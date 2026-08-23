@@ -1,0 +1,55 @@
+{
+  "webos_store": 2,
+  "version": 2,
+  "repo": "Kadharriminecraft/official-list",
+  "updated_at": "2026-08-23T20:33:00.079Z",
+  "categories": [
+    {
+      "id": "fun",
+      "name": "Fun",
+      "icon": "o"
+    },
+    {
+      "id": "multiplayer",
+      "name": "Multiplayer",
+      "icon": "h"
+    },
+    {
+      "id": "single-player",
+      "name": "Single Player",
+      "icon": "d"
+    },
+    {
+      "id": "podcasts",
+      "name": "Podcasts",
+      "icon": "i"
+    },
+    {
+      "id": "lyrics",
+      "name": "Lyrics",
+      "icon": "y"
+    },
+    {
+      "id": "emulators",
+      "name": "Emulators",
+      "icon": "t"
+    },
+    {
+      "id": "audio",
+      "name": "Audio",
+      "icon": "n"
+    }
+  ],
+  "apps": [
+    {
+      "name": "Steam",
+      "rawName": "Steam.html",
+      "path": "Other/Steam.html",
+      "icon": "fa:fa-gem",
+      "color": "linear-gradient(135deg, #00c6ff, #0072ff)",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    }
+  ]
+} 
