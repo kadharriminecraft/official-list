@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-23T21:33:00.827Z",
+  "updated_at": "2026-08-23T22:10:12.543Z",
   "categories": [
     {
       "id": "fun",
@@ -74,6 +74,48 @@
       "description": "Play Minecraft but it's entirely different",
       "featured": true,
       "isNew": true,
+      "pinned": true
+    },
+    {
+      "name": "A Access Radio",
+      "rawName": "A-Access Radio.html",
+      "path": "Audio/A-Access Radio.html",
+      "featured": true,
+      "pinned": true
+    },
+    {
+      "name": "Gameboy Color",
+      "rawName": "Gameboy Color.html",
+      "path": "Fun/Emulators/Gameboy Color.html",
+      "author": "Throk",
+      "icon": "👾",
+      "pinned": true
+    },
+    {
+      "name": "Lyric Search",
+      "rawName": "Lyric Search.html",
+      "path": "Audio/Lyrics/Lyric Search.html",
+      "pinned": true
+    },
+    {
+      "name": "Pocket Lyrics",
+      "rawName": "Pocket Lyrics.html",
+      "path": "Audio/Lyrics/Pocket Lyrics.html",
+      "pinned": true
+    },
+    {
+      "name": "Scry Table",
+      "rawName": "ScryTable.html",
+      "path": "Fun/Tabletop/Magic/ScryTable.html",
+      "author": "Buell",
+      "description": "Incredible app for Magic the Gathering",
+      "featured": true,
+      "pinned": true
+    },
+    {
+      "name": "Tetris",
+      "rawName": "Tetris.html",
+      "path": "Fun/Single Player/Tetris.html",
       "pinned": true
     }
   ]
