@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-23T22:10:12.543Z",
+  "updated_at": "2026-08-23T22:26:46.206Z",
   "categories": [
     {
       "id": "fun",
@@ -38,6 +38,11 @@
       "id": "audio",
       "name": "Audio",
       "icon": "n"
+    },
+    {
+      "id": "updated",
+      "name": "Updated",
+      "icon": "🌌"
     }
   ],
   "apps": [
@@ -50,7 +55,8 @@
       "icon": "fa:fa-gem",
       "color": "linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, var(--bg2)), color-mix(in srgb, var(--accent) 38%, var(--bg3)))",
       "tags": [
-        "fun"
+        "fun",
+        "updated"
       ],
       "featured": true,
       "isNew": true,
@@ -116,6 +122,15 @@
       "name": "Tetris",
       "rawName": "Tetris.html",
       "path": "Fun/Single Player/Tetris.html",
+      "pinned": true
+    },
+    {
+      "name": "Podcasts",
+      "rawName": "Podcasts.html",
+      "path": "Audio/Podcasts/Podcasts.html",
+      "tags": [
+        "updated"
+      ],
       "pinned": true
     }
   ]
