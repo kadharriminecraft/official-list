@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-23T21:16:01.966Z",
+  "updated_at": "2026-08-23T21:33:00.827Z",
   "categories": [
     {
       "id": "fun",
@@ -73,6 +73,7 @@
       "author": "Throk",
       "description": "Play Minecraft but it's entirely different",
       "featured": true,
+      "isNew": true,
       "pinned": true
     }
   ]
