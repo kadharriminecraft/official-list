@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T03:44:06.970Z",
+  "updated_at": "2026-08-24T04:01:13.603Z",
   "categories": [
     {
       "id": "developers",
@@ -25,9 +25,9 @@
       "icon": "🚀"
     },
     {
-      "id": "fun-multiplayer-chess",
-      "name": "Chess",
-      "icon": "📁",
+      "id": "jesus",
+      "name": "Jesus",
+      "icon": "🎈",
       "download": true
     }
   ],
@@ -51,6 +51,9 @@
       "name": "Lyric Search",
       "rawName": "Lyric Search.html",
       "path": "Audio/Lyrics/Lyric Search.html",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "pinned": true
     },
@@ -71,6 +74,9 @@
       "name": "Podcasts+",
       "rawName": "Podcasts+.html",
       "path": "Audio/Podcasts/Podcasts+.html",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -81,6 +87,19 @@
       "path": "Fun/Tabletop/Magic/ScryTable.html",
       "featured": true,
       "pinned": true
+    },
+    {
+      "name": "Particle Simulator",
+      "rawName": "Particle Simulator.html",
+      "path": "Fun/Particle Simulator.html",
+      "isNew": true,
+      "pinned": true
+    },
+    {
+      "name": "Library Of Babel",
+      "rawName": "Library of Babel.html",
+      "path": "Fun/Library of Babel.html",
+      "size": 69
     }
   ]
 }
