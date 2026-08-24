@@ -2,25 +2,22 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T19:59:58.655Z",
+  "updated_at": "2026-08-24T22:55:02.880Z",
   "categories": [
     {
       "id": "developers",
       "name": "Dev Tools",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     },
     {
       "id": "other",
       "name": "Other stuf",
-      "icon": "🔌",
-      "hidden": true
+      "icon": "🔌"
     },
     {
       "id": "fun",
       "name": "Fun",
-      "icon": "🚀",
-      "hidden": true
+      "icon": "🚀"
     },
     {
       "id": "magic",
@@ -38,8 +35,7 @@
     {
       "id": "audio",
       "name": "Audio",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     },
     {
       "id": "developers-practice-and-learn",
@@ -67,8 +63,7 @@
     {
       "id": "tools",
       "name": "Tools",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     },
     {
       "id": "developers-tools",
@@ -84,24 +79,19 @@
     {
       "id": "health",
       "name": "Health",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     }
   ],
   "apps": [
     {
-      "name": "Steam!!",
-      "rawName": "Steam.html",
-      "path": "Other/Steam.html",
-      "author": "Bluevader🔷",
-      "icon": "fa:fa-gamepad",
-      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
-      "iconColor": "#ffffff",
-      "tags": [
-        "jesus",
-        "other",
-        "health"
-      ],
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Unknown",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -115,14 +105,18 @@
       "pinned": true
     },
     {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Unknown",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
+      "name": "Steam!!",
+      "rawName": "Steam.html",
+      "path": "Other/Steam.html",
+      "author": "Bluevader🔷",
+      "icon": "fa:fa-gamepad",
+      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
+      "iconColor": "#ffffff",
+      "tags": [
+        "jesus",
+        "other",
+        "health"
+      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -536,7 +530,8 @@
       "name": "Chess",
       "rawName": "Chess.html",
       "path": "Fun/Multiplayer/Chess/Chess.html",
-      "author": "Throk"
+      "author": "Throk",
+      "featured": true
     },
     {
       "name": "Mobile Game Collection",
