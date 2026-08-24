@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T22:55:02.880Z",
+  "updated_at": "2026-08-24T22:57:59.512Z",
   "categories": [
     {
       "id": "developers",
@@ -326,7 +326,8 @@
       "name": "Text Editor",
       "rawName": "Text Editor.html",
       "path": "Developers/Text Editing/Text Editor.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Wobbies Text Editor",
