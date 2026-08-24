@@ -2,31 +2,27 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T15:59:32.140Z",
+  "updated_at": "2026-08-24T16:21:01.607Z",
   "categories": [
     {
       "id": "developers",
       "name": "Dev Tools",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     },
     {
       "id": "other",
       "name": "Other stuf",
-      "icon": "🔌",
-      "hidden": true
+      "icon": "🔌"
     },
     {
       "id": "tools",
       "name": "Tools",
-      "icon": "🛠️",
-      "hidden": true
+      "icon": "🛠️"
     },
     {
       "id": "fun",
       "name": "Fun",
-      "icon": "🚀",
-      "hidden": true
+      "icon": "🚀"
     },
     {
       "id": "magic",
@@ -39,13 +35,7 @@
       "id": "health",
       "name": "Health",
       "icon": "fa:fa-heart",
-      "download": true,
-      "hidden": true
-    },
-    {
-      "id": "fun-single-player-card-and-dice",
-      "name": "Card and Dice",
-      "icon": "📁"
+      "download": true
     },
     {
       "id": "fun-tabletop-magic",
@@ -56,8 +46,7 @@
     {
       "id": "audio",
       "name": "Audio",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     }
   ],
   "apps": [
@@ -65,7 +54,7 @@
       "name": "Steam",
       "rawName": "Steam.html",
       "path": "Other/Steam.html",
-      "author": "Me",
+      "author": "Bluevader🔷",
       "icon": "fa:fa-gamepad",
       "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
       "iconColor": "#ffffff",
