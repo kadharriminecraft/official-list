@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T04:31:36.669Z",
+  "updated_at": "2026-08-24T15:11:59.369Z",
   "categories": [
     {
       "id": "developers",
@@ -41,6 +41,11 @@
       "name": "Health",
       "icon": "fa:fa-heart",
       "download": true
+    },
+    {
+      "id": "fun-single-player-card-and-dice",
+      "name": "Card and Dice",
+      "icon": "📁"
     }
   ],
   "apps": [
@@ -164,6 +169,28 @@
       "path": "Tools/Google Drive Deflector.html",
       "tags": [
         "other"
+      ]
+    },
+    {
+      "name": "Audio Extractor",
+      "rawName": "Audio Extractor.html",
+      "path": "Audio/Tools/Audio Extractor.html",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
+      "name": "Adventure Path",
+      "rawName": "Adventure Path.html",
+      "path": "Fun/Multiplayer/Adventure Path.html",
+      "hidden": true
+    },
+    {
+      "name": "Dictionary",
+      "rawName": "Dictionary.html",
+      "path": "Other/Dictionary.html",
+      "tags": [
+        "jesus"
       ]
     }
   ]
