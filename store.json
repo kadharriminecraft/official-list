@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T17:12:47.922Z",
+  "updated_at": "2026-08-24T19:58:09.704Z",
   "categories": [
     {
       "id": "developers",
@@ -68,23 +68,15 @@
     {
       "id": "developers-tools",
       "name": "Dev Tools",
-      "icon": ""
+      "icon": "📁"
+    },
+    {
+      "id": "games",
+      "name": "Games",
+      "icon": "fa:fa-ghost"
     }
   ],
   "apps": [
-    {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Unknown",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
     {
       "name": "Steam!!",
       "rawName": "Steam.html",
@@ -103,20 +95,30 @@
       "pinned": true
     },
     {
-      "name": "Git Hub",
-      "rawName": "GitHub.html",
-      "path": "Developers/Tools/Github/GitHub.html",
+      "name": "Minesweeper",
+      "rawName": "Minesweeper.html",
+      "path": "Fun/Single Player/Minesweeper.html",
       "author": "Throk",
-      "tags": [
-        "jesus"
-      ],
       "featured": true,
       "pinned": true
     },
     {
-      "name": "Lyric Search",
-      "rawName": "Lyric Search.html",
-      "path": "Audio/Lyrics/Lyric Search.html",
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Unknown",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
+      "name": "Git Hub",
+      "rawName": "GitHub.html",
+      "path": "Developers/Tools/Github/GitHub.html",
       "author": "Throk",
       "tags": [
         "jesus"
@@ -133,10 +135,13 @@
       "color": "linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, var(--bg2)), color-mix(in srgb, var(--accent) 38%, var(--bg3)))"
     },
     {
-      "name": "Minesweeper",
-      "rawName": "Minesweeper.html",
-      "path": "Fun/Single Player/Minesweeper.html",
+      "name": "Lyric Search",
+      "rawName": "Lyric Search.html",
+      "path": "Audio/Lyrics/Lyric Search.html",
       "author": "Throk",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "pinned": true
     },
@@ -567,13 +572,19 @@
       "name": "3D Racing Game",
       "rawName": "3D Racing Game.html",
       "path": "Fun/Single Player/Beta/3D Racing Game.html",
-      "author": "Throk"
+      "author": "Throk",
+      "tags": [
+        "games"
+      ]
     },
     {
       "name": "ASCII Runner",
       "rawName": "ASCII Runner.html",
       "path": "Fun/Single Player/Beta/ASCII Runner.html",
-      "author": "Throk"
+      "author": "Throk",
+      "tags": [
+        "games"
+      ]
     },
     {
       "name": "Chromatic Logic",
@@ -627,7 +638,10 @@
       "name": "Blackjack",
       "rawName": "Blackjack.html",
       "path": "Fun/Single Player/Card and Dice/Blackjack.html",
-      "author": "Throk"
+      "author": "Throk",
+      "tags": [
+        "games"
+      ]
     },
     {
       "name": "Crazy 8s",
@@ -795,7 +809,8 @@
       "name": "Clipboard",
       "rawName": "Clipboard.html",
       "path": "Tools/Clipboard.html",
-      "author": "Throk"
+      "author": "Throk",
+      "isNew": true
     },
     {
       "name": "Dice Roller",
