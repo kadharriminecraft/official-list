@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T19:58:59.397Z",
+  "updated_at": "2026-08-24T19:59:58.655Z",
   "categories": [
     {
       "id": "developers",
@@ -78,7 +78,8 @@
     {
       "id": "games",
       "name": "Games",
-      "icon": "fa:fa-ghost"
+      "icon": "fa:fa-ghost",
+      "download": true
     },
     {
       "id": "health",
