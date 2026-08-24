@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T04:04:33.614Z",
+  "updated_at": "2026-08-24T04:08:21.187Z",
   "categories": [
     {
       "id": "developers",
@@ -29,6 +29,12 @@
       "name": "Jesus",
       "icon": "🎈",
       "download": true
+    },
+    {
+      "id": "magic",
+      "name": "Magic ✨",
+      "icon": "fa:fa-ghost",
+      "download": true
     }
   ],
   "apps": [
@@ -44,6 +50,9 @@
       "name": "Git Hub",
       "rawName": "GitHub.html",
       "path": "Developers/Tools/Github/GitHub.html",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "pinned": true
     },
@@ -93,8 +102,7 @@
       "rawName": "Particle Simulator.html",
       "path": "Fun/Particle Simulator.html",
       "isNew": true,
-      "pinned": true,
-      "size": 69
+      "pinned": true
     },
     {
       "name": "Library Of Babel",
@@ -103,11 +111,44 @@
       "size": 69
     },
     {
-      "name": "Text Editor",
-      "rawName": "Text Editor.html",
-      "path": "Developers/Text Editing/Text Editor.html",
-      "featured": true,
-      "pinned": true
+      "name": "Github Deleter",
+      "rawName": "Github deleter.html",
+      "path": "Developers/Tools/Github/Github deleter.html",
+      "tags": [
+        "jesus"
+      ]
+    },
+    {
+      "name": "Github File Manager",
+      "rawName": "Github File Manager.html",
+      "path": "Developers/Tools/Github/Github File Manager.html",
+      "tags": [
+        "jesus"
+      ]
+    },
+    {
+      "name": "Gin Rummy",
+      "rawName": "Gin Rummy.html",
+      "path": "Fun/Single Player/Card and Dice/Gin Rummy.html",
+      "tags": [
+        "jesus"
+      ]
+    },
+    {
+      "name": "Golf Sunday",
+      "rawName": "Golf Sunday.html",
+      "path": "Fun/Single Player/Golf Sunday.html",
+      "tags": [
+        "other"
+      ]
+    },
+    {
+      "name": "Google Drive Deflector",
+      "rawName": "Google Drive Deflector.html",
+      "path": "Tools/Google Drive Deflector.html",
+      "tags": [
+        "other"
+      ]
     }
   ]
 }
