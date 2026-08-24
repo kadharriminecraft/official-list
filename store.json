@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T03:30:00.913Z",
+  "updated_at": "2026-08-24T03:44:06.970Z",
   "categories": [
     {
       "id": "developers",
@@ -23,6 +23,12 @@
       "id": "fun",
       "name": "Fun",
       "icon": "🚀"
+    },
+    {
+      "id": "fun-multiplayer-chess",
+      "name": "Chess",
+      "icon": "📁",
+      "download": true
     }
   ],
   "apps": [
