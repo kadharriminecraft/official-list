@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T16:21:01.607Z",
+  "updated_at": "2026-08-24T16:24:19.924Z",
   "categories": [
     {
       "id": "developers",
@@ -35,7 +35,8 @@
       "id": "health",
       "name": "Health",
       "icon": "fa:fa-heart",
-      "download": true
+      "download": true,
+      "hidden": true
     },
     {
       "id": "fun-tabletop-magic",
@@ -47,6 +48,24 @@
       "id": "audio",
       "name": "Audio",
       "icon": "📁"
+    },
+    {
+      "id": "practice-and-learn",
+      "name": "Practice and learn",
+      "icon": "📁",
+      "hidden": true
+    },
+    {
+      "id": "podcasts",
+      "name": "Podcasts",
+      "icon": "📁",
+      "hidden": true
+    },
+    {
+      "id": "lyrics",
+      "name": "Lyrics",
+      "icon": "📁",
+      "hidden": true
     }
   ],
   "apps": [
@@ -99,19 +118,7 @@
       "rawName": "Podcasts.html",
       "path": "Audio/Podcasts/Podcasts.html",
       "icon": "🎤",
-      "color": "linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, var(--bg2)), color-mix(in srgb, var(--accent) 38%, var(--bg3)))",
-      "featured": true
-    },
-    {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "tags": [
-        "jesus"
-      ],
-      "featured": true,
-      "isNew": true,
-      "pinned": true
+      "color": "linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, var(--bg2)), color-mix(in srgb, var(--accent) 38%, var(--bg3)))"
     },
     {
       "name": "Scry Table",
@@ -198,6 +205,18 @@
       "tags": [
         "jesus"
       ]
+    },
+    {
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "description": "Upgraded podcasts app",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
     }
   ]
 }
