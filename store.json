@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T15:11:59.369Z",
+  "updated_at": "2026-08-24T15:57:00.304Z",
   "categories": [
     {
       "id": "developers",
@@ -25,16 +25,11 @@
       "icon": "🚀"
     },
     {
-      "id": "jesus",
-      "name": "Jesus",
-      "icon": "🎈",
-      "download": true
-    },
-    {
       "id": "magic",
       "name": "Magic ✨",
       "icon": "fa:fa-ghost",
-      "download": true
+      "download": true,
+      "hidden": true
     },
     {
       "id": "health",
@@ -46,6 +41,12 @@
       "id": "fun-single-player-card-and-dice",
       "name": "Card and Dice",
       "icon": "📁"
+    },
+    {
+      "id": "fun-tabletop-magic",
+      "name": "Magic",
+      "icon": "📁",
+      "hidden": true
     }
   ],
   "apps": [
@@ -54,8 +55,7 @@
       "rawName": "Steam.html",
       "path": "Other/Steam.html",
       "author": "Me",
-      "icon": "fa:fa-compass",
-      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
+      "color": "linear-gradient(135deg, #6d28d9, #a78bfa)",
       "tags": [
         "jesus",
         "other",
@@ -122,6 +122,10 @@
       "name": "Particle Simulator",
       "rawName": "Particle Simulator.html",
       "path": "Fun/Particle Simulator.html",
+      "author": "Bluevader",
+      "description": "It's part",
+      "icon": "fa:fa-rocket",
+      "color": "linear-gradient(135deg, #ffffff, #e8e8ed)",
       "isNew": true,
       "pinned": true
     },
