@@ -2,22 +2,25 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-24T22:57:59.512Z",
+  "updated_at": "2026-08-25T01:28:19.407Z",
   "categories": [
     {
       "id": "developers",
       "name": "Dev Tools",
-      "icon": "📁"
+      "icon": "📁",
+      "hidden": true
     },
     {
       "id": "other",
       "name": "Other stuf",
-      "icon": "🔌"
+      "icon": "🔌",
+      "hidden": true
     },
     {
       "id": "fun",
       "name": "Fun",
-      "icon": "🚀"
+      "icon": "🚀",
+      "hidden": true
     },
     {
       "id": "magic",
@@ -35,7 +38,8 @@
     {
       "id": "audio",
       "name": "Audio",
-      "icon": "📁"
+      "icon": "📁",
+      "hidden": true
     },
     {
       "id": "developers-practice-and-learn",
@@ -74,12 +78,14 @@
       "id": "games",
       "name": "Games",
       "icon": "fa:fa-ghost",
-      "download": true
+      "download": true,
+      "hidden": true
     },
     {
       "id": "health",
       "name": "Health",
-      "icon": "📁"
+      "icon": "📁",
+      "hidden": true
     }
   ],
   "apps": [
@@ -94,7 +100,8 @@
       "iconColor": "#f97316",
       "featured": true,
       "isNew": true,
-      "pinned": true
+      "pinned": true,
+      "hidden": true
     },
     {
       "name": "Minesweeper",
@@ -102,7 +109,8 @@
       "path": "Fun/Single Player/Minesweeper.html",
       "author": "Throk",
       "featured": true,
-      "pinned": true
+      "pinned": true,
+      "hidden": true
     },
     {
       "name": "Steam!!",
@@ -119,7 +127,8 @@
       ],
       "featured": true,
       "isNew": true,
-      "pinned": true
+      "pinned": true,
+      "hidden": true
     },
     {
       "name": "Git Hub",
@@ -130,7 +139,8 @@
         "jesus"
       ],
       "featured": true,
-      "pinned": true
+      "pinned": true,
+      "hidden": true
     },
     {
       "name": "Podcasts",
@@ -138,7 +148,8 @@
       "path": "Audio/Podcasts/Podcasts.html",
       "author": "Throk",
       "icon": "🎤",
-      "color": "linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, var(--bg2)), color-mix(in srgb, var(--accent) 38%, var(--bg3)))"
+      "color": "linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, var(--bg2)), color-mix(in srgb, var(--accent) 38%, var(--bg3)))",
+      "hidden": true
     },
     {
       "name": "Lyric Search",
@@ -149,7 +160,8 @@
         "jesus"
       ],
       "featured": true,
-      "pinned": true
+      "pinned": true,
+      "hidden": true
     },
     {
       "name": "Particle Simulator",
@@ -160,13 +172,15 @@
       "icon": "fa:fa-rocket",
       "color": "linear-gradient(135deg, #ffffff, #e8e8ed)",
       "isNew": true,
-      "pinned": true
+      "pinned": true,
+      "hidden": true
     },
     {
       "name": "Library Of Babel",
       "rawName": "Library of Babel.html",
       "path": "Fun/Library of Babel.html",
       "author": "Throk",
+      "hidden": true,
       "size": 69
     },
     {
@@ -176,7 +190,8 @@
       "author": "Throk",
       "tags": [
         "jesus"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Github File Manager",
@@ -185,7 +200,8 @@
       "author": "Throk",
       "tags": [
         "jesus"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Gin Rummy",
@@ -194,7 +210,8 @@
       "author": "Throk",
       "tags": [
         "jesus"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Golf Sunday",
@@ -203,7 +220,8 @@
       "author": "Throk",
       "tags": [
         "other"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Google Drive Deflector",
@@ -212,7 +230,8 @@
       "author": "Throk",
       "tags": [
         "other"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Scry Table",
@@ -220,7 +239,8 @@
       "path": "Fun/Tabletop/Magic/ScryTable.html",
       "author": "Throk",
       "featured": true,
-      "pinned": true
+      "pinned": true,
+      "hidden": true
     },
     {
       "name": "Adventure Path",
@@ -236,91 +256,106 @@
       "author": "Throk",
       "tags": [
         "jesus"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Audio Extractor",
       "rawName": "Audio Extractor.html",
       "path": "Audio/Tools/Audio Extractor.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "A Access Radio",
       "rawName": "A-Access Radio.html",
       "path": "Audio/A-Access Radio.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Beep Box",
       "rawName": "BeepBox.html",
       "path": "Audio/BeepBox.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Pocket Lyrics",
       "rawName": "Pocket Lyrics.html",
       "path": "Audio/Lyrics/Pocket Lyrics.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Metronome",
       "rawName": "Metronome.html",
       "path": "Audio/Metronome.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Music Recognition",
       "rawName": "Music Recognition.html",
       "path": "Audio/Music Recognition.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Pod Loader",
       "rawName": "PodLoader.html",
       "path": "Audio/Podcasts/PodLoader.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Audio Trimmer",
       "rawName": "Audio Trimmer.html",
       "path": "Audio/Tools/Audio Trimmer.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Video To Audio",
       "rawName": "Video to Audio.html",
       "path": "Audio/Tools/Video to Audio.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Java Script Mastery Course",
       "rawName": "JavaScript Mastery Course.html",
       "path": "Developers/Practice and learn/JavaScript Mastery Course.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Javascript Challenges",
       "rawName": "Javascript Challenges.html",
       "path": "Developers/Practice and learn/Javascript Challenges.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Big File Text Editor",
       "rawName": "Big File Text Editor.html",
       "path": "Developers/Text Editing/Big File Text Editor.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Massive Text File Editor",
       "rawName": "Massive Text File Editor.html",
       "path": "Developers/Text Editing/Massive Text File Editor.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Text Compare Tool",
       "rawName": "Text Compare Tool.html",
       "path": "Developers/Text Editing/Text Compare Tool.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Text Editor",
@@ -333,248 +368,289 @@
       "name": "Wobbies Text Editor",
       "rawName": "Wobbies Text Editor.html",
       "path": "Developers/Text Editing/Wobbies Text Editor.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Code Flattener",
       "rawName": "Code Flattener.html",
       "path": "Developers/Tools/Code Flattener.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Color Picker",
       "rawName": "Color Picker.html",
       "path": "Developers/Tools/Color Picker.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "CDN Tester",
       "rawName": "CDN Tester.html",
       "path": "Developers/Tools/Emulators/CDN Tester.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Cloudflare Worker Tester",
       "rawName": "Cloudflare Worker Tester.html",
       "path": "Developers/Tools/Emulators/Cloudflare Worker Tester.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Code Stylizer",
       "rawName": "Code Stylizer.html",
       "path": "Developers/Tools/Emulators/Code Stylizer.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "DB File Browser",
       "rawName": "DB File Browser.html",
       "path": "Developers/Tools/Emulators/DB File Browser.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Markdown Viewer",
       "rawName": "Markdown Viewer.html",
       "path": "Developers/Tools/Emulators/Markdown Viewer.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Base64 Extracter",
       "rawName": "Base64 Extracter.html",
       "path": "Developers/Tools/Encoding/Base64 Extracter.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Encoding",
       "rawName": "Encoding.html",
       "path": "Developers/Tools/Encoding/Encoding.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "File To Base64",
       "rawName": "File to Base64.html",
       "path": "Developers/Tools/Encoding/File to Base64.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "URL Code Fetcher",
       "rawName": "URL Code Fetcher.html",
       "path": "Developers/Tools/Fetching/URL Code Fetcher.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Web Fetch",
       "rawName": "Web Fetch.html",
       "path": "Developers/Tools/Fetching/Web Fetch.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Web Fetcher",
       "rawName": "Web Fetcher.html",
       "path": "Developers/Tools/Fetching/Web Fetcher.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Font Awesome Icon Browser",
       "rawName": "Font Awesome Icon Browser.html",
       "path": "Developers/Tools/Font Awesome Icon Browser.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Github Push Folder To Repo",
       "rawName": "Github Push Folder to Repo.html",
       "path": "Developers/Tools/Github/Github Push Folder to Repo.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Github Repo Creator",
       "rawName": "Github Repo Creator.html",
       "path": "Developers/Tools/Github/Github Repo Creator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Github Pages Shipper",
       "rawName": "Github pages shipper.html",
       "path": "Developers/Tools/Github/Github pages shipper.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "HTML Block Organizer",
       "rawName": "HTML Block Organizer.html",
       "path": "Developers/Tools/HTML Block Organizer.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Local Storage Manager",
       "rawName": "Local Storage Manager.html",
       "path": "Developers/Tools/Local Storage Manager.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Emulator Local Save Patcher",
       "rawName": "Emulator Local Save Patcher.html",
       "path": "Fun/Emulator Local Save Patcher.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Computer System",
       "rawName": "Computer System.html",
       "path": "Fun/Emulators/Computer System.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "GBA Emulator",
       "rawName": "GBA Emulator.html",
       "path": "Fun/Emulators/GBA Emulator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Gameboy Color",
       "rawName": "Gameboy Color.html",
       "path": "Fun/Emulators/Gameboy Color.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "N64 Emulator",
       "rawName": "N64 Emulator.html",
       "path": "Fun/Emulators/N64 Emulator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "NDS Emulator",
       "rawName": "NDS Emulator.html",
       "path": "Fun/Emulators/NDS Emulator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "NES Emulator",
       "rawName": "NES Emulator.html",
       "path": "Fun/Emulators/NES Emulator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "PSX Emulator",
       "rawName": "PSX Emulator.html",
       "path": "Fun/Emulators/PSX Emulator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "SNES Emulator",
       "rawName": "SNES Emulator.html",
       "path": "Fun/Emulators/SNES Emulator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "TI BASIC Emulator",
       "rawName": "TI-BASIC Emulator.html",
       "path": "Fun/Emulators/TI-BASIC Emulator.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Game.Gb",
       "rawName": "game.gb",
       "path": "Fun/Emulators/game.gb",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Chess Collection",
       "rawName": "Chess Collection.html",
       "path": "Fun/Multiplayer/Chess/Chess Collection.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Chess With Stockfish",
       "rawName": "Chess with Stockfish.html",
       "path": "Fun/Multiplayer/Chess/Chess with Stockfish.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Chess",
       "rawName": "Chess.html",
       "path": "Fun/Multiplayer/Chess/Chess.html",
       "author": "Throk",
-      "featured": true
+      "featured": true,
+      "hidden": true
     },
     {
       "name": "Mobile Game Collection",
       "rawName": "Mobile Game Collection.html",
       "path": "Fun/Multiplayer/Mobile Game Collection.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Tank Battle Arena",
       "rawName": "Tank Battle Arena.html",
       "path": "Fun/Multiplayer/Tank Battle Arena.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Pixel Art",
       "rawName": "Pixel Art.html",
       "path": "Fun/Pixel Art.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Rubik'S Cube Kit",
       "rawName": "Rubik's Cube Kit.html",
       "path": "Fun/Rubik's Cube Kit.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Adventure Capatalist",
       "rawName": "Adventure Capatalist.html",
       "path": "Fun/Single Player/Adventure Capatalist.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Ascent",
       "rawName": "Ascent.html",
       "path": "Fun/Single Player/Ascent.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Awesome Tanks 2",
       "rawName": "Awesome Tanks 2.html",
       "path": "Fun/Single Player/Awesome Tanks 2.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "3D Racing Game",
@@ -583,7 +659,8 @@
       "author": "Throk",
       "tags": [
         "games"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "ASCII Runner",
@@ -592,55 +669,64 @@
       "author": "Throk",
       "tags": [
         "games"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Chromatic Logic",
       "rawName": "Chromatic Logic.html",
       "path": "Fun/Single Player/Beta/Chromatic Logic.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Chromaverse",
       "rawName": "Chromaverse.html",
       "path": "Fun/Single Player/Beta/Chromaverse.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Climb The Tower",
       "rawName": "Climb the Tower.html",
       "path": "Fun/Single Player/Beta/Climb the Tower.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Color Logic",
       "rawName": "Color logic.html",
       "path": "Fun/Single Player/Beta/Color logic.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Nexus Mind",
       "rawName": "Nexus Mind.html",
       "path": "Fun/Single Player/Beta/Nexus Mind.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Flat Smashy Road",
       "rawName": "flat smashy road.html",
       "path": "Fun/Single Player/Beta/flat smashy road.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Race",
       "rawName": "race.html",
       "path": "Fun/Single Player/Beta/race.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Breakout",
       "rawName": "Breakout.html",
       "path": "Fun/Single Player/Breakout.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Blackjack",
@@ -649,236 +735,287 @@
       "author": "Throk",
       "tags": [
         "games"
-      ]
+      ],
+      "hidden": true
     },
     {
       "name": "Crazy 8s",
       "rawName": "Crazy 8s.html",
       "path": "Fun/Single Player/Card and Dice/Crazy 8s.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Freecell Solitaire",
       "rawName": "Freecell Solitaire.html",
       "path": "Fun/Single Player/Card and Dice/Freecell Solitaire.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Solitaire",
       "rawName": "Solitaire.html",
       "path": "Fun/Single Player/Card and Dice/Solitaire.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Spades",
       "rawName": "Spades.html",
       "path": "Fun/Single Player/Card and Dice/Spades.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Yahtzee",
       "rawName": "Yahtzee.html",
       "path": "Fun/Single Player/Card and Dice/Yahtzee.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Connect The Pipes",
       "rawName": "Connect the Pipes.html",
       "path": "Fun/Single Player/Connect the Pipes.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "High Stakes",
       "rawName": "High Stakes.html",
       "path": "Fun/Single Player/High Stakes.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Impossible Quiz",
       "rawName": "Impossible Quiz.html",
       "path": "Fun/Single Player/Impossible Quiz.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Learn To Fly Idle",
       "rawName": "Learn To Fly Idle.html",
       "path": "Fun/Single Player/Learn To Fly Idle.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Minecraft PE Alpha",
       "rawName": "Minecraft PE Alpha.html",
       "path": "Fun/Single Player/Minecraft PE Alpha.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Plants VS Zombies",
       "rawName": "Plants VS Zombies.html",
       "path": "Fun/Single Player/Plants VS Zombies.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Snake Game",
       "rawName": "Snake Game.html",
       "path": "Fun/Single Player/Snake Game.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Sudoku",
       "rawName": "Sudoku.html",
       "path": "Fun/Single Player/Sudoku.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Tetris",
       "rawName": "Tetris.html",
       "path": "Fun/Single Player/Tetris.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "The Alter",
       "rawName": "The Alter.html",
       "path": "Fun/Single Player/The Alter.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Wordle",
       "rawName": "Wordle.html",
       "path": "Fun/Single Player/Wordle.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "DND Grimoire",
       "rawName": "DND Grimoire.html",
       "path": "Fun/Tabletop/DND Grimoire.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Delve",
       "rawName": "Delve.html",
       "path": "Fun/Tabletop/Delve.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "MTG Life",
       "rawName": "MTG life.html",
       "path": "Fun/Tabletop/Magic/MTG life.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Scryfall",
       "rawName": "Scryfall.html",
       "path": "Fun/Tabletop/Magic/Scryfall.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Macro Tracker",
       "rawName": "Macro Tracker.html",
       "path": "Health/Macro Tracker.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Meal Tracker",
       "rawName": "Meal Tracker.html",
       "path": "Health/Meal Tracker.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Legend Of Zelda, The   Link'S Awakening (USA, Europe) (Rev 2).Gb",
       "rawName": "Legend of Zelda, The - Link's Awakening (USA, Europe) (Rev 2).gb",
       "path": "Legend of Zelda, The - Link's Awakening (USA, Europe) (Rev 2).gb",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Chat",
       "rawName": "Chat.html",
       "path": "Other/Chat.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Feed Tok",
       "rawName": "FeedTok.html",
       "path": "Other/FeedTok.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Web Browser",
       "rawName": "Web Browser.html",
       "path": "Other/Web Browser.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Archive.Org Downloader",
       "rawName": "Archive.org Downloader.html",
       "path": "Tools/Archive.org Downloader.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Clipboard",
       "rawName": "Clipboard.html",
       "path": "Tools/Clipboard.html",
       "author": "Throk",
-      "isNew": true
+      "isNew": true,
+      "hidden": true
     },
     {
       "name": "Dice Roller",
       "rawName": "Dice Roller.html",
       "path": "Tools/Dice Roller.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "GZ Extracter",
       "rawName": "GZ Extracter.html",
       "path": "Tools/GZ Extracter.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "LLM Text Chunker",
       "rawName": "LLM Text Chunker.html",
       "path": "Tools/LLM Text Chunker.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Phone Number Tool",
       "rawName": "Phone Number Tool.html",
       "path": "Tools/Phone Number Tool.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Random Group Maker",
       "rawName": "Random Group Maker.html",
       "path": "Tools/Random Group Maker.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Simple Prompt Aid",
       "rawName": "Simple Prompt Aid.html",
       "path": "Tools/Simple Prompt Aid.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Spinner Wheel",
       "rawName": "Spinner Wheel.html",
       "path": "Tools/Spinner Wheel.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Stopwatch",
       "rawName": "Stopwatch.html",
       "path": "Tools/Stopwatch.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "Text To Speech",
       "rawName": "Text to Speech.html",
       "path": "Tools/Text to Speech.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
     },
     {
       "name": "URL Decoder",
       "rawName": "URL Decoder.html",
       "path": "Tools/URL Decoder.html",
-      "author": "Throk"
+      "author": "Throk",
+      "hidden": true
+    },
+    {
+      "name": "A Day In The NOM",
+      "rawName": "a-Day-in-the-NOM.html",
+      "path": "Developers/Text Editing/a-Day-in-the-NOM.html",
+      "hidden": true
+    },
+    {
+      "name": "Worship Tracker V2",
+      "rawName": "WorshipTracker-V2.html",
+      "path": "WorshipTracker-V2.html",
+      "hidden": true
     }
   ]
 }
