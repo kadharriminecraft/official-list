@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-25T01:33:20.729Z",
+  "updated_at": "2026-08-25T03:48:53.891Z",
   "categories": [
     {
       "id": "developers",
@@ -84,14 +84,13 @@
   ],
   "apps": [
     {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Unknown",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
+      "name": "Song search",
+      "rawName": "_lookin better.html",
+      "path": "Audio/_lookin better.html",
+      "author": "Bluevader 🔷",
+      "description": "It's designed to find any song or album or artist.",
+      "icon": "🎵",
+      "color": "#101014",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -102,6 +101,19 @@
       "path": "Fun/Single Player/Minesweeper.html",
       "author": "Throk",
       "featured": true,
+      "pinned": true
+    },
+    {
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Unknown",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
+      "featured": true,
+      "isNew": true,
       "pinned": true
     },
     {
@@ -122,17 +134,6 @@
       "pinned": true
     },
     {
-      "name": "Git Hub",
-      "rawName": "GitHub.html",
-      "path": "Developers/Tools/Github/GitHub.html",
-      "author": "Throk",
-      "tags": [
-        "jesus"
-      ],
-      "featured": true,
-      "pinned": true
-    },
-    {
       "name": "Podcasts",
       "rawName": "Podcasts.html",
       "path": "Audio/Podcasts/Podcasts.html",
@@ -147,9 +148,7 @@
       "author": "Throk",
       "tags": [
         "jesus"
-      ],
-      "featured": true,
-      "pinned": true
+      ]
     },
     {
       "name": "Particle Simulator",
@@ -159,7 +158,6 @@
       "description": "It's particularly good",
       "icon": "fa:fa-rocket",
       "color": "linear-gradient(135deg, #ffffff, #e8e8ed)",
-      "isNew": true,
       "pinned": true
     },
     {
@@ -215,10 +213,13 @@
       ]
     },
     {
-      "name": "Scry Table",
-      "rawName": "ScryTable.html",
-      "path": "Fun/Tabletop/Magic/ScryTable.html",
+      "name": "Git Hub",
+      "rawName": "GitHub.html",
+      "path": "Developers/Tools/Github/GitHub.html",
       "author": "Throk",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "pinned": true
     },
@@ -526,11 +527,12 @@
       "author": "Throk"
     },
     {
-      "name": "Chess",
-      "rawName": "Chess.html",
-      "path": "Fun/Multiplayer/Chess/Chess.html",
+      "name": "Scry Table",
+      "rawName": "ScryTable.html",
+      "path": "Fun/Tabletop/Magic/ScryTable.html",
       "author": "Throk",
-      "featured": true
+      "featured": true,
+      "pinned": true
     },
     {
       "name": "Mobile Game Collection",
@@ -812,11 +814,11 @@
       "author": "Throk"
     },
     {
-      "name": "Clipboard",
-      "rawName": "Clipboard.html",
-      "path": "Tools/Clipboard.html",
+      "name": "Chess",
+      "rawName": "Chess.html",
+      "path": "Fun/Multiplayer/Chess/Chess.html",
       "author": "Throk",
-      "isNew": true
+      "featured": true
     },
     {
       "name": "Dice Roller",
@@ -887,6 +889,13 @@
       "name": "Worship Tracker V2",
       "rawName": "WorshipTracker-V2.html",
       "path": "WorshipTracker-V2.html"
+    },
+    {
+      "name": "Clipboard",
+      "rawName": "Clipboard.html",
+      "path": "Tools/Clipboard.html",
+      "author": "Throk",
+      "isNew": true
     }
   ]
 }
