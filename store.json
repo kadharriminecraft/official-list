@@ -2,22 +2,22 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-25T03:54:53.790Z",
+  "updated_at": "2026-08-25T14:31:23.807Z",
   "categories": [
     {
       "id": "developers",
       "name": "Dev Tools",
-      "icon": "📁"
+      "icon": "🧑‍💻"
     },
     {
       "id": "other",
       "name": "Other stuf",
-      "icon": "🔌"
+      "icon": "🪎"
     },
     {
       "id": "fun",
       "name": "Fun",
-      "icon": "🚀"
+      "icon": "🎯"
     },
     {
       "id": "magic",
@@ -35,25 +35,22 @@
     {
       "id": "audio",
       "name": "Audio",
-      "icon": "📁"
+      "icon": "🔊"
     },
     {
       "id": "developers-practice-and-learn",
       "name": "Practice and learn",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     },
     {
       "id": "audio-podcasts",
       "name": "Podcasts",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     },
     {
       "id": "audio-lyrics",
       "name": "Lyrics",
-      "icon": "📁",
-      "hidden": true
+      "icon": "📁"
     },
     {
       "id": "audio-tools",
@@ -63,7 +60,7 @@
     {
       "id": "tools",
       "name": "Tools",
-      "icon": "📁"
+      "icon": "fa:fa-toolbox"
     },
     {
       "id": "developers-tools",
@@ -71,15 +68,9 @@
       "icon": "📁"
     },
     {
-      "id": "games",
-      "name": "Games",
-      "icon": "fa:fa-ghost",
-      "download": true
-    },
-    {
       "id": "health",
       "name": "Health",
-      "icon": "📁"
+      "icon": "♥️"
     }
   ],
   "apps": [
@@ -91,6 +82,9 @@
       "description": "It's designed to find any song or album or artist.",
       "icon": "🎵",
       "color": "#101014",
+      "tags": [
+        "audio-lyrics"
+      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -117,7 +111,7 @@
       "pinned": true
     },
     {
-      "name": "Steam!!",
+      "name": "Steam",
       "rawName": "Steam.html",
       "path": "Other/Steam.html",
       "author": "Bluevader🔷",
@@ -137,7 +131,7 @@
       "path": "Audio/Podcasts/Podcasts.html",
       "author": "Throk",
       "icon": "🎤",
-      "color": "linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, var(--bg2)), color-mix(in srgb, var(--accent) 38%, var(--bg3)))"
+      "color": "linear-gradient(135deg, #2b2f36, #4b5563)"
     },
     {
       "name": "Lyric Search",
@@ -163,6 +157,9 @@
       "rawName": "Library of Babel.html",
       "path": "Fun/Library of Babel.html",
       "author": "Throk",
+      "description": "A library that contains every book imaginable and every book unimaginable",
+      "icon": "📖",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
       "size": 69
     },
     {
@@ -197,18 +194,13 @@
       "rawName": "Golf Sunday.html",
       "path": "Fun/Single Player/Golf Sunday.html",
       "author": "Throk",
-      "tags": [
-        "other"
-      ]
+      "icon": "⛳"
     },
     {
       "name": "Google Drive Deflector",
       "rawName": "Google Drive Deflector.html",
       "path": "Tools/Google Drive Deflector.html",
-      "author": "Throk",
-      "tags": [
-        "other"
-      ]
+      "author": "Throk"
     },
     {
       "name": "Git Hub",
@@ -232,6 +224,7 @@
       "rawName": "Dictionary.html",
       "path": "Other/Dictionary.html",
       "author": "Throk",
+      "icon": "fa:fa-book",
       "tags": [
         "jesus"
       ]
@@ -246,7 +239,9 @@
       "name": "A Access Radio",
       "rawName": "A-Access Radio.html",
       "path": "Audio/A-Access Radio.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "fa:fa-radio",
+      "pinned": true
     },
     {
       "name": "Beep Box",
@@ -258,7 +253,9 @@
       "name": "Pocket Lyrics",
       "rawName": "Pocket Lyrics.html",
       "path": "Audio/Lyrics/Pocket Lyrics.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "🎼",
+      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)"
     },
     {
       "name": "Metronome",
@@ -276,7 +273,10 @@
       "name": "Pod Loader",
       "rawName": "PodLoader.html",
       "path": "Audio/Podcasts/PodLoader.html",
-      "author": "Throk"
+      "author": "Throk",
+      "description": "Download mass amounts of podcasts",
+      "icon": "fa:fa-download",
+      "iconColor": "#f97316"
     },
     {
       "name": "Audio Trimmer",
@@ -529,7 +529,9 @@
       "name": "Scry Table",
       "rawName": "ScryTable.html",
       "path": "Fun/Tabletop/Magic/ScryTable.html",
-      "author": "Throk",
+      "author": "Buell",
+      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
+      "icon": "🔮",
       "featured": true,
       "pinned": true
     },
@@ -549,7 +551,8 @@
       "name": "Pixel Art",
       "rawName": "Pixel Art.html",
       "path": "Fun/Pixel Art.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "👾"
     },
     {
       "name": "Rubik'S Cube Kit",
@@ -573,25 +576,20 @@
       "name": "Awesome Tanks 2",
       "rawName": "Awesome Tanks 2.html",
       "path": "Fun/Single Player/Awesome Tanks 2.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "🪖"
     },
     {
       "name": "3D Racing Game",
       "rawName": "3D Racing Game.html",
       "path": "Fun/Single Player/Beta/3D Racing Game.html",
-      "author": "Throk",
-      "tags": [
-        "games"
-      ]
+      "author": "Throk"
     },
     {
       "name": "ASCII Runner",
       "rawName": "ASCII Runner.html",
       "path": "Fun/Single Player/Beta/ASCII Runner.html",
-      "author": "Throk",
-      "tags": [
-        "games"
-      ]
+      "author": "Throk"
     },
     {
       "name": "Chromatic Logic",
@@ -645,10 +643,7 @@
       "name": "Blackjack",
       "rawName": "Blackjack.html",
       "path": "Fun/Single Player/Card and Dice/Blackjack.html",
-      "author": "Throk",
-      "tags": [
-        "games"
-      ]
+      "author": "Throk"
     },
     {
       "name": "Crazy 8s",
@@ -696,13 +691,15 @@
       "name": "Impossible Quiz",
       "rawName": "Impossible Quiz.html",
       "path": "Fun/Single Player/Impossible Quiz.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "❔"
     },
     {
       "name": "Learn To Fly Idle",
       "rawName": "Learn To Fly Idle.html",
       "path": "Fun/Single Player/Learn To Fly Idle.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "🪽"
     },
     {
       "name": "Minecraft PE Alpha",
@@ -714,13 +711,15 @@
       "name": "Plants VS Zombies",
       "rawName": "Plants VS Zombies.html",
       "path": "Fun/Single Player/Plants VS Zombies.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "🧟"
     },
     {
       "name": "Snake Game",
       "rawName": "Snake Game.html",
       "path": "Fun/Single Player/Snake Game.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "🐍"
     },
     {
       "name": "Sudoku",
@@ -744,7 +743,8 @@
       "name": "Wordle",
       "rawName": "Wordle.html",
       "path": "Fun/Single Player/Wordle.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "🅰️"
     },
     {
       "name": "DND Grimoire",
@@ -792,19 +792,22 @@
       "name": "Chat",
       "rawName": "Chat.html",
       "path": "Other/Chat.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "💬"
     },
     {
       "name": "Feed Tok",
       "rawName": "FeedTok.html",
       "path": "Other/FeedTok.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "📲"
     },
     {
       "name": "Web Browser",
       "rawName": "Web Browser.html",
       "path": "Other/Web Browser.html",
-      "author": "Throk"
+      "author": "Throk",
+      "icon": "fa:fa-globe"
     },
     {
       "name": "Archive.Org Downloader",
@@ -817,6 +820,8 @@
       "rawName": "Chess.html",
       "path": "Fun/Multiplayer/Chess/Chess.html",
       "author": "Throk",
+      "icon": "♟️",
+      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
       "featured": true
     },
     {
