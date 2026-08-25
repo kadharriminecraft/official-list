@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-25T14:31:23.807Z",
+  "updated_at": "2026-08-25T15:30:36.735Z",
   "categories": [
     {
       "id": "developers",
@@ -75,6 +75,14 @@
   ],
   "apps": [
     {
+      "name": "Steam Prox",
+      "rawName": "SteamProx.html",
+      "path": "Other/SteamProx.html",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
       "name": "Song search",
       "rawName": "_lookin better.html",
       "path": "Audio/_lookin better.html",
@@ -108,21 +116,6 @@
       "iconColor": "#f97316",
       "featured": true,
       "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "Steam",
-      "rawName": "Steam.html",
-      "path": "Other/Steam.html",
-      "author": "Bluevader🔷",
-      "icon": "fa:fa-gamepad",
-      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
-      "iconColor": "#ffffff",
-      "tags": [
-        "jesus",
-        "other"
-      ],
-      "featured": true,
       "pinned": true
     },
     {
@@ -203,12 +196,16 @@
       "author": "Throk"
     },
     {
-      "name": "Git Hub",
-      "rawName": "GitHub.html",
-      "path": "Developers/Tools/Github/GitHub.html",
-      "author": "Throk",
+      "name": "Steam",
+      "rawName": "Steam.html",
+      "path": "Other/Steam.html",
+      "author": "Bluevader🔷",
+      "icon": "fa:fa-gamepad",
+      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
+      "iconColor": "#ffffff",
       "tags": [
-        "jesus"
+        "jesus",
+        "other"
       ],
       "featured": true,
       "pinned": true
@@ -526,12 +523,13 @@
       "author": "Throk"
     },
     {
-      "name": "Scry Table",
-      "rawName": "ScryTable.html",
-      "path": "Fun/Tabletop/Magic/ScryTable.html",
-      "author": "Buell",
-      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
-      "icon": "🔮",
+      "name": "Git Hub",
+      "rawName": "GitHub.html",
+      "path": "Developers/Tools/Github/GitHub.html",
+      "author": "Throk",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "pinned": true
     },
@@ -816,13 +814,14 @@
       "author": "Throk"
     },
     {
-      "name": "Chess",
-      "rawName": "Chess.html",
-      "path": "Fun/Multiplayer/Chess/Chess.html",
-      "author": "Throk",
-      "icon": "♟️",
-      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
-      "featured": true
+      "name": "Scry Table",
+      "rawName": "ScryTable.html",
+      "path": "Fun/Tabletop/Magic/ScryTable.html",
+      "author": "Buell",
+      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
+      "icon": "🔮",
+      "featured": true,
+      "pinned": true
     },
     {
       "name": "Dice Roller",
@@ -900,6 +899,15 @@
       "path": "Tools/Clipboard.html",
       "author": "Throk",
       "isNew": true
+    },
+    {
+      "name": "Chess",
+      "rawName": "Chess.html",
+      "path": "Fun/Multiplayer/Chess/Chess.html",
+      "author": "Throk",
+      "icon": "♟️",
+      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
+      "featured": true
     }
   ]
 }
