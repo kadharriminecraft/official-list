@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token Splitter</title>
+<style>
+:root{--bg:#101014;--panel:#18181d;--line:#2a2a32;--fg:#e8e8ec;--mut:#8b8b95;--dim:#55555e;--acc:#e8a83e;--err:#f05e5e;--ok:#3dd68c}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);color:var(--fg);min-height:100vh;font-size:13px}
+body.working{padding-bottom:52px}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--acc);color:#111;border:none;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:700}
+.btn:active{transform:scale(.97)}
+.btn.s{background:var(--panel);color:var(--fg);border:1px solid var(--line);font-weight:500}
+.btn.done-all{background:var(--panel);color:var(--acc);border:1px solid var(--acc)}
+.wrap{max-width:900px;margin:0 auto;padding:0 18px}
+
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:18px}
+header h1{font-size:15px;font-weight:700}
+#meta{font-size:11px;color:var(--mut)}
+#meta b{color:var(--fg)}
+
+#empty{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+#drop{border:2px dashed var(--line);border-radius:14px;padding:50px 30px;width:100%;max-width:520px;transition:border-color .15s,background .15s}
+#drop.hot{border-color:var(--acc);background:rgba(232,168,62,.06)}
+#drop p{color:var(--mut);margin-bottom:16px}
+#hint{font-size:11px;color:var(--dim)}
+
+#controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:10px;color:var(--mut);letter-spacing:.08em}
+input[type=number]{width:100px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--fg);font-family:inherit;font-size:14px;padding:8px;text-align:center;outline:none}
+input[type=number]:focus{border-color:var(--acc)}
+.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);cursor:pointer;padding-bottom:8px}
+.chk input{accent-color:var(--acc);width:15px;height:15px}
+#readout{margin-left:auto;font-size:12px;color:var(--mut);padding-bottom:8px}
+#readout b{color:var(--acc)}
+
+#cmd{position:sticky;top:8px;z-index:50;display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:14px}
+.nav{width:36px;height:36px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--fg);font-size:13px}
+.nav:disabled{opacity:.3}
+#rail{flex:1;display:flex;gap:2px;height:22px}
+#rail button{flex:1;border:none;border-radius:3px;background:var(--panel);min-width:3px;transition:background .25s}
+#rail button.done{background:var(--ok)}
+#rail button.act{outline:2px solid var(--fg);outline-offset:-1px}
+#copyNext{flex-shrink:0}
+#progTxt{background:none;border:none;color:var(--mut);font-size:11px;padding:0 2px}
+
+.sec{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--panel);overflow:hidden}
+.sec.active{border-color:var(--acc)}
+.sec-head{display:flex;align-items:center;gap:14px;padding:11px 14px;cursor:pointer;flex-wrap:wrap}
+.sec-head .n{font-weight:700;color:var(--acc)}
+.sec-head .info{font-size:11px;color:var(--mut)}
+.sec-head .info.over{color:var(--err);font-weight:700}
+.tag{font-size:10px;font-weight:700;color:var(--ok);border:1px solid var(--ok);border-radius:6px;padding:2px 7px}
+.mini{margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--fg);padding:6px 12px;font-size:11px}
+.mini:hover{border-color:var(--acc);color:var(--acc)}
+.code{display:none;max-height:52vh;overflow:auto;background:var(--bg);border-top:1px solid var(--line);font-size:12px;line-height:1.65;user-select:text;-webkit-user-select:text}
+.sec.active .code{display:block}
+.ln{display:flex}
+.ln .no{flex:0 0 auto;width:52px;text-align:right;padding-right:12px;color:var(--dim);font-size:10px;border-right:1px solid var(--line);user-select:none;background:var(--panel)}
+.ln .tx{white-space:pre;padding:0 16px;min-width:0}
+
+#bar{position:fixed;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--line);padding:12px;text-align:center;font-size:11px;color:var(--dim)}
+#toasts{position:fixed;right:14px;bottom:52px;display:flex;flex-direction:column;gap:6px;z-index:99}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:8px;padding:9px 13px;font-size:12px;animation:tin .2s}
+.toast.err{border-left-color:var(--err)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <h1>TOKEN SPLITTER</h1>
+  <div id="meta"></div>
+  <button class="btn s" id="newBtn">New file</button>
+</header>
+
+<div id="empty">
+  <div id="drop">
+    <p>Drop a file here, paste with Ctrl+V,<br>or</p>
+    <button class="btn" id="browseBtn">Browse</button>
+  </div>
+  <div id="hint">Everything runs locally — nothing is uploaded.</div>
+</div>
+
+<div id="work" hidden>
+  <div id="controls">
+    <div class="field">
+      <label>TOKENS PER SECTION (MAX)</label>
+      <input type="number" id="budget" min="200" max="32000" step="100">
+    </div>
+    <label class="chk"><input type="checkbox" id="snap"> cut at blank lines</label>
+    <label class="chk"><input type="checkbox" id="tag"> add header comment</label>
+    <div id="readout"></div>
+  </div>
+
+  <div id="cmd">
+    <button class="nav" id="prev">‹</button>
+    <button class="nav" id="next">›</button>
+    <div id="rail"></div>
+    <button id="progTxt"></button>
+    <button class="btn" id="copyNext">COPY & NEXT</button>
+  </div>
+
+  <div id="secs"></div>
+</div>
+</div>
+
+<div id="bar" hidden>← → move · Ctrl+Enter copy &amp; next · click rail to jump</div>
+<div id="toasts"></div>
+<input type="file" id="file" hidden>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const tok = s => Math.ceil(s.length / 4);
+const fmt = n => n >= 1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : n;
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+const S = {
+  lines: [], pieces: [], raw: '', name: '', secs: [], active: 0, done: new Set(),
+  cfg: Object.assign({budget: 3000, snap: true, tag: false},
+       JSON.parse(localStorage.getItem('ts.cfg')||'{}'))
+};
+
+/* ---------- cutting: pack lines until the token budget, never over it ---------- */
+
+// lines longer than the whole budget are split into pieces so the cap always holds
+function buildPieces(maxChars) {
+  const out = [];
+  S.lines.forEach((t, i) => {
+    if (t.length + 1 > maxChars) {
+      for (let p = 0, first = true; p < t.length; p += maxChars, first = false)
+        out.push({line: i, text: t.slice(p, p + maxChars), cont: !first});
+    } else out.push({line: i, text: t, cont: false});
+  });
+  return out;
+}
+
+function cut() {
+  const maxChars = S.cfg.budget * 4;              // 1 token ≈ 4 chars
+  const P = buildPieces(maxChars);
+  const secs = [];
+  const mk = (p0, p1) => {
+    const text = P.slice(p0, p1).map(x => x.text).join('\n');
+    return {p0, p1, a: P[p0].line, b: P[p1-1].line, text, tokens: Math.ceil(text.length / 4)};
+  };
+
+  let start = 0, chars = 0;
+  for (let i = 0; i < P.length; i++) {
+    const len = P[i].text.length + 1;
+    if (chars > 0 && chars + len > maxChars) {    // adding this line would go over → cut here
+      let end = i;
+      if (S.cfg.snap) {                           // back up to a blank line if one is nearby
+        const lo = start + Math.ceil((i - start) / 2);
+        for (let b = i; b > lo; b--) {
+          const p = P[b], q = P[b - 1];
+          if (!p.cont && p.line !== q.line && (q.text.trim() === '' || p.text.trim() === '')) { end = b; break; }
+        }
+      }
+      secs.push(mk(start, end));
+      start = end; chars = 0; i = end - 1;
+    } else chars += len;
+  }
+  if (start < P.length) secs.push(mk(start, P.length));
+
+  // merge a tiny leftover tail in ONLY if the result still fits the budget
+  if (secs.length > 1) {
+    const last = secs[secs.length - 1], prev = secs[secs.length - 2];
+    if (prev.text.length + last.text.length + 1 <= maxChars) {
+      prev.p1 = last.p1; prev.b = last.b;
+      prev.text += '\n' + last.text; prev.tokens = Math.ceil(prev.text.length / 4);
+      secs.pop();
+    }
+  }
+  S.pieces = P; S.secs = secs;
+}
+
+/* ---------- persistence ---------- */
+const hash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h*33 ^ s.charCodeAt(i))|0; return h>>>0; };
+const pkey = () => 'ts.p.' + S.cfg.budget + '.' + S.cfg.snap + '.' + hash(S.raw);
+const saveProg = () => localStorage.setItem(pkey(), JSON.stringify([...S.done]));
+const loadProg = () => {
+  try {
+    const d = JSON.parse(localStorage.getItem(pkey())||'[]');
+    S.done = new Set(d.filter(i => i < S.secs.length));
+  } catch(e) { S.done = new Set(); }
+};
+
+/* ---------- render ---------- */
+function render() {
+  const total = S.secs.reduce((s,c) => s + c.tokens, 0);
+  $('#meta').innerHTML = S.name ? `<b>${esc(S.name)}</b> · ${S.lines.length} lines · ≈${fmt(total)} tokens` : '';
+  $('#readout').innerHTML = `<b>${S.secs.length}</b> sections · ≤<b>${fmt(S.cfg.budget)}</b> tokens each`;
+  $('#budget').value = S.cfg.budget;
+  $('#snap').checked = S.cfg.snap;
+  $('#tag').checked = S.cfg.tag;
+
+  const rail = $('#rail'); rail.innerHTML = '';
+  S.secs.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.style.flexGrow = c.tokens;
+    b.title = `Section ${i+1} · lines ${c.a+1}–${c.b+1} · ≈${fmt(c.tokens)} tok`;
+    b.onclick = () => activate(i, true);
+    rail.appendChild(b);
+  });
+
+  const box = $('#secs'); box.innerHTML = '';
+  S.secs.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'sec';
+    el.innerHTML = `<div class="sec-head">
+      <span class="n">${i+1}/${S.secs.length}</span>
+      <span class="info ${c.tokens > S.cfg.budget ? 'over':''}">lines ${c.a+1}–${c.b+1} · ≈${fmt(c.tokens)} tok</span>
+      ${S.done.has(i) ? '<span class="tag">COPIED</span>' : ''}
+      <button class="mini" data-c="${i}">copy</button>
+    </div><div class="code"></div>`;
+    el.querySelector('.sec-head').onclick = e => {
+      if (e.target.dataset.c !== undefined) return;
+      if (i === S.active) el.classList.remove('active'); else activate(i, false);
+    };
+    box.appendChild(el);
+  });
+  activate(S.active, false);
+  updateCmd();
+}
+
+function activate(i, scroll) {
+  i = Math.max(0, Math.min(S.secs.length - 1, i));
+  S.active = i;
+  document.querySelectorAll('.sec').forEach((el, k) => {
+    el.classList.toggle('active', k === i);
+    el.querySelector('.code').innerHTML = '';      // only render active code
+  });
+  const c = S.secs[i];
+  document.querySelectorAll('.sec')[i].querySelector('.code').innerHTML =
+    S.pieces.slice(c.p0, c.p1).map(p =>
+      `<div class="ln"><span class="no">${p.line+1}${p.cont?'·':''}</span><span class="tx">${esc(p.text)||' '}</span></div>`).join('');
+  if (scroll) document.querySelectorAll('.sec')[i].scrollIntoView({behavior:'smooth', block:'start'});
+  updateCmd();
+}
+
+function updateCmd() {
+  const all = S.done.size >= S.secs.length;
+  document.querySelectorAll('#rail button').forEach((b, i) => {
+    b.classList.toggle('done', S.done.has(i));
+    b.classList.toggle('act', i === S.active);
+  });
+  $('#progTxt').textContent = `${S.done.size}/${S.secs.length}`;
+  $('#copyNext').textContent = all ? 'RESET' : 'COPY & NEXT';
+  $('#copyNext').classList.toggle('done-all', all);
+  $('#prev').disabled = S.active <= 0;
+  $('#next').disabled = S.active >= S.secs.length - 1;
+}
+
+function toast(msg, err) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (err ? ' err' : '');
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+
+/* ---------- copy flow ---------- */
+const nextOpen = from => {
+  for (let i = from + 1; i < S.secs.length; i++) if (!S.done.has(i)) return i;
+  for (let i = 0; i <= from; i++) if (!S.done.has(i)) return i;
+  return -1;
+};
+
+async function copy(i) {
+  const c = S.secs[i]; if (!c) return;
+  let text = c.text;
+  if (S.cfg.tag) text = `<!-- SECTION ${i+1} OF ${S.secs.length} · lines ${c.a+1}-${c.b+1} -->\n${text}`;
+  let ok;
+  try { await navigator.clipboard.writeText(text); ok = true; }
+  catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    ok = document.execCommand('copy'); ta.remove();
+  }
+  if (!ok) { activate(i, false); toast('Clipboard blocked — select & copy manually', 1); return; }
+  S.done.add(i); saveProg(); updateCmd();
+  const all = S.done.size >= S.secs.length;
+  toast(all ? `Section ${i+1} copied — file complete!` : `Section ${i+1} copied · ≈${fmt(c.tokens)} tokens`);
+  if (!all) setTimeout(() => activate(nextOpen(i), true), 350);
+}
+
+function load(raw, name) {
+  raw = String(raw);
+  if (!raw.trim()) return toast('Nothing to split', 1);
+  S.raw = raw; S.name = name || 'pasted.txt';
+  S.lines = raw.replace(/\r\n?/g, '\n').split('\n');
+  while (S.lines.length && !S.lines.at(-1).trim()) S.lines.pop();
+  cut(); loadProg();
+  const n = nextOpen(-1); S.active = n < 0 ? 0 : n;
+  $('#empty').hidden = true; $('#work').hidden = false; $('#bar').hidden = false;
+  document.body.classList.add('working');
+  render(); scrollTo(0, 0);
+  toast(`${S.lines.length} lines → ${S.secs.length} sections`);
+}
+
+function recut(silent) {
+  localStorage.setItem('ts.cfg', JSON.stringify(S.cfg));
+  if (!S.raw) return;
+  cut(); S.done = new Set(); saveProg(); S.active = 0; render();
+  if (!silent) toast(`Re-split: ${S.secs.length} sections, progress reset`);
+}
+
+/* ---------- wiring ---------- */
+ $('#browseBtn').onclick = () => $('#file').click();
+ $('#file').onchange = e => { const f = e.target.files[0]; if (f) {
+  const r = new FileReader(); r.onload = () => load(r.result, f.name); r.readAsText(f);
+}};
+ $('#newBtn').onclick = () => location.reload();
+
+// live re-split while typing; field only normalizes on blur
+let cutTimer;
+ $('#budget').oninput = e => {
+  const v = parseInt(e.target.value, 10);
+  if (!Number.isFinite(v)) return;
+  S.cfg.budget = Math.min(32000, Math.max(200, v));
+  clearTimeout(cutTimer);
+  cutTimer = setTimeout(() => recut(true), 250);
+};
+ $('#budget').onchange = e => { e.target.value = S.cfg.budget; };
+
+ $('#snap').onchange = e => { S.cfg.snap = e.target.checked; recut(); };
+ $('#tag').onchange = e => { S.cfg.tag = e.target.checked; localStorage.setItem('ts.cfg', JSON.stringify(S.cfg)); };
+ $('#copyNext').onclick = () => S.done.size >= S.secs.length
+  ? (S.done.clear(), saveProg(), updateCmd(), toast('Progress reset'))
+  : copy(S.active);
+ $('#prev').onclick = () => activate(S.active - 1, true);
+ $('#next').onclick = () => activate(S.active + 1, true);
+ $('#secs').addEventListener('click', e => { if (e.target.dataset.c) copy(+e.target.dataset.c); });
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); $('#copyNext').click(); }
+  if (e.key === 'ArrowRight') activate(S.active + 1, true);
+  if (e.key === 'ArrowLeft') activate(S.active - 1, true);
+});
+document.addEventListener('paste', e => {
+  if ($('#work').hidden) { const t = e.clipboardData.getData('text'); if (t.trim()) load(t, 'pasted.txt'); }
+});
+const drop = $('#drop');
+document.body.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('hot'); });
+document.body.addEventListener('dragleave', () => drop.classList.remove('hot'));
+document.body.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('hot');
+  const f = e.dataTransfer.files[0];
+  if (f) { const r = new FileReader(); r.onload = () => load(r.result, f.name); r.readAsText(f); }
+});
+})();
+</script>
+</body>
+</html>
