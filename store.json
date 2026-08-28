@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T15:48:33.646Z",
+  "updated_at": "2026-08-28T16:03:42.383Z",
   "categories": [
     {
       "id": "developers",
@@ -71,6 +71,11 @@
       "id": "health",
       "name": "Health",
       "icon": "♥️"
+    },
+    {
+      "id": "missionary",
+      "name": "Missionary",
+      "icon": "⛪️"
     }
   ],
   "apps": [
@@ -979,6 +984,27 @@
       "path": "Other/BYUScholarAchive",
       "author": "BYU",
       "description": "This is a website full of cool papers and datasets with interesting ideas.",
+      "icon": "fa:fa-graduation-cap",
+      "iconColor": "#2563eb"
+    },
+    {
+      "name": "Gospel Library",
+      "rawName": "GospelLibrary.html",
+      "path": "Missionary/GospelLibrary.html",
+      "author": "The Church of Jesus Christ of Latter Day Saints",
+      "description": "Yall should know this",
+      "icon": "📖"
+    },
+    {
+      "name": "Worship Tracker V2",
+      "rawName": "WorshipTracker-V2.html",
+      "path": "Missionary/WorshipTracker-V2.html",
+      "icon": "🙏"
+    },
+    {
+      "name": "BYUScholar Archive",
+      "rawName": "BYUScholarArchive.html",
+      "path": "Missionary/BYUScholarArchive.html",
       "icon": "fa:fa-graduation-cap",
       "iconColor": "#2563eb"
     }
