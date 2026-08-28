@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NES ⇄ TXT Transformer</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0e1a; --bg-2:#1a1b2e; --panel:#16182a; --panel-2:#1f2238;
+  --border:#2d3149; --fg:#f1e8d0; --muted:#8d8fa8;
+  --accent:#e63946; --accent-2:#ff6b35; --gold:#ffd166;
+  --green:#06d6a0; --blue:#4a90e2;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'VT323',monospace;background:var(--bg);color:var(--fg);
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse at top,rgba(230,57,70,.15),transparent 60%),
+    radial-gradient(ellipse at bottom,rgba(74,144,226,.1),transparent 60%);
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:100;mix-blend-mode:multiply;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.18),rgba(0,0,0,.18) 1px,transparent 1px,transparent 3px);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+.container{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:40px 24px 60px}
+header{text-align:center;margin-bottom:40px}
+.logo-row{display:flex;justify-content:center;align-items:center;gap:18px;margin-bottom:10px}
+.cartridge{
+  width:48px;height:54px;background:var(--accent);position:relative;
+  border:3px solid var(--fg);box-shadow:4px 4px 0 var(--border);
+}
+.cartridge::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+  width:28px;height:10px;background:var(--gold);border:2px solid var(--fg);}
+.cartridge::after{content:'';position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  width:18px;height:4px;background:var(--fg);box-shadow:0 -8px 0 -2px var(--fg);}
+h1{
+  font-family:'Press Start 2P',monospace;font-size:clamp(20px,4vw,34px);letter-spacing:2px;
+  text-shadow:4px 4px 0 var(--accent),8px 8px 0 rgba(0,0,0,.4);
+}
+.subtitle{color:var(--muted);font-size:20px;margin-top:14px}
+.subtitle .arrow{color:var(--gold);margin:0 10px}
+.subtitle .tag{color:var(--green)}
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+@media(max-width:880px){.panels{grid-template-columns:1fr}}
+.panel{
+  background:var(--panel);border:4px solid var(--border);position:relative;padding:24px;
+  box-shadow:0 0 0 4px var(--bg),0 0 0 8px var(--border),8px 8px 0 0 rgba(0,0,0,.6);
+}
+.panel-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px dashed var(--border)}
+.panel-num{font-family:'Press Start 2P',monospace;font-size:14px;background:var(--accent);color:var(--fg);padding:8px 10px;border:2px solid var(--fg)}
+.panel-title{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--gold)}
+.dropzone{
+  border:3px dashed var(--border);background:var(--bg-2);padding:36px 20px;text-align:center;
+  cursor:pointer;transition:all .2s;position:relative;
+}
+.dropzone:hover{border-color:var(--accent);background:rgba(230,57,70,.08);transform:translateY(-2px)}
+.dropzone.dragover{border-color:var(--gold);background:rgba(255,209,102,.12);transform:translateY(-3px) scale(1.01)}
+.dz-icon{font-size:42px;margin-bottom:12px;display:block;font-family:'Press Start 2P',monospace;color:var(--gold)}
+.dz-text{font-size:22px;color:var(--fg);margin-bottom:6px}
+.dz-hint{font-size:16px;color:var(--muted)}
+.file-info{margin-top:16px;padding:14px;background:var(--bg-2);border-left:4px solid var(--accent-2);font-size:18px;display:none}
+.file-info.active{display:block}
+.fi-row{display:flex;justify-content:space-between;margin-bottom:4px;gap:12px}
+.fi-row .label{color:var(--muted)}
+.fi-row .val{color:var(--fg);font-weight:bold;word-break:break-all;text-align:right}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.info-cell{background:var(--bg-2);padding:10px 14px;border-left:3px solid var(--accent)}
+.info-cell .label{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px}
+.info-cell .val{font-size:17px;color:var(--gold);word-break:break-all;line-height:1.3}
+.hash-display{font-size:13px;word-break:break-all;background:var(--bg);padding:6px 8px;border:1px solid var(--border);margin-top:6px;color:var(--green)}
+.actions{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+.btn{
+  font-family:'Press Start 2P',monospace;font-size:11px;padding:14px 18px;background:var(--accent);
+  color:var(--fg);border:2px solid var(--fg);cursor:pointer;letter-spacing:1px;
+  transition:all .1s;box-shadow:4px 4px 0 var(--border);text-transform:uppercase;
+}
+.btn:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--accent-2)}
+.btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:0 0 0 var(--accent-2)}
+.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:2px 2px 0 var(--border)}
+.btn-secondary{background:var(--blue)}
+.btn-gold{background:var(--gold);color:var(--bg)}
+.progress-track{height:14px;background:var(--bg-2);border:2px solid var(--border);margin-top:14px;position:relative;overflow:hidden}
+.progress-bar{
+  height:100%;width:0%;transition:width .25s;
+  background:repeating-linear-gradient(45deg,var(--accent),var(--accent) 8px,var(--accent-2) 8px,var(--accent-2) 16px);
+}
+.status-bar{
+  background:var(--panel);border:4px solid var(--border);padding:16px 20px;font-size:18px;
+  box-shadow:0 0 0 4px var(--bg),0 0 0 8px var(--border);
+}
+.status-title{
+  font-family:'Press Start 2P',monospace;font-size:12px;color:var(--green);margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+}
+.status-title::before{content:'>';color:var(--gold);animation:blink 1s infinite}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+.log{max-height:220px;overflow-y:auto;font-size:16px;line-height:1.5}
+.log-line{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.log-line.ok{color:var(--green)}
+.log-line.warn{color:var(--gold)}
+.log-line.err{color:var(--accent)}
+.log-line.info{color:var(--blue)}
+.format-doc{margin-top:24px;background:var(--panel-2);border:2px solid var(--border);padding:20px}
+.format-doc h3{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--gold);margin-bottom:12px}
+.format-doc pre{background:var(--bg);padding:14px;font-size:14px;overflow-x:auto;border:1px solid var(--border);color:var(--green);line-height:1.4}
+.format-doc p{margin-top:12px;color:var(--muted);font-size:16px;line-height:1.5}
+.format-doc code{background:var(--bg);padding:2px 8px;color:var(--gold);border:1px solid var(--border)}
+footer{text-align:center;margin-top:40px;color:var(--muted);font-size:16px;line-height:1.6}
+footer code{background:var(--bg-2);padding:2px 8px;color:var(--gold);border:1px solid var(--border)}
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);
+  background:var(--panel);border:3px solid var(--accent);padding:14px 24px;
+  font-family:'Press Start 2P',monospace;font-size:11px;color:var(--fg);z-index:200;
+  transition:transform .3s;box-shadow:6px 6px 0 rgba(0,0,0,.6);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--green)}
+.toast.err{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-row">
+      <div class="cartridge" aria-hidden="true"></div>
+      <h1>NES⇄TXT</h1>
+    </div>
+    <div class="subtitle">
+      <span>.nes</span><span class="arrow">▶</span><span>.txt</span><span class="arrow">▶</span><span>.nes</span>
+      <span class="tag"> // fully reversible</span>
+    </div>
+  </header>
+
+  <div class="panels">
+    <!-- ENCODE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-num">01</div>
+        <div class="panel-title">ENCODE // .NES → .TXT</div>
+      </div>
+      <div class="dropzone" id="dropNes" tabindex="0" role="button" aria-label="Drop NES file">
+        <div class="dz-icon">▣</div>
+        <div class="dz-text">DROP .NES FILE</div>
+        <div class="dz-hint">or click to browse</div>
+        <input type="file" accept=".nes" id="fileNes" hidden>
+      </div>
+      <div class="file-info" id="nesInfo">
+        <div class="fi-row"><span class="label">Name:</span><span class="val" id="nesName">—</span></div>
+        <div class="fi-row"><span class="label">Size:</span><span class="val" id="nesSize">—</span></div>
+        <div class="fi-row"><span class="label">Type:</span><span class="val" id="nesType">—</span></div>
+      </div>
+      <div class="info-grid" id="headerGrid" style="display:none;">
+        <div class="info-cell"><div class="label">HEADER MAGIC</div><div class="val" id="hMagic">—</div></div>
+        <div class="info-cell"><div class="label">PRG BANKS</div><div class="val" id="hPrg">—</div></div>
+        <div class="info-cell"><div class="label">CHR BANKS</div><div class="val" id="hChr">—</div></div>
+        <div class="info-cell"><div class="label">MAPPER</div><div class="val" id="hMapper">—</div></div>
+        <div class="info-cell"><div class="label">MIRRORING</div><div class="val" id="hMirr">—</div></div>
+        <div class="info-cell"><div class="label">SHA-256</div><div class="val"><div class="hash-display" id="hHash">—</div></div></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnEncode" disabled>ENCODE</button>
+        <button class="btn btn-secondary" id="btnCopyTxt" disabled>COPY TEXT</button>
+        <button class="btn btn-gold" id="btnDownloadTxt" disabled>DOWNLOAD .TXT</button>
+      </div>
+      <div class="progress-track"><div class="progress-bar" id="progEncode"></div></div>
+    </div>
+
+    <!-- DECODE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-num">02</div>
+        <div class="panel-title">DECODE // .TXT → .NES</div>
+      </div>
+      <div class="dropzone" id="dropTxt" tabindex="0" role="button" aria-label="Drop TXT file">
+        <div class="dz-icon">▤</div>
+        <div class="dz-text">DROP .TXT FILE</div>
+        <div class="dz-hint">or click to browse</div>
+        <input type="file" accept=".txt,text/plain" id="fileTxt" hidden>
+      </div>
+      <div class="file-info" id="txtInfo">
+        <div class="fi-row"><span class="label">Name:</span><span class="val" id="txtName">—</span></div>
+        <div class="fi-row"><span class="label">Size:</span><span class="val" id="txtSize">—</span></div>
+        <div class="fi-row"><span class="label">Original:</span><span class="val" id="txtOrig">—</span></div>
+      </div>
+      <div class="info-grid" id="verifyGrid" style="display:none;">
+        <div class="info-cell"><div class="label">DECODED SIZE</div><div class="val" id="vSize">—</div></div>
+        <div class="info-cell"><div class="label">STATUS</div><div class="val" id="vStatus">—</div></div>
+        <div class="info-cell"><div class="label">EXPECTED SHA-256</div><div class="val"><div class="hash-display" id="vHashExp">—</div></div></div>
+        <div class="info-cell"><div class="label">ACTUAL SHA-256</div><div class="val"><div class="hash-display" id="vHashAct">—</div></div></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnDecode" disabled>DECODE</button>
+        <button class="btn btn-gold" id="btnDownloadNes" disabled>DOWNLOAD .NES</button>
+      </div>
+      <div class="progress-track"><div class="progress-bar" id="progDecode"></div></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-title">SYSTEM LOG</div>
+    <div class="log" id="log">
+      <div class="log-line info">> NES2TXT v1.0 ready. Awaiting input...</div>
+    </div>
+  </div>
+
+  <div class="format-doc">
+    <h3>/// TXT FILE FORMAT SPEC ///</h3>
+    <pre>NES2TXT v1.0
+OriginalFileName: game.nes
+OriginalSize: 49280
+SHA256: &lt;64 hex chars&gt;
+Encoding: base64
+===BEGIN===
+&lt;base64 data, 76 chars per line&gt;
+===END===</pre>
+    <p>Any external program can decode this format: read the header, locate the block between
+    <code>===BEGIN===</code> and <code>===END===</code>, strip all whitespace, base64-decode,
+    then write the bytes to a <code>.nes</code> file. The SHA-256 in the header lets the
+    decoder verify a bit-perfect round-trip.</p>
+  </div>
+
+  <footer>
+    <p>100% client-side · no uploads · your ROM never leaves your browser</p>
+    <p style="margin-top:8px;">Only convert ROMs you legally own.</p>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// ---------- Logging ----------
+const logEl = document.getElementById('log');
+function log(msg, type='info'){
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+  while(logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
+}
+
+// ---------- Toast ----------
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, type='ok'){
+  toastEl.textContent = msg;
+  toastEl.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+
+// ---------- State ----------
+let nesFile = null;     // {name, bytes: Uint8Array}
+let txtBlob = null;
+let txtContent = '';
+let inTxtFile = null;   // {name, content: string}
+let outNesBlob = null;
+
+// ---------- Helpers ----------
+function fmtBytes(b){
+  if(b < 1024) return b + ' B';
+  if(b < 1048576) return (b/1024).toFixed(2) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+function setProg(id, frac){
+  document.getElementById(id).style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%';
+}
+async function sha256(bytes){
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  const arr = new Uint8Array(hash);
+  let hex = '';
+  for(let i=0;i<arr.length;i++) hex += arr[i].toString(16).padStart(2,'0');
+  return hex;
+}
+
+// ---------- iNES header parser ----------
+function parseINES(bytes){
+  if(bytes.length < 16) return {valid:false, reason:'File < 16 bytes (no iNES header)'};
+  if(!(bytes[0]===0x4E && bytes[1]===0x45 && bytes[2]===0x53 && bytes[3]===0x1A))
+    return {valid:false, reason:'Not iNES (magic NES\\x1A missing)'};
+  const prg = bytes[4];
+  const chr = bytes[5];
+  const f6 = bytes[6], f7 = bytes[7];
+  const mapper = (f6 >> 4) | (f7 & 0xF0);
+  const mirroring = (f6 & 1) ? 'Vertical' : 'Horizontal';
+  const fourScreen = (f6 & 0x08) ? ' / 4-screen' : '';
+  const trainer = (f6 & 0x04) ? ' / +trainer' : '';
+  const battery = (f6 & 0x02) ? ' / +battery' : '';
+  return {valid:true, prg, chr, mapper, mirroring, fourScreen, trainer, battery};
+}
+
+// ---------- Drag & drop wiring ----------
+function wireDrop(zoneId, inputId, handler){
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); input.click(); }
+  });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if(e.dataTransfer.files.length) handler(e.dataTransfer.files[0]);
+  });
+  input.addEventListener('change', () => {
+    if(input.files.length) handler(input.files[0]);
+    input.value = ''; // allow re-selecting same file
+  });
+}
+
+// ---------- Chunked binary → base64 (handles large ROMs safely) ----------
+function bytesToBase64(bytes){
+  const CHUNK = 0x8000; // 32KB per String.fromCharCode.apply call (safe arg count)
+  let binStr = '';
+  for(let i=0; i<bytes.length; i+=CHUNK){
+    binStr += String.fromCharCode.apply(null, bytes.subarray(i, i+CHUNK));
+    if(i % (CHUNK*4) === 0) log('  packed ' + fmtBytes(i) + ' / ' + fmtBytes(bytes.length), 'info');
+  }
+  return btoa(binStr);
+}
+function chunkLines(str, width){
+  let out = '';
+  for(let i=0; i<str.length; i+=width) out += str.slice(i, i+width) + '\n';
+  return out;
+}
+
+// ---------- Encode: .nes → .txt ----------
+async function encodeNes(){
+  if(!nesFile) return;
+  try{
+    log('Encoding "' + nesFile.name + '" ...', 'info');
+    setProg('progEncode', 0.05);
+    const bytes = nesFile.bytes;
+    const hash = await sha256(bytes);
+    setProg('progEncode', 0.25);
+    log('SHA-256: ' + hash.slice(0,24) + '…', 'ok');
+
+    const b64 = bytesToBase64(bytes);
+    setProg('progEncode', 0.80);
+
+    const header = [
+      'NES2TXT v1.0',
+      'OriginalFileName: ' + nesFile.name,
+      'OriginalSize: ' + bytes.length,
+      'SHA256: ' + hash,
+      'Encoding: base64',
+      '===BEGIN==='
+    ].join('\n') + '\n';
+    const footer = '===END===\n';
+
+    txtContent = header + chunkLines(b64, 76) + footer;
+    txtBlob = new Blob([txtContent], {type:'text/plain'});
+
+    setProg('progEncode', 1.0);
+    log('Encoded ' + fmtBytes(bytes.length) + ' → ' + fmtBytes(txtContent.length) + ' text', 'ok');
+
+    document.getElementById('btnCopyTxt').disabled = false;
+    document.getElementById('btnDownloadTxt').disabled = false;
+    toast('Encoding complete', 'ok');
+  } catch(e){
+    log('ERROR: ' + e.message, 'err');
+    toast('Encoding failed', 'err');
+    setProg('progEncode', 0);
+  }
+}
+
+// ---------- Decode: .txt → .nes ----------
+async function decodeTxt(){
+  if(!inTxtFile) return;
+  try{
+    log('Decoding "' + inTxtFile.name + '" ...', 'info');
+    setProg('progDecode', 0.05);
+
+    const content = inTxtFile.content;
+    const lines = content.split(/\r?\n/);
+    let origName = 'restored.nes';
+    let origSize = 0;
+    let expectedHash = '';
+    let encoding = 'base64';
+    let b64 = '';
+    let inData = false;
+    let headerParsed = false;
+
+    for(let i=0; i<lines.length; i++){
+      const ln = lines[i];
+      if(ln.startsWith('NES2TXT')) { headerParsed = true; continue; }
+      if(ln.startsWith('OriginalFileName:')) { origName = ln.slice('OriginalFileName:'.length).trim(); continue; }
+      if(ln.startsWith('OriginalSize:'))     { origSize = parseInt(ln.slice('OriginalSize:'.length).trim(),10) || 0; continue; }
+      if(ln.startsWith('SHA256:'))          { expectedHash = ln.slice('SHA256:'.length).trim(); continue; }
+      if(ln.startsWith('Encoding:'))        { encoding = ln.slice('Encoding:'.length).trim(); continue; }
+      if(ln.startsWith('===BEGIN==='))       { inData = true; continue; }
+      if(ln.startsWith('===END==='))         { inData = false; continue; }
+      if(inData) b64 += ln;
+    }
+
+    if(!headerParsed) throw new Error('Not a NES2TXT file (missing "NES2TXT" header line).');
+    if(encoding.toLowerCase() !== 'base64') throw new Error('Unsupported encoding: ' + encoding + ' (only base64 supported).');
+    if(!b64) throw new Error('No data found between BEGIN/END markers.');
+
+    setProg('progDecode', 0.30);
+    log('Header parsed: original=' + origName + ', size=' + origSize, 'ok');
+
+    b64 = b64.replace(/\s/g, '');
+    const binStr = atob(b64);
+    setProg('progDecode', 0.60);
+
+    const bytes = new Uint8Array(binStr.length);
+    for(let i=0; i<binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+    setProg('progDecode', 0.80);
+
+    log('Decoded ' + fmtBytes(bytes.length) + ' bytes', 'ok');
+
+    if(origSize && bytes.length !== origSize)
+      log('Size mismatch! header says ' + origSize + ', got ' + bytes.length, 'warn');
+    else
+      log('Size matches header (' + origSize + ' bytes)', 'ok');
+
+    const actualHash = await sha256(bytes);
+    setProg('progDecode', 0.95);
+
+    document.getElementById('vSize').textContent = fmtBytes(bytes.length);
+    document.getElementById('vHashExp').textContent = expectedHash || '(none in file)';
+    document.getElementById('vHashAct').textContent = actualHash;
+    document.getElementById('verifyGrid').style.display = 'grid';
+
+    const vStatus = document.getElementById('vStatus');
+    if(!expectedHash){
+      vStatus.textContent = 'NO HASH';
+      vStatus.style.color = 'var(--gold)';
+      log('No expected hash present — cannot verify integrity', 'warn');
+    } else if(expectedHash.toLowerCase() === actualHash.toLowerCase()){
+      vStatus.textContent = '✓ MATCH';
+      vStatus.style.color = 'var(--green)';
+      log('SHA-256 match — perfect round-trip ✓', 'ok');
+    } else {
+      vStatus.textContent = '✗ MISMATCH';
+      vStatus.style.color = 'var(--accent)';
+      log('SHA-256 MISMATCH — data corrupted!', 'err');
+    }
+
+    outNesBlob = new Blob([bytes], {type:'application/octet-stream'});
+    setProg('progDecode', 1.0);
+    document.getElementById('btnDownloadNes').disabled = false;
+    toast('Decoding complete', 'ok');
+  } catch(e){
+    log('ERROR: ' + e.message, 'err');
+    toast('Decoding failed', 'err');
+    setProg('progDecode', 0);
+  }
+}
+
+// ---------- Wire up NES dropzone ----------
+wireDrop('dropNes', 'fileNes', async (file) => {
+  if(!file.name.toLowerCase().endsWith('.nes'))
+    log('Warning: file "' + file.name + '" has no .nes extension', 'warn');
+  log('Loading "' + file.name + '" (' + fmtBytes(file.size) + ')', 'info');
+  const buf = await file.arrayBuffer();
+  nesFile = { name: file.name, bytes: new Uint8Array(buf) };
+
+  document.getElementById('nesName').textContent = file.name;
+  document.getElementById('nesSize').textContent = fmtBytes(file.size);
+  document.getElementById('nesType').textContent = file.type || 'application/octet-stream';
+  document.getElementById('nesInfo').classList.add('active');
+
+  const info = parseINES(nesFile.bytes);
+  const grid = document.getElementById('headerGrid');
+  if(info && info.valid){
+    document.getElementById('hMagic').textContent = '"NES\\x1A" ✓';
+    document.getElementById('hPrg').textContent = info.prg + ' × 16KB (' + (info.prg*16384) + ' B)';
+    document.getElementById('hChr').textContent = info.chr + ' × 8KB (' + (info.chr*8192) + ' B)';
+    document.getElementById('hMapper').textContent = '#' + info.mapper;
+    document.getElementById('hMirr').textContent = info.mirroring + info.fourScreen + info.trainer + info.battery;
+    grid.style.display = 'grid';
+    log('iNES header OK — PRG=' + info.prg + ' CHR=' + info.chr + ' mapper=' + info.mapper, 'ok');
+    const hash = await sha256(nesFile.bytes);
+    document.getElementById('hHash').textContent = hash.slice(0, 32) + '…';
+    document.getElementById('hHash').title = hash;
+  } else {
+    document.getElementById('hMagic').textContent = info ? info.reason : 'invalid';
+    ['hPrg','hChr','hMapper','hMirr','hHash'].forEach(id => document.getElementById(id).textContent = '—');
+    grid.style.display = 'grid';
+    log('Not a valid iNES/NES2.0 file — encoding will still work (raw bytes)', 'warn');
+    const hash = await sha256(nesFile.bytes);
+    document.getElementById('hHash').textContent = hash.slice(0, 32) + '…';
+    document.getElementById('hHash').title = hash;
+  }
+
+  document.getElementById('btnEncode').disabled = false;
+  txtBlob = null; txtContent = '';
+  document.getElementById('btnCopyTxt').disabled = true;
+  document.getElementById('btnDownloadTxt').disabled = true;
+  setProg('progEncode', 0);
+});
+
+// ---------- Wire up TXT dropzone ----------
+wireDrop('dropTxt', 'fileTxt', async (file) => {
+  log('Loading "' + file.name + '" (' + fmtBytes(file.size) + ')', 'info');
+  const txt = await file.text();
+  inTxtFile = { name: file.name, content: txt };
+
+  const origNameMatch = txt.match(/^OriginalFileName:\s*(.+)$/m);
+  const origSizeMatch = txt.match(/^OriginalSize:\s*(\d+)/m);
+  document.getElementById('txtName').textContent = file.name;
+  document.getElementById('txtSize').textContent = fmtBytes(file.size);
+  document.getElementById('txtOrig').textContent = origNameMatch ? origNameMatch[1] : '(not specified)';
+  document.getElementById('txtInfo').classList.add('active');
+  if(origSizeMatch) log('Header reports original .nes size: ' + origSizeMatch[1] + ' bytes', 'info');
+
+  document.getElementById('btnDecode').disabled = false;
+  outNesBlob = null;
+  document.getElementById('btnDownloadNes').disabled = true;
+  setProg('progDecode', 0);
+  document.getElementById('verifyGrid').style.display = 'none';
+});
+
+// ---------- Button handlers ----------
+document.getElementById('btnEncode').addEventListener('click', encodeNes);
+document.getElementById('btnDecode').addEventListener('click', decodeTxt);
+
+document.getElementById('btnCopyTxt').addEventListener('click', async () => {
+  if(!txtContent) return;
+  try {
+    await navigator.clipboard.writeText(txtContent);
+    toast('Copied to clipboard', 'ok');
+    log('TXT copied to clipboard (' + txtContent.length + ' chars)', 'ok');
+  } catch(e) {
+    // Fallback: select a hidden textarea
+    const ta = document.createElement('textarea');
+    ta.value = txtContent; ta.style.position='fixed'; ta.style.top='-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('Copied (legacy)', 'ok'); }
+    catch(_) { toast('Copy failed', 'err'); log('Clipboard error: ' + e.message, 'err'); }
+    ta.remove();
+  }
+});
+
+document.getElementById('btnDownloadTxt').addEventListener('click', () => {
+  if(!txtBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(txtBlob);
+  a.download = nesFile.name.replace(/\.nes$/i, '') + '.txt';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  log('Downloaded .txt: ' + a.download, 'ok');
+  toast('Download started', 'ok');
+});
+
+document.getElementById('btnDownloadNes').addEventListener('click', () => {
+  if(!outNesBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(outNesBlob);
+  const m = inTxtFile.content.match(/^OriginalFileName:\s*(.+)$/m);
+  let name = m ? m[1] : inTxtFile.name.replace(/\.txt$/i, '') + '.nes';
+  if(!name.toLowerCase().endsWith('.nes')) name += '.nes';
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  log('Downloaded .nes: ' + name, 'ok');
+  toast('Download started', 'ok');
+});
+
+log('Ready. Drop a .nes file in panel 01 to begin.', 'info');
+</script>
+</body>
+</html>
