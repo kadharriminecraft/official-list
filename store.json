@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T02:27:54.334Z",
+  "updated_at": "2026-08-28T02:33:10.165Z",
   "categories": [
     {
       "id": "developers",
@@ -75,9 +75,14 @@
   ],
   "apps": [
     {
-      "name": "Steam Prox",
+      "name": "Steam",
       "rawName": "SteamProx.html",
       "path": "Other/SteamProx.html",
+      "author": "Bluevader🔷️",
+      "description": "This can access all of steam games and see full game pages(no videos)\nNo real setup other than selecting perfered proxy",
+      "icon": "fa:fa-gamepad",
+      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
+      "iconColor": "#ffffff",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -91,14 +96,16 @@
       "pinned": true
     },
     {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Unknown",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
+      "name": "Song Search",
+      "rawName": "SongSearch.html",
+      "path": "Audio/SongSearch.html",
+      "author": "Bluevader🔷️",
+      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
+      "icon": "🎵",
+      "color": "#101014",
+      "tags": [
+        "audio-lyrics"
+      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -181,18 +188,16 @@
       "author": "Throk"
     },
     {
-      "name": "Steam",
-      "rawName": "Steam.html",
-      "path": "Other/Steam.html",
-      "author": "Bluevader🔷",
-      "icon": "fa:fa-gamepad",
-      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
-      "iconColor": "#ffffff",
-      "tags": [
-        "jesus",
-        "other"
-      ],
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Anonymous",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
       "featured": true,
+      "isNew": true,
       "pinned": true
     },
     {
@@ -508,17 +513,6 @@
       "author": "Throk"
     },
     {
-      "name": "Git Hub",
-      "rawName": "GitHub.html",
-      "path": "Developers/Tools/Github/GitHub.html",
-      "author": "Throk",
-      "tags": [
-        "jesus"
-      ],
-      "featured": true,
-      "pinned": true
-    },
-    {
       "name": "Mobile Game Collection",
       "rawName": "Mobile Game Collection.html",
       "path": "Fun/Multiplayer/Mobile Game Collection.html",
@@ -799,12 +793,13 @@
       "author": "Throk"
     },
     {
-      "name": "Scry Table",
-      "rawName": "ScryTable.html",
-      "path": "Fun/Tabletop/Magic/ScryTable.html",
-      "author": "Buell",
-      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
-      "icon": "🔮",
+      "name": "Git Hub",
+      "rawName": "GitHub.html",
+      "path": "Developers/Tools/Github/GitHub.html",
+      "author": "Throk",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "pinned": true
     },
@@ -886,13 +881,14 @@
       "isNew": true
     },
     {
-      "name": "Chess",
-      "rawName": "Chess.html",
-      "path": "Fun/Multiplayer/Chess/Chess.html",
-      "author": "Throk",
-      "icon": "♟️",
-      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
-      "featured": true
+      "name": "Scry Table",
+      "rawName": "ScryTable.html",
+      "path": "Fun/Tabletop/Magic/ScryTable.html",
+      "author": "Buell",
+      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
+      "icon": "🔮",
+      "featured": true,
+      "pinned": true
     },
     {
       "name": "Throk's Text Editor v16",
@@ -903,19 +899,13 @@
       "icon": "fa:fa-code"
     },
     {
-      "name": "Song Search",
-      "rawName": "SongSearch.html",
-      "path": "Audio/SongSearch.html",
-      "author": "Bluevader🔷️",
-      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
-      "icon": "🎵",
-      "color": "#101014",
-      "tags": [
-        "audio-lyrics"
-      ],
-      "featured": true,
-      "isNew": true,
-      "pinned": true
+      "name": "Chess",
+      "rawName": "Chess.html",
+      "path": "Fun/Multiplayer/Chess/Chess.html",
+      "author": "Throk",
+      "icon": "♟️",
+      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
+      "featured": true
     }
   ]
 }
