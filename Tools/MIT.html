@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Network Test</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#0a0a0a;color:#fff;min-height:100vh;display:flex;flex-direction:column;padding:0}
+.card{background:#1c1c1e;min-height:100vh;width:100%;padding:24px 20px 40px;display:flex;flex-direction:column}
+h2{font-size:34px;font-weight:800;margin-bottom:28px;text-align:center;letter-spacing:-0.5px}
+.settings{margin-bottom:28px}
+.settings-label{color:#8e8e93;font-size:15px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:14px;font-weight:600}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.preset{padding:16px 8px;border-radius:16px;background:#2c2c2e;border:3px solid transparent;text-align:center;cursor:pointer;font-size:15px;transition:all 0.2s;min-height:70px;display:flex;flex-direction:column;justify-content:center}
+.preset.active{border-color:#0a84ff;background:#1a2a3a}
+.preset-title{font-weight:700;margin-bottom:4px;font-size:16px}
+.preset-desc{font-size:12px;color:#8e8e93;line-height:1.4}
+button{width:100%;padding:22px;font-size:22px;font-weight:700;border:none;border-radius:18px;background:linear-gradient(135deg,#0a84ff,#007aff);color:white;cursor:pointer;transition:all 0.15s;margin-top:8px;min-height:60px}
+button:active{transform:scale(0.97)}
+button.cancel{background:linear-gradient(135deg,#ff3b30,#d70015)}
+button:disabled{opacity:0.5}
+.stats{margin-top:28px;display:flex;flex-direction:column;gap:18px;flex:1}
+.stat{background:#2c2c2e;border-radius:20px;padding:24px}
+.stat-label{color:#8e8e93;font-size:15px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600}
+.stat-value{font-size:42px;font-weight:800;line-height:1.1}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stat-small.stat-value{font-size:32px}
+.running{color:#ff9f0a;font-size:15px;text-align:center;margin-top:10px;font-weight:600}
+.status-box{background:#2c2c2e;border-radius:16px;padding:18px 20px;margin-top:24px;font-size:17px;color:#ff9f0a;border-left:4px solid #ff9f0a;transition:all 0.3s;font-weight:600}
+.status-box.done{background:#1a2e1a;color:#30d158;border-left-color:#30d158}
+.sub-text{font-size:15px;color:#8e8e93;margin-top:8px;font-weight:500}
+#imgs{display:none}
+
+/* Make it feel native on small screens */
+@media (max-width:380px){
+ .stat-value{font-size:36px}
+ .stat-small.stat-value{font-size:28px}
+  button{font-size:20px;padding:20px}
+  h2{font-size:30px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Network Test</h2>
+
+  <div class="settings">
+    <div class="settings-label">Test Preset</div>
+    <div class="preset-grid">
+      <div class="preset" data-preset="quick">
+        <div class="preset-title">Quick</div>
+        <div class="preset-desc">2s ping<br>100KB Up 1MB Down</div>
+      </div>
+      <div class="preset active" data-preset="balanced">
+        <div class="preset-title">Balanced</div>
+        <div class="preset-desc">5s ping<br>200KB Up 2.5MB Down</div>
+      </div>
+      <div class="preset" data-preset="accurate">
+        <div class="preset-title">Accurate</div>
+        <div class="preset-desc">10s ping<br>1MB Up 5MB Down</div>
+      </div>
+    </div>
+  </div>
+
+  <button id="btn">Start Test</button>
+
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat">
+      <div class="stat-label">Instant Ping</div>
+      <div class="stat-value" id="instant">-- ms</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-label">Average Ping</div>
+      <div class="stat-value" id="avg">-- ms</div>
+      <div class="sub-text" id="samples">Samples: --</div>
+      <div class="running" id="runPing" style="display:none">Testing...</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat stat-small">
+        <div class="stat-label">Download</div>
+        <div class="stat-value" id="down">-- Mbps</div>
+        <div class="running" id="runDown" style="display:none">Downloading...</div>
+      </div>
+      <div class="stat stat-small">
+        <div class="stat-label">Upload</div>
+        <div class="stat-value" id="up">-- Mbps</div>
+        <div class="running" id="runUp" style="display:none">Uploading...</div>
+      </div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-label">Jitter / Min / Max</div>
+      <div class="stat-value" id="jitter">-- ms</div>
+      <div class="sub-text" id="minmax">Min: -- Max: --</div>
+    </div>
+  </div>
+
+  <div class="status-box" id="statusBox" style="display:none">Ready</div>
+  <div id="imgs"></div>
+</div>
+
+<script>
+let cancelTest = false;
+let currentPreset = 'balanced';
+
+const presets = {
+  quick: { pingTime: 2000, uploadKB: 100, downloadSize: 1000000, label: '2s' },
+  balanced: { pingTime: 5000, uploadKB: 200, downloadSize: 2500000, label: '5s' },
+  accurate: { pingTime: 10000, uploadKB: 1024, downloadSize: 5000000, label: '10s' }
+};
+
+document.querySelectorAll('.preset').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.preset').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    currentPreset = p.dataset.preset;
+  });
+});
+
+document.getElementById('btn').addEventListener('click', async () => {
+  const btn = document.getElementById('btn');
+  const stats = document.getElementById('stats');
+  const statusBox = document.getElementById('statusBox');
+  const cfg = presets[currentPreset];
+
+  if(btn.classList.contains('cancel')) {
+    cancelTest = true;
+    btn.disabled = true;
+    btn.textContent = 'Canceling...';
+    statusBox.textContent = 'Canceling test...';
+    statusBox.classList.remove('done');
+    return;
+  }
+
+  cancelTest = false;
+  statusBox.classList.remove('done');
+  btn.classList.add('cancel');
+  btn.textContent = 'Cancel Test';
+  stats.style.display = 'flex';
+  statusBox.style.display = 'block';
+
+  try {
+    statusBox.textContent = 'Step 1/4: Testing instant ping...';
+    let pings = [];
+    for(let url of ['https://1.1.1.1/cdn-cgi/trace', 'https://www.google.com/favicon.ico', 'https://cloudflare.com/favicon.ico']) {
+      if(cancelTest) throw 'Canceled';
+      const t0 = performance.now();
+      await fetch(url, {mode: 'no-cors', cache: 'no-store'});
+      pings.push(Math.round(performance.now() - t0));
+    }
+    const avgPing = Math.round(pings.reduce((a,b)=>a+b)/pings.length);
+    document.getElementById('instant').textContent = avgPing + ' ms';
+    statusBox.textContent = 'Done: Instant ping complete';
+
+    statusBox.textContent = `Step 2/4: Running ${cfg.label} average test...`;
+    document.getElementById('runPing').style.display = 'block';
+    let pings2 = [];
+    const startTime = performance.now();
+    while(performance.now() - startTime < cfg.pingTime) {
+      if(cancelTest) throw 'Canceled';
+      const t1 = performance.now();
+      await fetch('https://1.1.1.1/cdn-cgi/trace', {mode: 'no-cors', cache: 'no-store'});
+      pings2.push(Math.round(performance.now() - t1));
+      const avg2 = Math.round(pings2.reduce((a,b)=>a+b)/pings2.length);
+      const min = Math.min(...pings2);
+      const max = Math.max(...pings2);
+      document.getElementById('avg').textContent = avg2 + ' ms';
+      document.getElementById('jitter').textContent = (max-min) + ' ms';
+      document.getElementById('minmax').textContent = `Min: ${min} ms Max: ${max} ms`;
+      document.getElementById('samples').textContent = `Samples: ${pings2.length} Time: ${((performance.now()-startTime)/1000).toFixed(1)}s`;
+      await new Promise(r => setTimeout(r, 250));
+    }
+    document.getElementById('runPing').style.display = 'none';
+    statusBox.textContent = 'Done: Average ping complete';
+
+    statusBox.textContent = `Step 3/4: Testing download... ${(cfg.downloadSize/1e6).toFixed(1)}MB`;
+    document.getElementById('runDown').style.display = 'block';
+    const container = document.getElementById('imgs');
+    container.innerHTML = '';
+    const t0 = performance.now();
+    await new Promise((resolve, reject) => {
+      if(cancelTest) throw 'Canceled';
+      const i = new Image();
+      i.onload = () => resolve();
+      i.onerror = reject;
+      i.src = `https://picsum.photos/${cfg.downloadSize > 3000000? '2500/2500' : '2000/2000'}.jpg?r=` + Date.now();
+      container.appendChild(i);
+    });
+    if(cancelTest) throw 'Canceled';
+    const downTime = (performance.now() - t0)/1000;
+    const downMbps = ((cfg.downloadSize * 8) / downTime / 1e6).toFixed(1);
+    document.getElementById('down').textContent = downMbps + ' Mbps';
+    document.getElementById('runDown').style.display = 'none';
+    statusBox.textContent = 'Done: Download complete';
+
+    statusBox.textContent = `Step 4/4: Testing upload... ${cfg.uploadKB}KB`;
+    document.getElementById('runUp').style.display = 'block';
+    const uploadSize = cfg.uploadKB * 1024;
+    const blob = new Blob([new Uint8Array(uploadSize)]);
+
+    const t1 = performance.now();
+    await fetch('https://httpbin.org/post', {
+      method: 'POST',
+      mode: 'no-cors',
+      body: blob,
+      cache: 'no-store'
+    });
+    if(cancelTest) throw 'Canceled';
+
+    const upTime = (performance.now() - t1)/1000;
+    const upMbps = ((uploadSize * 8) / upTime / 1e6).toFixed(3);
+    document.getElementById('up').textContent = upMbps + ' Mbps';
+
+    statusBox.textContent = 'Done: All tests complete';
+    statusBox.classList.add('done');
+    document.getElementById('runUp').style.display = 'none';
+
+  } catch(e) {
+    if(e === 'Canceled') {
+      statusBox.textContent = 'Test canceled by user';
+    } else {
+      statusBox.textContent = 'Error: ' + e;
+      document.getElementById('up').textContent = 'Error';
+    }
+    statusBox.classList.remove('done');
+    document.getElementById('runPing').style.display = 'none';
+    document.getElementById('runDown').style.display = 'none';
+    document.getElementById('runUp').style.display = 'none';
+  }
+
+  btn.classList.remove('cancel');
+  btn.textContent = 'Start Test';
+  btn.disabled = false;
+});
+</script>
+</body>
+</html>
