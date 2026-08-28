@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T03:13:17.783Z",
+  "updated_at": "2026-08-28T03:24:48.877Z",
   "categories": [
     {
       "id": "developers",
@@ -948,6 +948,13 @@
       "description": "Poorly built network tester but it works well for awful missionary Hotspot networking.",
       "icon": "📶",
       "color": "linear-gradient(135deg, #f97316, #fbbf24)"
+    },
+    {
+      "name": "Memes",
+      "rawName": "memes.html",
+      "path": "Fun/memes.html",
+      "author": "Throk",
+      "icon": "😂"
     }
   ]
 }
