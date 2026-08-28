@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meme Machine</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #121212;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+h1 {
+  color: #00ffcc;
+  margin-bottom: 10px;
+}
+button {
+  background: #00ffcc;
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  margin: 10px;
+}
+button:hover {
+  background: #00ccaa;
+}
+#meme-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+.meme {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 10px;
+  width: 300px;
+  box-shadow: 0 0 10px rgba(0,255,204,0.3);
+}
+.meme img {
+  width: 100%;
+  border-radius: 6px;
+}
+.meme p {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+<h1>🔥 Meme Machine 🔥</h1>
+<p>Click below to load fresh memes from the internet!</p>
+<button onclick="loadMeme()">Load One Meme</button>
+<button onclick="loadManyMemes()">Load 10 Memes</button>
+
+<div id="meme-container"></div>
+
+<button onclick="loadManyMemes()">Load 10 Memes</button>
+ 
+<script>
+localStorage.setItem('pot8o watermark', `${localStorage.getItem('pot8o watermark') || ''} memes`);
+const proxy = "";
+const memeContainer = document.getElementById('meme-container');
+
+async function loadMeme() {
+  const res = await fetch(proxy + 'https://meme-api.com/gimme');
+  const data = await res.json();
+  displayMemes([data]);
+}
+
+async function loadManyMemes() {
+  const res = await fetch(proxy + 'https://meme-api.com/gimme/10');
+  const data = await res.json();
+  displayMemes(data.memes);
+}
+
+function displayMemes(memes) {
+  memeContainer.innerHTML = '';
+  memes.forEach(meme => {
+    const div = document.createElement('div');
+    div.className = 'meme';
+    div.innerHTML = `
+      <img src="${meme.url}" alt="Meme">
+      <p><strong>${meme.title}</strong></p>
+      <p>From: ${meme.subreddit}</p>
+    `;
+    memeContainer.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
