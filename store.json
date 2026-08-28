@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T15:41:04.550Z",
+  "updated_at": "2026-08-28T15:41:45.006Z",
   "categories": [
     {
       "id": "developers",
@@ -970,7 +970,8 @@
       "path": "Fun/Emulators/GamesDrive.html",
       "author": "Ogden Marrow",
       "description": "Google drive link to all the games for emulators",
-      "icon": "fa:fa-database"
+      "icon": "fa:fa-database",
+      "pinned": true
     }
   ]
 }
