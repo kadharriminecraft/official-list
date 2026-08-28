@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T16:07:57.537Z",
+  "updated_at": "2026-08-28T16:23:04.458Z",
   "categories": [
     {
       "id": "developers",
@@ -979,15 +979,6 @@
       "pinned": true
     },
     {
-      "name": "BYU Scholar Achive",
-      "rawName": "BYUScholarAchive",
-      "path": "Other/BYUScholarAchive",
-      "author": "BYU",
-      "description": "This is a website full of cool papers and datasets with interesting ideas.",
-      "icon": "fa:fa-graduation-cap",
-      "iconColor": "#2563eb"
-    },
-    {
       "name": "Gospel Library",
       "rawName": "GospelLibrary.html",
       "path": "Missionary/GospelLibrary.html",
@@ -1005,6 +996,7 @@
       "name": "BYUScholar Archive",
       "rawName": "BYUScholarArchive.html",
       "path": "Missionary/BYUScholarArchive.html",
+      "author": "BYU",
       "icon": "fa:fa-graduation-cap",
       "iconColor": "#2563eb"
     },
