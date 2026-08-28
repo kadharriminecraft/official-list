@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A Day in the NOM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F2EA;
+    --bg-2:#EBE6D8;
+    --surface:#FFFFFF;
+    --text:#1E2A32;
+    --text-soft:#5A6670;
+    --line:#D9D2C2;
+    --plate:#1E2A32;
+    --plate-text:#F5F2EA;
+    --overlay-bg:rgba(30,42,50,0.45);
+    --green:#2F9E64; --green-soft:#DDEFE3;
+    --yellow:#D89B1F; --yellow-soft:#FBEBD0;
+    --grey:#7C868F; --grey-soft:#E7E6E2;
+    --member:#3B6FD4; --member-soft:#E1E8FB;
+    --radius:18px;
+    --shadow:0 1px 2px rgba(30,42,50,0.06), 0 6px 20px rgba(30,42,50,0.08);
+  }
+  html[data-theme="dark"]{
+    --bg:#14181B;
+    --bg-2:#262C31;
+    --surface:#1E2428;
+    --text:#ECE7DC;
+    --text-soft:#9BA3AA;
+    --line:#333B40;
+    --plate:#262E33;
+    --plate-text:#F1ECE0;
+    --overlay-bg:rgba(0,0,0,0.6);
+    --green-soft:rgba(47,158,100,0.18);
+    --yellow-soft:rgba(216,155,31,0.18);
+    --grey-soft:rgba(124,134,143,0.22);
+    --member-soft:rgba(59,111,212,0.22);
+    --shadow:0 1px 2px rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(30,42,50,0.04), transparent 40%),
+      radial-gradient(circle at 100% 30%, rgba(59,111,212,0.05), transparent 45%);
+    color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:20px 14px 60px;
+    transition:background .2s ease, color .2s ease;
+  }
+  button{ touch-action:manipulation; }
+  .app{max-width:480px;margin:0 auto;}
+
+  /* ---------- Header / badge ---------- */
+  .badge{
+    position:relative;
+    background:var(--plate);
+    color:var(--plate-text);
+    border-radius:20px;
+    padding:22px 24px 20px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .badge::after{
+    content:"";
+    position:absolute;
+    top:-40px; right:-40px;
+    width:140px;height:140px;
+    background:radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .badge h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(22px,6.5vw,28px);
+    font-weight:700;
+    letter-spacing:0.01em;
+    margin:0 0 4px;
+    padding-right:78px;
+    line-height:1.15;
+  }
+  .badge p{
+    margin:0;
+    font-size:13px;
+    color:#B9C2C7;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    font-weight:500;
+  }
+  .header-icons{
+    position:absolute; top:16px; right:16px;
+    display:flex; gap:8px;
+    z-index:2;
+  }
+  .icon-btn{
+    background:rgba(255,255,255,0.08);
+    border:none; color:var(--plate-text);
+    width:36px;height:36px;border-radius:50%;
+    font-size:16px; cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .icon-btn:active{transform:scale(0.9);}
+  .icon-btn:hover{background:rgba(255,255,255,0.16);}
+
+  /* ---------- Log buttons ---------- */
+  .log-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:16px;
+  }
+  .log-btn{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:16px 6px 14px;
+    border-radius:16px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--text);
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .log-btn .dot{width:22px;height:22px;border-radius:50%;display:block;}
+  .log-btn.green .dot{background:var(--green);}
+  .log-btn.yellow .dot{background:var(--yellow);}
+  .log-btn.blue .dot{background:var(--grey);}
+  .log-btn.member .dot{background:var(--member);}
+  .log-btn:active{transform:scale(0.96);}
+  @media (hover:hover){
+    .log-btn:hover{box-shadow:0 2px 4px rgba(30,42,50,0.08), 0 10px 26px rgba(30,42,50,0.12);}
+  }
+
+  /* ---------- Period nav ---------- */
+  .period-nav{
+    margin-top:22px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .segmented{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    background:var(--bg-2);
+    border-radius:12px;
+    padding:4px;
+    gap:4px;
+  }
+  .segmented button{
+    border:none;background:transparent;
+    padding:9px 4px;
+    border-radius:9px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;font-size:13px;
+    color:var(--text-soft);
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .segmented button.active{
+    background:var(--plate); color:var(--plate-text);
+  }
+  .range-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 2px;
+  }
+  .range-nav button{
+    width:34px;height:34px;border-radius:50%;
+    border:1px solid var(--line); background:var(--surface);
+    font-size:16px; cursor:pointer; color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .range-nav button:disabled{opacity:0.3; cursor:default;}
+  .range-nav button:active:not(:disabled){transform:scale(0.9);}
+  #rangeLabel{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px; font-weight:500; color:var(--text-soft);
+    text-align:center; flex:1;
+  }
+
+  /* ---------- Stats card ---------- */
+  .stats-card{
+    margin-top:16px;
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:20px;
+    box-shadow:var(--shadow);
+  }
+  .total-row{display:flex; align-items:baseline; gap:8px;}
+  .total-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:44px; font-weight:700; color:var(--text);
+    line-height:1;
+  }
+  .total-label{font-size:13px; color:var(--text-soft); font-weight:500;}
+  .bar{
+    margin-top:14px;
+    height:12px; border-radius:8px; overflow:hidden;
+    display:flex; background:var(--bg-2);
+  }
+  .bar span{height:100%; transition:width .3s ease;}
+  .bar .seg-green{background:var(--green);}
+  .bar .seg-yellow{background:var(--yellow);}
+  .bar .seg-blue{background:var(--grey);}
+  .bar .seg-member{background:var(--member);}
+  .stat-legend{margin-top:16px; display:flex; flex-direction:column; gap:10px;}
+  .legend-item{
+    display:flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:500; color:var(--text);
+  }
+  .legend-item .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .legend-item.green .dot{background:var(--green);}
+  .legend-item.yellow .dot{background:var(--yellow);}
+  .legend-item.blue .dot{background:var(--grey);}
+  .legend-item.member .dot{background:var(--member);}
+  .legend-item b{margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:13px;}
+  .legend-item small{color:var(--text-soft); font-family:'JetBrains Mono',monospace; width:26px; text-align:right;}
+
+  /* ---------- List ---------- */
+  .list-section{margin-top:22px;}
+  .list-section h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px; font-weight:700; margin:0 0 10px;
+    color:var(--text);
+  }
+  #contactList{display:flex; flex-direction:column; gap:8px;}
+  .contact-row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--surface); border-radius:14px; padding:12px 14px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:border-color .15s ease;
+  }
+  .contact-row:active{border-color:var(--line);}
+  .contact-row .row-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .contact-row .row-dot.green{background:var(--green);}
+  .contact-row .row-dot.yellow{background:var(--yellow);}
+  .contact-row .row-dot.blue{background:var(--grey);}
+  .contact-row .row-dot.member{background:var(--member);}
+  .row-text{flex:1; min-width:0;}
+  .row-name{font-size:14px; font-weight:600; color:var(--text);}
+  .row-note{font-size:12px; color:var(--text-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .row-time{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-soft); flex-shrink:0;}
+  .empty{
+    display:none;
+    text-align:center; font-size:13px; color:var(--text-soft);
+    padding:26px 20px; background:var(--surface); border-radius:14px; box-shadow:var(--shadow);
+  }
+
+  /* ---------- Share button ---------- */
+  .share-btn{
+    display:block; width:100%; margin-top:24px;
+    background:var(--plate); color:var(--plate-text);
+    border:none; border-radius:14px;
+    padding:15px; font-size:15px; font-weight:700;
+    font-family:'Space Grotesk',sans-serif;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .share-btn:active{transform:scale(0.98);}
+
+  .footnote{
+    text-align:center; font-size:11px; color:var(--text-soft);
+    margin-top:16px; line-height:1.5; padding:0 20px;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; left:0; top:0; width:100%; height:100%;
+    background:var(--overlay-bg);
+    display:none; align-items:flex-end; justify-content:center;
+    z-index:50; backdrop-filter:blur(2px);
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--bg); width:100%; max-width:480px;
+    border-radius:22px 22px 0 0;
+    padding:22px 20px calc(18px + env(safe-area-inset-bottom));
+    box-shadow:0 -8px 30px rgba(0,0,0,0.2);
+    animation:slideUp .2s ease;
+    display:flex; flex-direction:column;
+    max-height:100%;
+  }
+  @keyframes slideUp{from{transform:translateY(24px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modal h3{
+    font-family:'Space Grotesk',sans-serif; margin:0 0 16px;
+    font-size:18px; font-weight:700; flex-shrink:0;
+    color:var(--text);
+  }
+  .modal-body{
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding-right:2px;
+  }
+  .modal label{
+    display:block; font-size:12px; font-weight:600; color:var(--text-soft);
+    margin-bottom:14px; text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .modal input[type=text], .modal input[type=date], .modal input[type=number], .modal input[type=time]{
+    display:block; width:100%; margin-top:6px;
+    padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+    font-size:15px; font-family:'Inter',sans-serif; color:var(--text);
+    background:var(--surface);
+  }
+  .modal input:focus{outline:2px solid var(--member); outline-offset:1px;}
+  .status-toggle{
+    display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px;
+  }
+  .status-toggle button{
+    padding:12px 4px; border-radius:10px; border:2px solid var(--line);
+    background:var(--surface); font-size:12px; font-weight:600; color:var(--text-soft);
+    cursor:pointer;
+  }
+  .status-toggle button[data-status=green].sel{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+  .status-toggle button[data-status=yellow].sel{border-color:var(--yellow); background:var(--yellow-soft); color:var(--yellow);}
+  .status-toggle button[data-status=blue].sel{border-color:var(--grey); background:var(--grey-soft); color:var(--grey);}
+  .status-toggle button[data-status=member].sel{border-color:var(--member); background:var(--member-soft); color:var(--member);}
+  .modal-actions{display:flex; gap:10px; flex-shrink:0; padding-top:16px;}
+  .modal-actions button{
+    flex:1; padding:14px; border-radius:12px; border:none;
+    font-size:14px; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    cursor:pointer;
+  }
+  .modal-actions .primary{background:var(--plate); color:var(--plate-text);}
+  .modal-actions .danger{background:var(--surface); color:#C1443A; border:1px solid #E9C6C2;}
+  .modal-actions .secondary{background:var(--surface); color:var(--text); border:1px solid var(--line);}
+  .modal-actions button:active{transform:scale(0.97);}
+  .hint{font-size:12px; color:var(--text-soft); line-height:1.5; margin:-6px 0 16px;}
+  .date-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .section-divider{
+    font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--text-soft); border-top:1px solid var(--line);
+    padding-top:18px; margin:6px 0 12px;
+  }
+  .backup-actions{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px;}
+  .backup-actions button{
+    padding:12px 6px; border-radius:12px; border:1px solid var(--line);
+    background:var(--surface); color:var(--text);
+    font-size:13px; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    cursor:pointer;
+  }
+  .backup-actions button:active{transform:scale(0.97);}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed; left:50%; bottom:28px; transform:translate(-50%,20px);
+    background:var(--plate); color:var(--plate-text);
+    padding:11px 20px; border-radius:30px;
+    font-size:13px; font-weight:600;
+    opacity:0; pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:60;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
+  }
+  .toast.show{opacity:1; transform:translate(-50%,0);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="badge">
+    <div class="header-icons">
+      <button type="button" class="icon-btn" id="themeBtn" aria-label="Toggle dark mode">&#9789;</button>
+      <button type="button" class="icon-btn" id="gearBtn" aria-label="Mission settings">&#9881;</button>
+    </div>
+    <h1 id="titleText">A Day in the NOM</h1>
+    <p id="subtitleText">Nebraska Omaha Mission</p>
+  </header>
+
+  <section class="log-actions">
+    <button type="button" class="log-btn green" data-status="green"><span class="dot"></span>Teaching</button>
+    <button type="button" class="log-btn yellow" data-status="yellow"><span class="dot"></span>Interested</button>
+    <button type="button" class="log-btn blue" data-status="blue"><span class="dot"></span>Not Interested</button>
+    <button type="button" class="log-btn member" data-status="member"><span class="dot"></span>Member</button>
+  </section>
+
+  <section class="period-nav">
+    <div class="segmented" id="segmented">
+      <button type="button" data-view="day" class="active">Day</button>
+      <button type="button" data-view="week">Week</button>
+      <button type="button" data-view="transfer">Transfer</button>
+    </div>
+    <div class="range-nav">
+      <button type="button" id="prevBtn" aria-label="Previous period">&#8249;</button>
+      <span id="rangeLabel">Today</span>
+      <button type="button" id="nextBtn" aria-label="Next period">&#8250;</button>
+    </div>
+  </section>
+
+  <section class="stats-card">
+    <div class="total-row">
+      <span class="total-num" id="totalNum">0</span>
+      <span class="total-label">people talked to</span>
+    </div>
+    <div class="bar">
+      <span class="seg-green" id="segGreen"></span>
+      <span class="seg-yellow" id="segYellow"></span>
+      <span class="seg-blue" id="segBlue"></span>
+      <span class="seg-member" id="segMember"></span>
+    </div>
+    <div class="stat-legend">
+      <div class="legend-item green"><span class="dot"></span>Teaching <b id="greenPct">0%</b><small id="greenCount">0</small></div>
+      <div class="legend-item yellow"><span class="dot"></span>Interested <b id="yellowPct">0%</b><small id="yellowCount">0</small></div>
+      <div class="legend-item blue"><span class="dot"></span>Not Interested <b id="bluePct">0%</b><small id="blueCount">0</small></div>
+      <div class="legend-item member"><span class="dot"></span>Member <b id="memberPct">0%</b><small id="memberCount">0</small></div>
+    </div>
+  </section>
+
+  <section class="list-section">
+    <h2>Log</h2>
+    <div id="contactList"></div>
+    <p class="empty" id="emptyState">No contacts logged for this period yet. Tap Teaching, Interested, Not Interested, or Member above to log your first contact.</p>
+  </section>
+
+  <button type="button" class="share-btn" id="shareBtn">Share Stats</button>
+  <p class="footnote">Your data stays on this device. Save this file to your phone and open it in Chrome directly (not a preview screen) for taps to work and data to persist.</p>
+</div>
+
+<!-- Contact modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Contact</h3>
+    <div class="modal-body">
+      <label>Name
+        <input id="modalName" type="text" placeholder="Optional">
+      </label>
+      <label>Note
+        <input id="modalNote" type="text" placeholder="Optional — met at park, has a Book of Mormon...">
+      </label>
+      <label>Date &amp; time
+        <div class="date-row">
+          <input id="modalDate" type="date">
+          <input id="modalTime" type="time">
+        </div>
+      </label>
+      <div class="status-toggle" id="modalStatusToggle">
+        <button type="button" data-status="green">Teaching</button>
+        <button type="button" data-status="yellow">Interested</button>
+        <button type="button" data-status="blue">Not Interested</button>
+        <button type="button" data-status="member">Member</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="danger" id="deleteBtn">Delete</button>
+      <button type="button" class="primary" id="doneBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <h3>Mission Settings</h3>
+    <div class="modal-body">
+      <label>Mission title
+        <input id="settingsTitle" type="text">
+      </label>
+      <label>Subtitle
+        <input id="settingsSubtitle" type="text">
+      </label>
+      <label>Current transfer period
+        <div class="date-row">
+          <input id="settingsStart" type="date" aria-label="Transfer start date">
+          <input id="settingsEnd" type="date" aria-label="Transfer end date">
+        </div>
+      </label>
+      <p class="hint">Set the start and end date of your current transfer. That length repeats automatically going forward — change it anytime and everything from that point recalculates on its own.</p>
+
+      <div class="section-divider">Backup</div>
+      <p class="hint">Save a backup file to keep your data safe or move it to a new phone. Restoring replaces everything currently on this device.</p>
+      <div class="backup-actions">
+        <button type="button" id="exportBtn">Save Backup File</button>
+        <button type="button" id="importBtn">Restore from File</button>
+      </div>
+      <input type="file" id="importInput" accept="application/json" style="display:none;">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="secondary" id="settingsCancel">Cancel</button>
+      <button type="button" class="primary" id="settingsSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var LS_SETTINGS = 'nom_settings_v1';
+  var LS_CONTACTS = 'nom_contacts_v1';
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function toDateStr(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function toTimeStr(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
+  function parseDateStr(s){
+    var parts = s.split('-').map(Number);
+    return new Date(parts[0], parts[1]-1, parts[2]);
+  }
+  function midnight(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
+  function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+  function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function fmtShort(d){ return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+  function fmtTime(ts){ return new Date(ts).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
+  function prefersDark(){ return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
+
+  function defaultSettings(){
+    var start = midnight(new Date());
+    var end = addDays(start, 41); // 6-week default
+    return {
+      title:'A Day in the NOM',
+      subtitle:'Nebraska Omaha Mission',
+      transferStart: toDateStr(start),
+      transferEnd: toDateStr(end),
+      theme: prefersDark() ? 'dark' : 'light'
+    };
+  }
+
+  function loadJSON(key){
+    try{
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveSettings(){ try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch(e){} }
+  function saveContacts(){ try{ localStorage.setItem(LS_CONTACTS, JSON.stringify(contacts)); }catch(e){} }
+
+  function migrateSettings(s){
+    s = s || {};
+    var d = defaultSettings();
+    if(!s.title) s.title = d.title;
+    if(!s.subtitle) s.subtitle = d.subtitle;
+    if(!s.transferStart) s.transferStart = d.transferStart;
+    if(!s.transferEnd){
+      var start = parseDateStr(s.transferStart);
+      var weeks = s.transferWeeks || 6;
+      s.transferEnd = toDateStr(addDays(start, weeks*7 - 1));
+    }
+    if(!s.theme){ s.theme = prefersDark() ? 'dark' : 'light'; }
+    return s;
+  }
+
+  var settings = migrateSettings(loadJSON(LS_SETTINGS) || defaultSettings());
+  var contacts = loadJSON(LS_CONTACTS) || [];
+
+  var currentView = 'day';
+  var offset = 0;
+  var currentEditId = null;
+  var modalStatus = 'green';
+
+  var STATUS_META = [
+    {key:'green', label:'Teaching', color:'#2F9E64'},
+    {key:'yellow', label:'Interested', color:'#D89B1F'},
+    {key:'blue', label:'Not Interested', color:'#7C868F'},
+    {key:'member', label:'Member', color:'#3B6FD4'}
+  ];
+
+  // ---------- DOM refs ----------
+  var el = {
+    titleText: document.getElementById('titleText'),
+    subtitleText: document.getElementById('subtitleText'),
+    gearBtn: document.getElementById('gearBtn'),
+    themeBtn: document.getElementById('themeBtn'),
+    segmented: document.getElementById('segmented'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn'),
+    rangeLabel: document.getElementById('rangeLabel'),
+    totalNum: document.getElementById('totalNum'),
+    segGreen: document.getElementById('segGreen'),
+    segYellow: document.getElementById('segYellow'),
+    segBlue: document.getElementById('segBlue'),
+    segMember: document.getElementById('segMember'),
+    greenPct: document.getElementById('greenPct'),
+    yellowPct: document.getElementById('yellowPct'),
+    bluePct: document.getElementById('bluePct'),
+    memberPct: document.getElementById('memberPct'),
+    greenCount: document.getElementById('greenCount'),
+    yellowCount: document.getElementById('yellowCount'),
+    blueCount: document.getElementById('blueCount'),
+    memberCount: document.getElementById('memberCount'),
+    contactList: document.getElementById('contactList'),
+    emptyState: document.getElementById('emptyState'),
+    shareBtn: document.getElementById('shareBtn'),
+    modalOverlay: document.getElementById('modalOverlay'),
+    modalTitle: document.getElementById('modalTitle'),
+    modalName: document.getElementById('modalName'),
+    modalNote: document.getElementById('modalNote'),
+    modalDate: document.getElementById('modalDate'),
+    modalTime: document.getElementById('modalTime'),
+    modalStatusToggle: document.getElementById('modalStatusToggle'),
+    deleteBtn: document.getElementById('deleteBtn'),
+    doneBtn: document.getElementById('doneBtn'),
+    settingsOverlay: document.getElementById('settingsOverlay'),
+    settingsTitle: document.getElementById('settingsTitle'),
+    settingsSubtitle: document.getElementById('settingsSubtitle'),
+    settingsStart: document.getElementById('settingsStart'),
+    settingsEnd: document.getElementById('settingsEnd'),
+    settingsCancel: document.getElementById('settingsCancel'),
+    settingsSave: document.getElementById('settingsSave'),
+    exportBtn: document.getElementById('exportBtn'),
+    importBtn: document.getElementById('importBtn'),
+    importInput: document.getElementById('importInput'),
+    toast: document.getElementById('toast')
+  };
+
+  // ---------- Theme ----------
+  function applyTheme(){
+    document.documentElement.setAttribute('data-theme', settings.theme);
+    el.themeBtn.innerHTML = settings.theme === 'dark' ? '&#9728;' : '&#9789;';
+    el.themeBtn.setAttribute('aria-label', settings.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+  el.themeBtn.addEventListener('click', function(){
+    settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+    saveSettings();
+    applyTheme();
+  });
+
+  // ---------- Period calculation ----------
+  function computeRange(view, off){
+    var today = midnight(new Date());
+    if(view === 'day'){
+      var start = addDays(today, off);
+      var end = addDays(start, 1);
+      var label = off === 0 ? 'Today · '+fmtShort(start) : fmtShort(start);
+      return {start:start, end:end, label:label};
+    }
+    if(view === 'week'){
+      var base = addDays(today, off*7);
+      var dow = base.getDay();
+      var diffToMonday = (dow === 0 ? -6 : 1-dow);
+      var monday = addDays(base, diffToMonday);
+      var sunday = addDays(monday, 7);
+      var lbl = 'Week of '+fmtShort(monday)+' – '+fmtShort(addDays(sunday,-1));
+      return {start:monday, end:sunday, label:lbl};
+    }
+    var anchor = midnight(parseDateStr(settings.transferStart));
+    var endDate = midnight(parseDateStr(settings.transferEnd));
+    var lengthMs = Math.max(86400000, (endDate.getTime() - anchor.getTime()) + 86400000);
+    var idx0 = Math.floor((today.getTime() - anchor.getTime()) / lengthMs);
+    var idx = idx0 + off;
+    var tStart = new Date(anchor.getTime() + idx*lengthMs);
+    var tEnd = new Date(tStart.getTime() + lengthMs);
+    var num = idx + 1;
+    var tLabel = (num >= 1 ? 'Transfer '+num : 'Pre-Transfer') + '  ('+fmtShort(tStart)+' – '+fmtShort(addDays(tEnd,-1))+')';
+    return {start:tStart, end:tEnd, label:tLabel};
+  }
+
+  function filterContacts(range){
+    return contacts.filter(function(c){
+      return c.ts >= range.start.getTime() && c.ts < range.end.getTime();
+    });
+  }
+
+  function countStatuses(list){
+    var c = {green:0, yellow:0, blue:0, member:0};
+    list.forEach(function(x){ if(c.hasOwnProperty(x.status)) c[x.status]++; });
+    return c;
+  }
+
+  // ---------- Rendering ----------
+  function render(){
+    el.titleText.textContent = settings.title;
+    el.subtitleText.textContent = settings.subtitle;
+
+    var range = computeRange(currentView, offset);
+    el.rangeLabel.textContent = range.label;
+    el.nextBtn.disabled = offset >= 0;
+
+    var filtered = filterContacts(range);
+    var counts = countStatuses(filtered);
+    var total = filtered.length;
+
+    el.totalNum.textContent = total;
+
+    var gp = total ? Math.round(counts.green/total*100) : 0;
+    var yp = total ? Math.round(counts.yellow/total*100) : 0;
+    var bp = total ? Math.round(counts.blue/total*100) : 0;
+    var mp = total ? Math.round(counts.member/total*100) : 0;
+
+    el.segGreen.style.width = gp+'%';
+    el.segYellow.style.width = yp+'%';
+    el.segBlue.style.width = bp+'%';
+    el.segMember.style.width = mp+'%';
+
+    el.greenPct.textContent = gp+'%';
+    el.yellowPct.textContent = yp+'%';
+    el.bluePct.textContent = bp+'%';
+    el.memberPct.textContent = mp+'%';
+    el.greenCount.textContent = counts.green;
+    el.yellowCount.textContent = counts.yellow;
+    el.blueCount.textContent = counts.blue;
+    el.memberCount.textContent = counts.member;
+
+    var listSorted = filtered.slice().sort(function(a,b){ return b.ts-a.ts; });
+    el.contactList.innerHTML = '';
+    el.emptyState.style.display = listSorted.length ? 'none' : 'block';
+    listSorted.forEach(function(c){
+      var row = document.createElement('div');
+      row.className = 'contact-row';
+      row.innerHTML =
+        '<span class="row-dot '+c.status+'"></span>'+
+        '<div class="row-text">'+
+          '<div class="row-name"></div>'+
+          '<div class="row-note"></div>'+
+        '</div>'+
+        '<span class="row-time"></span>';
+      row.querySelector('.row-name').textContent = c.name || 'Unnamed contact';
+      row.querySelector('.row-note').textContent = c.note || '';
+      row.querySelector('.row-time').textContent = fmtTime(c.ts);
+      row.addEventListener('click', function(){ openModal(c.id); });
+      el.contactList.appendChild(row);
+    });
+  }
+
+  // ---------- Logging ----------
+  function logContact(status){
+    var c = {id:genId(), name:'', note:'', status:status, ts:Date.now()};
+    contacts.push(c);
+    saveContacts();
+    render();
+    openModal(c.id);
+    toast('Logged');
+  }
+
+  document.querySelectorAll('.log-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ logContact(btn.getAttribute('data-status')); });
+  });
+
+  // ---------- Segmented / nav ----------
+  el.segmented.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-view]');
+    if(!btn) return;
+    currentView = btn.getAttribute('data-view');
+    offset = 0;
+    Array.from(el.segmented.children).forEach(function(b){ b.classList.toggle('active', b===btn); });
+    render();
+  });
+  el.prevBtn.addEventListener('click', function(){ offset -= 1; render(); });
+  el.nextBtn.addEventListener('click', function(){ if(offset<0){ offset += 1; render(); } });
+
+  // ---------- Contact modal ----------
+  function openModal(id){
+    currentEditId = id;
+    var c = contacts.find(function(x){ return x.id===id; });
+    if(!c) return;
+    el.modalTitle.textContent = c.name ? c.name : 'New Contact';
+    el.modalName.value = c.name || '';
+    el.modalNote.value = c.note || '';
+    var d = new Date(c.ts);
+    el.modalDate.value = toDateStr(d);
+    el.modalTime.value = toTimeStr(d);
+    setModalStatus(c.status);
+    el.modalOverlay.classList.add('open');
+    updateViewportSizing();
+    setTimeout(function(){ el.modalName.focus(); }, 50);
+  }
+  function closeModal(){
+    el.modalOverlay.classList.remove('open');
+    currentEditId = null;
+  }
+  function setModalStatus(status){
+    modalStatus = status;
+    Array.from(el.modalStatusToggle.children).forEach(function(b){
+      b.classList.toggle('sel', b.getAttribute('data-status')===status);
+    });
+  }
+  el.modalStatusToggle.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-status]');
+    if(!btn) return;
+    setModalStatus(btn.getAttribute('data-status'));
+  });
+  el.doneBtn.addEventListener('click', function(){
+    var c = contacts.find(function(x){ return x.id===currentEditId; });
+    if(c){
+      c.name = el.modalName.value.trim();
+      c.note = el.modalNote.value.trim();
+      c.status = modalStatus;
+      if(el.modalDate.value){
+        var dp = el.modalDate.value.split('-').map(Number);
+        var tp = (el.modalTime.value || '00:00').split(':').map(Number);
+        var newTs = new Date(dp[0], dp[1]-1, dp[2], tp[0]||0, tp[1]||0, 0, 0).getTime();
+        if(!isNaN(newTs)) c.ts = newTs;
+      }
+      saveContacts();
+    }
+    closeModal();
+    render();
+    toast('Saved');
+  });
+  el.deleteBtn.addEventListener('click', function(){
+    if(!currentEditId) return;
+    if(!confirm('Delete this contact?')) return;
+    contacts = contacts.filter(function(x){ return x.id!==currentEditId; });
+    saveContacts();
+    closeModal();
+    render();
+    toast('Deleted');
+  });
+  el.modalOverlay.addEventListener('click', function(e){
+    if(e.target === el.modalOverlay) el.doneBtn.click();
+  });
+  [el.modalName, el.modalNote].forEach(function(inp){
+    inp.addEventListener('focus', function(){
+      setTimeout(function(){ inp.scrollIntoView({block:'center', behavior:'smooth'}); }, 250);
+    });
+  });
+
+  // ---------- Settings modal ----------
+  el.gearBtn.addEventListener('click', function(){
+    el.settingsTitle.value = settings.title;
+    el.settingsSubtitle.value = settings.subtitle;
+    el.settingsStart.value = settings.transferStart;
+    el.settingsEnd.value = settings.transferEnd;
+    el.settingsOverlay.classList.add('open');
+    updateViewportSizing();
+  });
+  el.settingsCancel.addEventListener('click', function(){ el.settingsOverlay.classList.remove('open'); });
+  el.settingsOverlay.addEventListener('click', function(e){
+    if(e.target === el.settingsOverlay) el.settingsOverlay.classList.remove('open');
+  });
+  el.settingsSave.addEventListener('click', function(){
+    var newStart = el.settingsStart.value || settings.transferStart;
+    var newEnd = el.settingsEnd.value || settings.transferEnd;
+    if(parseDateStr(newEnd) < parseDateStr(newStart)){
+      toast('Transfer end must be after start');
+      return;
+    }
+    settings.title = el.settingsTitle.value.trim() || 'A Day in the NOM';
+    settings.subtitle = el.settingsSubtitle.value.trim() || 'Mission Field';
+    settings.transferStart = newStart;
+    settings.transferEnd = newEnd;
+    saveSettings();
+    offset = 0;
+    el.settingsOverlay.classList.remove('open');
+    render();
+    toast('Settings saved');
+  });
+  [el.settingsTitle, el.settingsSubtitle, el.settingsStart, el.settingsEnd].forEach(function(inp){
+    inp.addEventListener('focus', function(){
+      setTimeout(function(){ inp.scrollIntoView({block:'center', behavior:'smooth'}); }, 250);
+    });
+  });
+
+  // ---------- Backup / restore ----------
+  function downloadBlob(blob, fileName){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+
+  el.exportBtn.addEventListener('click', async function(){
+    var data = {app:'A Day in the NOM', version:1, exportedAt:Date.now(), settings:settings, contacts:contacts};
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    var fileName = 'nom-backup-'+toDateStr(new Date())+'.json';
+    var file = null;
+    try{ file = new File([blob], fileName, {type:'application/json'}); }catch(e){}
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file], title:'A Day in the NOM Backup'});
+        toast('Backup shared');
+        return;
+      }catch(err){ /* fall through to download */ }
+    }
+    downloadBlob(blob, fileName);
+    toast('Backup saved');
+  });
+
+  el.importBtn.addEventListener('click', function(){ el.importInput.click(); });
+  el.importInput.addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = JSON.parse(reader.result);
+        if(!data || (!data.settings && !data.contacts)) throw new Error('bad file');
+        if(!confirm('Replace all current data on this device with this backup? This cannot be undone.')){
+          el.importInput.value = '';
+          return;
+        }
+        if(data.settings) settings = migrateSettings(data.settings);
+        if(Array.isArray(data.contacts)) contacts = data.contacts;
+        saveSettings();
+        saveContacts();
+        applyTheme();
+        el.settingsStart.value = settings.transferStart;
+        el.settingsEnd.value = settings.transferEnd;
+        el.settingsTitle.value = settings.title;
+        el.settingsSubtitle.value = settings.subtitle;
+        render();
+        toast('Backup restored');
+      }catch(err){
+        toast('Could not read that backup file');
+      }
+      el.importInput.value = '';
+    };
+    reader.readAsText(f);
+  });
+
+  // ---------- Keyboard-safe viewport sizing ----------
+  function updateViewportSizing(){
+    if(!window.visualViewport) return;
+    var vv = window.visualViewport;
+    [el.modalOverlay, el.settingsOverlay].forEach(function(ov){
+      ov.style.height = vv.height + 'px';
+      ov.style.top = vv.offsetTop + 'px';
+    });
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', updateViewportSizing);
+    window.visualViewport.addEventListener('scroll', updateViewportSizing);
+  }
+
+  // ---------- Toast ----------
+  var toastTimer = null;
+  function toast(msg){
+    el.toast.textContent = msg;
+    el.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.toast.classList.remove('show'); }, 1600);
+  }
+
+  // ---------- Share stats image ----------
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function getCanvasTheme(){
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return dark ? {
+      bg:'#14181B', plate:'#262E33', plateText:'#F1ECE0', text:'#ECE7DC',
+      textSoft:'#9BA3AA', barTrack:'#262C31', footer:'#6B7480'
+    } : {
+      bg:'#F5F2EA', plate:'#1E2A32', plateText:'#F5F2EA', text:'#1E2A32',
+      textSoft:'#5A6670', barTrack:'#EBE6D8', footer:'#8A8371'
+    };
+  }
+
+  function drawBar(ctx,x,y,w,h,counts,total,theme){
+    roundRect(ctx,x,y,w,h,h/2); ctx.fillStyle = theme.barTrack; ctx.fill();
+    if(total>0){
+      ctx.save();
+      roundRect(ctx,x,y,w,h,h/2); ctx.clip();
+      var cx = x;
+      var widths = [
+        w*counts.green/total, w*counts.yellow/total, w*counts.blue/total, w*counts.member/total
+      ];
+      var colors = ['#2F9E64','#D89B1F','#7C868F','#3B6FD4'];
+      widths.forEach(function(ww,i){ ctx.fillStyle = colors[i]; ctx.fillRect(cx,y,ww,h); cx+=ww; });
+      ctx.restore();
+    }
+  }
+
+  function drawSection(ctx,x,y,w,theme,title,list){
+    ctx.fillStyle = theme.textSoft;
+    ctx.font = '700 28px Inter, sans-serif';
+    ctx.fillText(title.toUpperCase(), x, y);
+    y += 26;
+
+    var counts = countStatuses(list);
+    var total = list.length;
+
+    ctx.fillStyle = theme.text;
+    ctx.font = '700 104px "JetBrains Mono", monospace';
+    ctx.fillText(String(total), x, y+92);
+    var numWidth = ctx.measureText(String(total)).width;
+    ctx.font = '500 28px Inter, sans-serif';
+    ctx.fillStyle = theme.textSoft;
+    ctx.fillText('people talked to', x + numWidth + 22, y+92);
+    y += 122;
+
+    drawBar(ctx, x, y, w, 22, counts, total, theme);
+    y += 54;
+
+    var chipW = w/2;
+    STATUS_META.forEach(function(s,i){
+      var col = i % 2, row = Math.floor(i/2);
+      var cx = x + col*chipW;
+      var cy = y + row*52;
+      var pct = total ? Math.round(counts[s.key]/total*100) : 0;
+      ctx.beginPath(); ctx.arc(cx+9, cy-8, 9, 0, Math.PI*2); ctx.fillStyle = s.color; ctx.fill();
+      ctx.fillStyle = theme.text;
+      ctx.font = '600 27px Inter, sans-serif';
+      ctx.fillText(s.label + ' ' + pct + '%', cx+28, cy);
+    });
+    y += 52*2 + 46;
+
+    return y;
+  }
+
+  async function shareStats(){
+    try{ await document.fonts.ready; }catch(e){}
+    var theme = getCanvasTheme();
+    var W = 1080;
+
+    var tmp = document.createElement('canvas');
+    tmp.width = W; tmp.height = 2200;
+    var ctx = tmp.getContext('2d');
+    ctx.fillStyle = theme.bg; ctx.fillRect(0,0,W,tmp.height);
+
+    var y = 60;
+    roundRect(ctx,60,y,W-120,170,24); ctx.fillStyle = theme.plate; ctx.fill();
+    ctx.fillStyle = theme.plateText;
+    ctx.font = '700 50px "Space Grotesk", sans-serif';
+    ctx.fillText(settings.title, 100, y+85, W-200);
+    ctx.font = '500 25px Inter, sans-serif';
+    ctx.fillStyle = '#B9C2C7';
+    ctx.fillText(settings.subtitle.toUpperCase(), 100, y+128, W-200);
+    y += 170 + 56;
+
+    var dayRange = computeRange('day', 0);
+    var weekRange = computeRange('week', 0);
+    var transferRange = computeRange('transfer', 0);
+
+    y = drawSection(ctx, 60, y, W-120, theme, dayRange.label, filterContacts(dayRange));
+    y = drawSection(ctx, 60, y, W-120, theme, weekRange.label, filterContacts(weekRange));
+    y = drawSection(ctx, 60, y, W-120, theme, transferRange.label, filterContacts(transferRange));
+
+    ctx.font = '400 23px Inter, sans-serif';
+    ctx.fillStyle = theme.footer;
+    ctx.fillText('Generated '+new Date().toLocaleDateString(), 60, y+10);
+    ctx.textAlign = 'right';
+    ctx.fillText('A Day in the NOM', W-60, y+10);
+    ctx.textAlign = 'left';
+    y += 50;
+
+    var finalCanvas = document.createElement('canvas');
+    finalCanvas.width = W;
+    finalCanvas.height = Math.ceil(y);
+    var outCtx = finalCanvas.getContext('2d');
+    outCtx.drawImage(tmp, 0, 0, W, finalCanvas.height, 0, 0, W, finalCanvas.height);
+
+    finalCanvas.toBlob(async function(blob){
+      if(!blob){ toast('Could not generate image'); return; }
+      var file;
+      try{ file = new File([blob], 'nom-stats.png', {type:'image/png'}); }catch(e){ file = null; }
+      if(file && navigator.canShare && navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file], title: settings.title, text: 'Day / Week / Transfer stats'});
+          return;
+        }catch(err){ /* fall through to download */ }
+      }
+      downloadBlob(blob, 'nom-stats.png');
+      toast('Image downloaded');
+    }, 'image/png');
+  }
+
+  el.shareBtn.addEventListener('click', shareStats);
+
+  // ---------- Init ----------
+  function init(){
+    applyTheme();
+    updateViewportSizing();
+    render();
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  }else{
+    init();
+  }
+})();
+</script>
+</body>
+</html>
