@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T02:52:53.443Z",
+  "updated_at": "2026-08-28T02:57:16.568Z",
   "categories": [
     {
       "id": "developers",
@@ -925,6 +925,20 @@
       "icon": "fa:fa-cat",
       "isNew": true,
       "pinned": true
+    },
+    {
+      "name": "File Splitter",
+      "rawName": "fileSplitter.html",
+      "path": "Tools/fileSplitter.html",
+      "author": "Bluevader",
+      "description": "This is made to split html files up into segments so you can upload your projects to Ai of your choice(Meta AI works well) so ai can handle bigger coding projects",
+      "icon": "fa:fa-scissors",
+      "color": "linear-gradient(135deg, #6d28d9, #a78bfa)",
+      "iconColor": "#0a0a0f",
+      "tags": [
+        "developers"
+      ],
+      "isNew": true
     }
   ]
 }
