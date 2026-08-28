@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T03:27:16.960Z",
+  "updated_at": "2026-08-28T03:28:08.594Z",
   "categories": [
     {
       "id": "developers",
@@ -227,8 +227,7 @@
       "rawName": "A-Access Radio.html",
       "path": "Audio/A-Access Radio.html",
       "author": "Throk",
-      "icon": "fa:fa-radio",
-      "pinned": true
+      "icon": "fa:fa-radio"
     },
     {
       "name": "Beep Box",
