@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-25T21:00:36.692Z",
+  "updated_at": "2026-08-28T02:27:54.334Z",
   "categories": [
     {
       "id": "developers",
@@ -78,21 +78,6 @@
       "name": "Steam Prox",
       "rawName": "SteamProx.html",
       "path": "Other/SteamProx.html",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "Song search",
-      "rawName": "_lookin better.html",
-      "path": "Audio/_lookin better.html",
-      "author": "Bluevader 🔷",
-      "description": "It's designed to find any song or album or artist.",
-      "icon": "🎵",
-      "color": "#101014",
-      "tags": [
-        "audio-lyrics"
-      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -916,6 +901,21 @@
       "author": "Throk",
       "description": "Best text editor",
       "icon": "fa:fa-code"
+    },
+    {
+      "name": "Song Search",
+      "rawName": "SongSearch.html",
+      "path": "Audio/SongSearch.html",
+      "author": "Bluevader🔷️",
+      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
+      "icon": "🎵",
+      "color": "#101014",
+      "tags": [
+        "audio-lyrics"
+      ],
+      "featured": true,
+      "isNew": true,
+      "pinned": true
     }
   ]
 }
