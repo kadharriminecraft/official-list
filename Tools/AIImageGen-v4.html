@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ GlassGen - AI Image Generator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          mint: '#10b981',
+          'mint-dark': '#059669',
+        }
+      }
+    }
+  }
+</script>
+<style>
+ .glass {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  body {
+    background: linear-gradient(135deg, #0a0f0e 0%, #111827 100%);
+    min-height: 100vh;
+  }
+ .spinner {
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top: 3px solid #10b981;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="text-gray-200 font-sans flex-col items-center p-4 md:p-8">
+
+  <div class="w-full max-w-2xl">
+
+    <h1 class="text-3xl md:text-4xl font-bold text-center mb-2">✨ Stable Diffusion</h1>
+    <p class="text-center text-gray-400 mb-6">AI Image Generator powered by Pollinations.ai</p>
+
+    <!-- Main Card -->
+    <div class="glass rounded-3xl p-5 md:p-6 mb-6">
+
+      <!-- Prompt -->
+      <input id="prompt" type="text"
+        placeholder="a capybara in a bathtub..."
+        class="w-full glass rounded-2xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-mint bg-transparent placeholder:text-gray-500"
+      />
+
+      <!-- Model + Generate -->
+      <div class="flex gap-3 mb-4">
+        <select id="model" class="glass rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-mint bg-transparent flex-1">
+          <option value="flux">Flux - Best Quality</option>
+          <option value="sdxl">SDXL - Balanced</option>
+          <option value="turbo">Turbo - Fastest</option>
+        </select>
+        <button id="generate" class="bg-mint hover:bg-mint-dark text-white px-6 py-3 rounded-2xl font-semibold transition disabled:opacity-50">
+          Generate
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 glass p-1 rounded-2xl mb-4">
+        <button class="tab-btn flex-1 py-2 rounded-xl font-semibold transition" data-tab="basic">Basic</button>
+        <button class="tab-btn flex-1 py-2 rounded-xl font-semibold transition" data-tab="advanced">Advanced</button>
+      </div>
+
+      <!-- Tab Content -->
+      <div id="basic" class="tab-content">
+        <p class="text-center text-gray-400 text-sm">Switch to Advanced for negative prompt and size</p>
+      </div>
+
+      <div id="advanced" class="tab-content hidden">
+        <div class="mb-4">
+          <label class="text-xs uppercase text-gray-400 mb-2 block">Negative Prompt</label>
+          <textarea id="negative" placeholder="blurry, lowres, deformed, watermark"
+            class="w-full glass rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-mint bg-transparent h-20 resize-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs uppercase text-gray-400 mb-2 block">Width</label>
+            <select id="width" class="w-full glass rounded-2xl px-4 py-3 outline-none bg-transparent">
+              <option>512</option><option>768</option><option selected>1024</option><option>1344</option><option>1536</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs uppercase text-gray-400 mb-2 block">Height</label>
+            <select id="height" class="w-full glass rounded-2xl px-4 py-3 outline-none bg-transparent">
+              <option>512</option><option>768</option><option selected>1024</option><option>1344</option><option>1536</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs uppercase text-gray-400 mb-2 block">Seed</label>
+            <input id="seed" type="number" placeholder="Random" class="w-full glass rounded-2xl px-4 py-3 outline-none bg-transparent">
+          </div>
+          <div>
+            <label class="text-xs uppercase text-gray-400 mb-2 block">Enhance</label>
+            <select id="enhance" class="w-full glass rounded-2xl px-4 py-3 outline-none bg-transparent">
+              <option value="true" selected>On</option>
+              <option value="false">Off</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Card -->
+    <div id="result" class="glass rounded-3xl p-5 min-h-[400px] flex items-center justify-center flex-col gap-3">
+      <div class="spinner hidden" id="spinner"></div>
+      <span id="placeholder" class="text-gray-400">Your image will appear here</span>
+      <div id="error" class="text-red-400 hidden"></div>
+      <div id="url-debug" class="text-xs text-gray-500 break-all hidden"></div>
+    </div>
+
+  </div>
+
+<script>
+const client = {
+  base: 'https://image.pollinations.ai/prompt/',
+  buildUrl(prompt, negative, options = {}) {
+    let fullPrompt = prompt;
+    if (negative) fullPrompt += `. Avoid: ${negative}`;
+    const params = new URLSearchParams();
+    params.set('width', options.width);
+    params.set('height', options.height);
+    params.set('model', options.model);
+    params.set('nologo', 'true');
+    params.set('enhance', options.enhance);
+    if (options.seed) params.set('seed', options.seed);
+    return `${this.base}${encodeURIComponent(fullPrompt)}?${params.toString()}`;
+  }
+};
+
+const els = {
+  prompt: document.getElementById('prompt'),
+  negative: document.getElementById('negative'),
+  model: document.getElementById('model'),
+  width: document.getElementById('width'),
+  height: document.getElementById('height'),
+  seed: document.getElementById('seed'),
+  enhance: document.getElementById('enhance'),
+  btn: document.getElementById('generate'),
+  result: document.getElementById('result'),
+  spinner: document.getElementById('spinner'),
+  placeholder: document.getElementById('placeholder'),
+  error: document.getElementById('error'),
+  debug: document.getElementById('url-debug')
+};
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('bg-mint', 'text-white'));
+    btn.classList.add('bg-mint', 'text-white');
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById(btn.dataset.tab).classList.remove('hidden');
+  }
+});
+document.querySelector('.tab-btn[data-tab="basic"]').click();
+
+async function generateImage() {
+  const prompt = els.prompt.value.trim();
+  if (!prompt) return showError('Type a prompt first');
+
+  els.btn.disabled = true;
+  els.spinner.classList.remove('hidden');
+  els.placeholder.classList.add('hidden');
+  els.error.classList.add('hidden');
+  els.result.querySelector('img')?.remove();
+
+  const url = client.buildUrl(prompt, els.negative.value.trim(), {
+    model: els.model.value,
+    width: els.width.value,
+    height: els.height.value,
+    seed: els.seed.value,
+    enhance: els.enhance.value
+  });
+
+  els.debug.textContent = url;
+  els.debug.classList.remove('hidden');
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    const blob = await res.blob();
+    const imgUrl = URL.createObjectURL(blob);
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.className = 'w-full rounded-2xl';
+    els.result.appendChild(img);
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    els.spinner.classList.add('hidden');
+    els.btn.disabled = false;
+  }
+}
+
+function showError(msg) {
+  els.error.textContent = msg;
+  els.error.classList.remove('hidden');
+  els.placeholder.classList.remove('hidden');
+}
+
+els.btn.onclick = generateImage;
+els.prompt.addEventListener('keydown', e => { if (e.key === 'Enter') generateImage(); });
+</script>
+</body>
+</html>
