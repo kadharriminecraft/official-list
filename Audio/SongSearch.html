@@ -860,25 +860,42 @@ input[type="text"]::placeholder{color:var(--text-3)}
         <div id="set-detail-views"><!-- rendered by JS --></div>
       </div>
 
+      <!-- Player -->
+      <div class="settings-group">
+        <div class="settings-group-label">Player</div>
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <span class="settings-row-label">Auto-fetch more songs</span>
+            <span class="settings-row-hint">When on, fetches more songs by the same artist at end of queue (off = stop at queue end)</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="set-auto-fetch-more">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+      </div>
+
       <!-- AI configuration -->
       <div class="settings-group" id="sg-ai">
         <div class="settings-group-label">AI Overview</div>
 
-        <div class="settings-row">
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px">
           <div class="settings-row-info">
             <span class="settings-row-label">Model</span>
-            <span class="settings-row-hint">Which Groq model to use</span>
+            <span class="settings-row-hint">Which Groq model to use — click Refresh to pull the live list from Groq</span>
           </div>
-          <select class="model-select" id="set-groq-model">
-            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (fast)</option>
-            <option value="llama-3.2-3b-preview">llama-3.2-3b-preview (fastest)</option>
-            <option value="llama-3.2-1b-preview">llama-3.2-1b-preview (tiny)</option>
-            <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-            <option value="gemma2-9b-it">gemma2-9b-it</option>
-            <option value="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout-17b</option>
-            <option value="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick-17b</option>
-            <option value="deepseek-r1-distill-llama-70b">deepseek-r1-70b</option>
-          </select>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="model-select" id="set-groq-model" style="flex:1;min-width:0">
+              <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (fast)</option>
+              <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+              <option value="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout-17b</option>
+              <option value="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick-17b</option>
+              <option value="deepseek-r1-distill-llama-70b">deepseek-r1-70b</option>
+              <option value="gemma2-9b-it">gemma2-9b-it</option>
+            </select>
+            <button class="key-eye" id="refresh-models-btn" title="Refresh model list from Groq" style="white-space:nowrap;padding:0 10px">↻</button>
+          </div>
+          <div id="model-refresh-status" class="model-refresh-status" style="font-size:.75rem;color:var(--text-3);min-height:0"></div>
         </div>
 
         <!-- Include lyrics toggle -->
@@ -958,12 +975,25 @@ const DEFAULT_DETAIL_VIEWS = [
 
 const DEFAULT_SETTINGS = {
   groq_key:'', groq_model:'llama-3.1-8b-instant',
+  groq_models_cache: null,        // [{id, owned_by, active, context_window}, ...] cached from Groq /models
+  groq_models_cache_at: 0,        // epoch ms when cache was last refreshed
   demo_mode:false,
   ai_modes: DEFAULT_AI_MODES,
   detail_views: DEFAULT_DETAIL_VIEWS,
   ai_system_prompt: DEFAULT_AI_SYSTEM,
   ai_include_lyrics: false,
+  auto_fetch_more: false,          // when true, fetchAutoplay may add songs that weren't on screen (default OFF to prevent surprise plays)
 };
+
+// Fallback list used when we can't reach Groq /models
+const FALLBACK_GROQ_MODELS = [
+  'llama-3.1-8b-instant',
+  'llama-3.3-70b-versatile',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'deepseek-r1-distill-llama-70b',
+  'gemma2-9b-it',
+];
 
 let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 function loadSettings() {
@@ -1053,7 +1083,8 @@ let currentPopularMode = false;
 let queue    = [], origQueue = [], queueIdx = -1, queueCtx = 'search';
 let autoplay = localStorage.getItem(LS.AUTOPLAY) === 'true';
 let shuffle  = localStorage.getItem(LS.SHUFFLE)  === 'true';
-let loopMode = parseInt(localStorage.getItem(LS.LOOP) || '0');
+let loopMode = parseInt(localStorage.getItem(LS.LOOP) || '0', 10);
+if (isNaN(loopMode) || loopMode < 0 || loopMode > 2) loopMode = 0;
 let speed    = 1;
 
 // swipe state — fullscreen
@@ -1075,9 +1106,11 @@ function populateSettingsUI() {
   $('set-groq-key').value  = settings.groq_key  || '';
   $('set-demo-on').checked = !!settings.demo_mode;
   $('set-ai-include-lyrics').checked = !!settings.ai_include_lyrics;
+  $('set-auto-fetch-more').checked = !!settings.auto_fetch_more;
   $('set-ai-system').value = settings.ai_system_prompt || DEFAULT_AI_SYSTEM;
-  const modelSel = $('set-groq-model');
-  modelSel.value = settings.groq_model || 'llama-3.1-8b-instant';
+
+  // Populate model dropdown from cache (or fallback list), keep user's selection if still present
+  refreshModelSelectUI();
 
   // Detail views
   const dvEl = $('set-detail-views');
@@ -1091,6 +1124,108 @@ function populateSettingsUI() {
     </div>`).join('');
 
   renderAIPromptsList();
+}
+
+/* ── Groq model list (dynamic) ─── */
+const GROQ_MODELS_ENDPOINT = 'https://api.groq.com/openai/v1/models';
+const GROQ_MODEL_CACHE_TTL = 24 * 60 * 60 * 1000;   // 24 hours
+
+// Returns the current model list — either cached, or the fallback list
+function getCachedGroqModels() {
+  if (Array.isArray(settings.groq_models_cache) && settings.groq_models_cache.length) {
+    return settings.groq_models_cache;
+  }
+  return FALLBACK_GROQ_MODELS.map(id => ({ id, owned_by: '', active: true, context_window: null }));
+}
+
+function refreshModelSelectUI(statusMsg='', statusErr=false) {
+  const modelSel = $('set-groq-model');
+  if (!modelSel) return;
+  const models = getCachedGroqModels();
+  const cur = settings.groq_model || 'llama-3.1-8b-instant';
+  const inList = models.some(m => m.id === cur);
+
+  // Build options
+  modelSel.innerHTML = models.map(m => {
+    const parts = [m.id];
+    if (m.active === false) parts.push('retired');
+    if (m.context_window) parts.push(`ctx ${m.context_window}`);
+    const label = parts.join(' — ');
+    return `<option value="${escAttr(m.id)}"${m.id===cur?' selected':''}>${esc(label)}</option>`;
+  }).join('');
+
+  // If current selection not in list, prepend it as a "stale" option + add a fallback option
+  if (!inList) {
+    const fb = document.createElement('option');
+    fb.value = cur;
+    fb.textContent = `${cur} (current — not in live list)`;
+    fb.selected = true;
+    modelSel.insertBefore(fb, modelSel.firstChild);
+    // Also append the default fallback so user can switch
+    const def = document.createElement('option');
+    def.value = 'llama-3.1-8b-instant';
+    def.textContent = 'llama-3.1-8b-instant (default)';
+    modelSel.appendChild(def);
+  }
+
+  // Sync the displayed value — the `selected` attribute above already handles the in-list case;
+  // for the not-in-list case we prepended a special "current — not in live list" option that is already selected.
+  modelSel.value = cur;
+
+  // Status message
+  const statusEl = $('model-refresh-status');
+  if (statusEl) {
+    statusEl.textContent = statusMsg;
+    statusEl.style.color = statusErr ? 'var(--heart)' : 'var(--accent)';
+  }
+}
+
+async function refreshGroqModels() {
+  const statusEl = $('model-refresh-status');
+  const btn = $('refresh-models-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  if (statusEl) { statusEl.textContent = 'Fetching models from Groq…'; statusEl.style.color = 'var(--text-2)'; }
+
+  const key = $('set-groq-key')?.value.trim() || settings.groq_key;
+  if (!key) {
+    if (statusEl) { statusEl.textContent = 'Enter your Groq API key first.'; statusEl.style.color = 'var(--heart)'; }
+    if (btn) { btn.disabled = false; btn.textContent = '↻'; }
+    return;
+  }
+
+  try {
+    const r = await fetch(GROQ_MODELS_ENDPOINT, {
+      headers: { 'Authorization': `Bearer ${key}` }
+    });
+    if (!r.ok) {
+      const txt = await r.text().catch(()=>'');
+      throw new Error(`HTTP ${r.status}${txt?`: ${txt.slice(0,160)}`:''}`);
+    }
+    const d = await r.json();
+    const all = Array.isArray(d?.data) ? d.data : [];
+    // Keep chat-capable models (Groq returns objects with id, object, created, owned_by, active, context_window, etc.)
+    // Some entries are whisper/tts models — we keep them too; the user can pick what they want.
+    const models = all
+      .filter(m => m && typeof m.id === 'string')
+      .map(m => ({
+        id: m.id,
+        owned_by: m.owned_by || '',
+        active: m.active !== false,
+        context_window: m.context_window || null,
+      }))
+      .sort((a,b) => a.id.localeCompare(b.id));
+    if (!models.length) throw new Error('Groq returned no models');
+
+    settings.groq_models_cache = models;
+    settings.groq_models_cache_at = Date.now();
+    saveSettings();
+    refreshModelSelectUI(`Loaded ${models.length} models from Groq ✓`, false);
+  } catch (err) {
+    console.warn('refreshGroqModels failed:', err);
+    refreshModelSelectUI(`Failed: ${err.message || err}. Using fallback list.`, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↻'; }
+  }
 }
 
 function renderAIModeCards() {
@@ -1141,6 +1276,14 @@ function openSettings() {
   const btn = $('settings-btn');
   btn.classList.add('spinning');
   setTimeout(() => btn.classList.remove('spinning'), 500);
+
+  // Auto-refresh Groq model list if we have a key and the cache is stale/empty
+  const key = settings.groq_key || '';
+  const cacheAge = Date.now() - (settings.groq_models_cache_at || 0);
+  if (key && (!settings.groq_models_cache || cacheAge > GROQ_MODEL_CACHE_TTL)) {
+    // Fire-and-forget — populateSettingsUI already rendered the fallback list
+    refreshGroqModels();
+  }
 }
 function closeSettings() {
   $('settings-overlay').classList.remove('show');
@@ -1189,11 +1332,18 @@ settingsScroll.addEventListener('touchend', onStgEnd);
 
 $('settings-overlay').addEventListener('click', e => { if (e.target === $('settings-overlay')) closeSettings(); });
 
+// Wire up model-refresh button (bind once on script load)
+(function wireRefreshModelsBtn(){
+  const btn = document.getElementById('refresh-models-btn');
+  if (btn) btn.addEventListener('click', refreshGroqModels);
+})();
+
 $('settings-save').addEventListener('click', () => {
   settings.groq_key   = $('set-groq-key').value.trim();
-  settings.groq_model = $('set-groq-model').value;
+  settings.groq_model = $('set-groq-model').value || 'llama-3.1-8b-instant';
   settings.demo_mode  = $('set-demo-on').checked;
   settings.ai_include_lyrics = $('set-ai-include-lyrics').checked;
+  settings.auto_fetch_more   = $('set-auto-fetch-more').checked;
   settings.ai_system_prompt  = $('set-ai-system').value.trim() || DEFAULT_AI_SYSTEM;
   settings.ai_modes   = collectAIModesFromDOM();
   if (!settings.ai_modes.length) settings.ai_modes = DEFAULT_AI_MODES.map(m=>({...m}));
@@ -1405,6 +1555,25 @@ function skeletons(n=5) {
 /* ── Art URL ─── */
 const artUrl = (song,size=100) => (song.artworkUrl100||song.artworkUrl60||'').replace(/\d+x\d+bb/,`${size}x${size}bb`);
 
+/* ── Artist name parsing ───
+   iTunes returns `artistName` as a single combined string like "Artist1 & Artist2",
+   "Artist1 ft. Artist2", "Artist1 feat. Artist2", "Artist1 x Artist2", etc.
+   Searching iTunes/LRClib by the combined string returns wrong results (a song that
+   merely mentions those words), so we split here. */
+const ARTIST_SPLIT_RE = /\s+(?:&|and|ft\.?|feat\.?|featuring|with|vs\.?|versus|x)\s+/i;
+function splitArtists(name) {
+  if (!name) return [];
+  return String(name)
+    .split(ARTIST_SPLIT_RE)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+// Returns the primary artist (first listed). Falls back to the full string if splitting fails.
+function primaryArtist(name) {
+  const parts = splitArtists(name);
+  return parts.length ? parts[0] : (name || '');
+}
+
 /* ── Song card HTML ─── */
 function songCardHtml(song, idx, ctx) {
   songCache[song.trackId] = song;
@@ -1573,22 +1742,48 @@ function renderAlbumList(albums, container) {
 }
 
 /* ── Artist card ─── */
+// Fetch an artist image. Uses the PRIMARY artist (split from combined names like
+// "A & B" or "A ft. B") so we don't pull artwork for a random song that mentions
+// those words. Cache is keyed by the original artistId when available, plus the
+// primary-artist-name as a fallback (covers RSS-feed songs where artistId===0).
+async function fetchArtistImage(artist) {
+  const primaryName = primaryArtist(artist.artistName);
+  const cacheKey = artist.artistId && artist.artistId !== 0
+    ? `id:${artist.artistId}`
+    : `name:${primaryName.toLowerCase()}`;
+  if (artistCache[cacheKey]) return artistCache[cacheKey];
+  try {
+    const r = await fetch(`${ITUNES}?term=${encodeURIComponent(primaryName)}&entity=song&limit=1`);
+    const d = await r.json();
+    const img = d.results?.[0]?.artworkUrl100 || '';
+    artistCache[cacheKey] = img;
+    return img;
+  } catch { artistCache[cacheKey] = ''; return ''; }
+}
+
 async function renderArtistList(artists, container) {
   if (!artists.length) { container.innerHTML = `<div class="empty"><div class="empty-icon">👤</div><p>No artists found</p></div>`; return; }
   container.innerHTML = skeletons(artists.length);
   const withPics = await Promise.all(artists.map(async a => {
-    let img = artistCache[a.artistId];
-    if (!img) {
-      try { const r=await fetch(`${ITUNES}?term=${encodeURIComponent(a.artistName)}&entity=song&limit=1`); const d=await r.json(); img=d.results[0]?.artworkUrl100||''; artistCache[a.artistId]=img; } catch { img=''; }
-    }
-    return {...a,img};
+    const img = await fetchArtistImage(a);
+    return {...a, img};
   }));
-  container.innerHTML = withPics.map(a=>`
-    <div class="artist-card" data-artist-id="${a.artistId}" data-artist-name="${escAttr(a.artistName)}" role="button" tabindex="0">
+  container.innerHTML = withPics.map(a=>{
+    // When the artistName contains "&", "ft.", etc., show both the original (combined)
+    // name AND a sub-line identifying the primary artist, so the user can tell which
+    // specific artist the image actually belongs to.
+    const parts = splitArtists(a.artistName);
+    const isCollab = parts.length > 1;
+    const sub = isCollab
+      ? `Primary: ${esc(parts[0])}${a.primaryGenreName ? ' · ' + esc(a.primaryGenreName) : ''}`
+      : (a.primaryGenreName || 'Artist');
+    return `
+    <div class="artist-card" data-artist-id="${a.artistId}" data-artist-name="${escAttr(a.artistName)}" data-primary-artist-name="${escAttr(parts[0]||a.artistName)}" role="button" tabindex="0">
       <img class="album-art" src="${esc(a.img)}" alt="" onerror="this.src='${FALLBACK_ARTIST(50)}'">
-      <div class="artist-info"><div class="artist-name">${esc(a.artistName)}</div><div class="artist-sub">${esc(a.primaryGenreName||'Artist')}</div></div>
+      <div class="artist-info"><div class="artist-name">${esc(a.artistName)}</div><div class="artist-sub">${sub}</div></div>
       <div class="chevron">›</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 /* ── Favorites/Likes ─── */
@@ -1664,24 +1859,40 @@ async function viewAlbum(collectionId, skipPush=false) {
 
 /* ── Artist view ─── */
 async function viewArtist(artistId, artistName, skipPush=false) {
+  // iTunes returns combined names like "A & B". For images & album lookups we use
+  // the primary artist only — the heading still shows the original combined name so
+  // the user can see who collaborated.
+  const primaryName = primaryArtist(artistName);
+  const isCollab = splitArtists(artistName).length > 1;
+
   if (!artistId||artistId===0) {
-    try { const r=await fetch(`${ITUNES}?term=${encodeURIComponent(artistName)}&entity=musicArtist&limit=1`); const d=await r.json(); artistId=d.results?.[0]?.artistId; if (!artistId) {showToast('Artist not found');return;} } catch {showToast('Failed to find artist');return;}
+    try {
+      const r=await fetch(`${ITUNES}?term=${encodeURIComponent(primaryName)}&entity=musicArtist&limit=1`);
+      const d=await r.json();
+      artistId=d.results?.[0]?.artistId;
+      if (!artistId) { showToast('Artist not found'); return; }
+    } catch { showToast('Failed to find artist'); return; }
   }
   if (!skipPush) pushNav('artist',{id:artistId,name:artistName});
   showView('artist');
   artistHeader.innerHTML='<div class="loader-text">Loading…</div>'; artistAlbums.innerHTML='';
   albumFilterMode=0; albumFilterBtn.textContent='All Albums'; albumFilterBtn.classList.remove('active');
   try {
-    let img=artistCache[artistId];
-    if (!img) { const r2=await fetch(`${ITUNES}?term=${encodeURIComponent(artistName)}&entity=song&limit=1`); const d2=await r2.json(); img=d2.results?.[0]?.artworkUrl100||''; artistCache[artistId]=img; }
+    // Use fetchArtistImage so the cache key matches the one used in renderArtistList
+    const img = await fetchArtistImage({ artistId, artistName: primaryName });
     const r=await fetch(`${LOOKUP}?id=${artistId}&entity=album&limit=200`);
     const d=await r.json();
     if (!d.results?.length) throw new Error();
     const artist=d.results[0];
     const albums=d.results.slice(1).sort((a,b)=>new Date(b.releaseDate)-new Date(a.releaseDate));
     currentArtistAlbums=albums;
-    const bigArt=img.replace(/\d+x\d+bb/,'400x400bb');
-    artistHeader.innerHTML=`<div class="detail-header artist"><img src="${esc(bigArt)}" alt="" onerror="this.src='${FALLBACK_ARTIST(180)}'"><h2>${esc(artistName)}</h2><div class="detail-sub">${esc(artist.primaryGenreName||'')}</div></div>`;
+    const bigArt=(img||'').replace(/\d+x\d+bb/,'400x400bb');
+    // Heading: show the original combined name (so user sees "A & B"), but tag the
+    // primary artist below so they know which one the image/albums are for.
+    const collabTag = isCollab
+      ? `<div class="detail-sub" style="color:var(--text-2)">Primary artist: ${esc(primaryName)}</div>`
+      : '';
+    artistHeader.innerHTML=`<div class="detail-header artist"><img src="${esc(bigArt)}" alt="" onerror="this.src='${FALLBACK_ARTIST(180)}'"><h2>${esc(artistName)}</h2>${collabTag}<div class="detail-sub">${esc(artist.primaryGenreName||'')}</div></div>`;
     renderFilteredAlbums();
   } catch { artistHeader.innerHTML=`<div class="error-state">Failed to load artist.</div>`; }
 }
@@ -1756,9 +1967,15 @@ function setLyricsHasContent(has) {
   if (el) el.classList.toggle('has-content', has);
 }
 
+// Sequence tokens prevent stale responses from overwriting newer ones —
+// e.g., user clicks song A then song B quickly; A's response arrives after B's
+// would otherwise overwrite B's display.
+let viewSongSeq = 0;
+
 /* ── Lyrics / song detail view ─── */
 function viewSong(song) {
   if (!song?.trackId) return;
+  const mySeq = ++viewSongSeq;
   lyricsSong = song;
   lyricsSource = getActiveViewName();
   pushNav('lyrics');
@@ -1779,8 +1996,10 @@ function viewSong(song) {
 
   buildDetailViewsDOM();
 
-  if (isViewEnabled('lyrics')) fetchLyrics(song.artistName, song.trackName);
-  if (isViewEnabled('ai'))     renderAI(song);
+  // Pass primaryArtist to lyrics/AI — combined names like "A & B" confuse both LRClib and the AI.
+  const primary = primaryArtist(song.artistName);
+  if (isViewEnabled('lyrics')) fetchLyrics(primary, song.trackName, mySeq);
+  if (isViewEnabled('ai'))     renderAI(song, mySeq);
 }
 
 function updateLyricsPlayBtn() {
@@ -1799,16 +2018,19 @@ function playFromLyrics() {
   if (!song?.previewUrl) return;
   const isCurrent=queueIdx>=0&&queue[queueIdx]?.trackId===song.trackId;
   if (isCurrent) { togglePlay(); return; }
-  queue=origQueue=[song]; queueCtx='lyrics'; queueIdx=0; playCurrent();
+  // Two distinct arrays — avoiding the shared-reference bug where
+  // queue===origQueue means any later in-place shuffle mutation corrupts both.
+  queue=[song]; origQueue=[song]; queueCtx='lyrics'; queueIdx=0; playCurrent();
 }
 
-async function fetchLyrics(artist, title) {
+async function fetchLyrics(artist, title, seq) {
   setLyricsHasContent(false);
   const lyricsText = $('lyrics-text');
   if (!lyricsText) return;
   if (!isViewEnabled('lyrics')) return;
 
   if (settings.demo_mode) {
+    if (seq !== undefined && seq !== viewSongSeq) return;
     lyricsText.textContent = `[Demo lyrics for "${title}" by ${artist}]\n\nVerse 1\nThese are placeholder lyrics for the demo mode.\nTurn off demo mode and add your Groq key in Settings.\n\nChorus\nEverything is wired up — just swap in the real keys.\nThe AI overview below will also show fake text.\n\nVerse 2\nListener counts, lyrics, AI summaries — all ready to go.\nJust add your API keys when you're ready.`;
     setLyricsHasContent(true);
     return;
@@ -1817,10 +2039,15 @@ async function fetchLyrics(artist, title) {
   try {
     const r=await fetch(`${LYRICS}/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`);
     const d=await r.json();
+    // Stale guard: user may have navigated to another song while we were waiting
+    if (seq !== undefined && seq !== viewSongSeq) return;
     const text=d.plainLyrics||d.syncedLyrics||'';
     if (text.trim()) { lyricsText.textContent=text; setLyricsHasContent(true); }
     else lyricsText.innerHTML=`<div class="empty" style="padding:40px 0"><div class="empty-icon">🎤</div><p>Lyrics not found for this song.</p></div>`;
-  } catch { lyricsText.innerHTML=`<div class="error-state">Failed to load lyrics.</div>`; }
+  } catch {
+    if (seq !== undefined && seq !== viewSongSeq) return;
+    lyricsText.innerHTML=`<div class="error-state">Failed to load lyrics.</div>`;
+  }
 }
 
 /* ── Fetch lyrics for AI (separate, bypasses DOM) ─── */
@@ -1854,14 +2081,16 @@ function renderAIModeButtons() {
 function setAIMode(mode) {
   aiMode = mode;
   document.querySelectorAll('.ai-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
-  if (lyricsSong && isViewEnabled('ai')) renderAI(lyricsSong);
+  if (lyricsSong && isViewEnabled('ai')) renderAI(lyricsSong, ++viewSongSeq);
 }
 
-async function renderAI(song) {
+async function renderAI(song, seq) {
   const aiTextEl=$('ai-text'); if (!aiTextEl) return;
   if (!isViewEnabled('ai')) return;
   if (!settings.groq_key&&!settings.demo_mode) return;
   if (!song?.trackId) return;
+  if (seq === undefined) seq = viewSongSeq;
+  const mySeq = seq;
 
   // Reset state — remove loaded, show pulsing dots
   aiTextEl.className='';
@@ -1871,6 +2100,8 @@ async function renderAI(song) {
   </div>`;
 
   const text = await fetchAI(song, aiMode);
+  // Stale guard: user has since switched songs — drop this response.
+  if (mySeq !== viewSongSeq) return;
   if (!text) {
     aiTextEl.innerHTML='<div class="ai-error">Couldn\'t generate a response. Check your Groq key in Settings.</div>';
     return;
@@ -1892,22 +2123,24 @@ async function fetchAI(song, mode) {
 
   if (settings.demo_mode) {
     await new Promise(r=>setTimeout(r,900+Math.random()*700));
-    const demo=`"${song.trackName}" by ${song.artistName} — AI overview (demo mode). Add your Groq key in Settings to get real analysis. Mode: ${modeConfig.label}.`;
+    const demo=`"${song.trackName}" by ${primaryArtist(song.artistName)} — AI overview (demo mode). Add your Groq key in Settings to get real analysis. Mode: ${modeConfig.label}.`;
     aiCache.set(cKey,demo); return demo;
   }
   if (!settings.groq_key) return null;
 
-  // Get lyrics if include-lyrics is on
+  // Get lyrics if include-lyrics is on. Use the PRIMARY artist — LRClib has trouble
+  // matching combined names like "A & B" and would return 404 / no lyrics.
+  const aiArtist = primaryArtist(song.artistName);
   let lyricsText = '';
   if (settings.ai_include_lyrics) {
-    lyricsText = await fetchLyricsForAI(song.artistName, song.trackName);
+    lyricsText = await fetchLyricsForAI(aiArtist, song.trackName);
   } else {
     // Fall back to what's already in the DOM (short snippet)
     const domLyrics = $('lyrics-text')?.textContent?.trim()||'';
     lyricsText = domLyrics.length > 600 ? domLyrics.slice(0,600)+'…' : domLyrics;
   }
 
-  const userPrompt = makePrompt(modeConfig.prompt, song.trackName, song.artistName) +
+  const userPrompt = makePrompt(modeConfig.prompt, song.trackName, aiArtist) +
     (lyricsText ? `\n\nHere are the lyrics:\n${lyricsText.slice(0, 3000)}` : '');
 
   const systemPrompt = settings.ai_system_prompt || DEFAULT_AI_SYSTEM;
@@ -1981,10 +2214,25 @@ function animateTrackChange(direction, onMidpoint) {
 function playCurrent() {
   if (queueIdx<0||queueIdx>=queue.length) return;
   const song=queue[queueIdx];
-  if (!song?.previewUrl) { if(autoplay||loopMode>0)nextTrack(); return; }
+  if (!song?.previewUrl) {
+    // Skip songs without a preview URL, but guard against infinite loops
+    // (e.g., entire queue has no previews + loop-all mode would recurse forever)
+    if (autoplay||loopMode>0) {
+      if (!playCurrent._skipCount) playCurrent._skipCount = 0;
+      if (++playCurrent._skipCount > queue.length) { playCurrent._skipCount = 0; return; }
+      nextTrack();
+      return;
+    }
+    return;
+  }
+  playCurrent._skipCount = 0;
   currentSong=song;
   audio.src=song.previewUrl; audio.playbackRate=speed;
-  audio.play().catch(()=>{if(autoplay||loopMode>0)nextTrack();});
+  audio.play().catch(err => {
+    // AbortError is the browser autoplay-policy rejection — don't recurse, just give up silently
+    if (err && err.name === 'AbortError') return;
+    if (autoplay||loopMode>0) nextTrack();
+  });
   showPlayerBar(); syncPlayerUI(); syncPlayButtons(); syncFullscreen(); updateFsFavButton();
 }
 function togglePlay() { if(audio.paused){if(!audio.src&&queueIdx>=0)playCurrent();else audio.play();}else audio.pause(); }
@@ -1992,14 +2240,17 @@ function nextTrack() {
   if (loopMode===2){audio.currentTime=0;audio.play();return;}
   if (queueIdx<queue.length-1) animateTrackChange('next',()=>{queueIdx++;playCurrent();});
   else if (loopMode===1) animateTrackChange('next',()=>{queueIdx=0;playCurrent();});
-  else if (autoplay) fetchAutoplay();
+  else if (autoplay && settings.auto_fetch_more) fetchAutoplay();
+  else if (autoplay) showToast('Reached end of queue');
 }
 function prevTrack() {
   if (audio.currentTime>3){audio.currentTime=0;return;}
   if (queueIdx>0) animateTrackChange('prev',()=>{queueIdx--;playCurrent();});
+  else if (loopMode===1) animateTrackChange('prev',()=>{queueIdx=queue.length-1;playCurrent();});  // wrap-around in loop-all
 }
 async function fetchAutoplay() {
   if (queueIdx<0||!queue[queueIdx]) return;
+  if (!settings.auto_fetch_more) return;   // explicit opt-in required — prevents random songs from playing
   const triggerSong=queue[queueIdx]; const triggerIdx=queueIdx; const triggerLen=queue.length;
   try {
     const r=await fetch(`${ITUNES}?term=${encodeURIComponent(triggerSong.artistName)}&entity=song&limit=15`);
@@ -2008,8 +2259,15 @@ async function fetchAutoplay() {
     const extra=(d.results||[]).filter(s=>s.previewUrl&&!queue.some(q=>q.trackId===s.trackId));
     if (extra.length) {
       extra.forEach(s=>songCache[s.trackId]=s);
-      origQueue=[...queue,...extra]; queue=[...queue,...extra];
+      // Preserve origQueue as the unshuffled natural order.
+      // If shuffle is currently OFF, queue === origQueue conceptually, so we extend both.
+      // If shuffle is ON, origQueue is the saved unshuffled list — we extend THAT so
+      // turning shuffle off later still restores a sane order including the new songs.
+      origQueue=[...origQueue,...extra];
+      queue=[...queue,...extra];
       animateTrackChange('next',()=>{queueIdx++;playCurrent();});
+    } else {
+      showToast('No more songs found by this artist');
     }
   } catch {}
 }
@@ -2027,7 +2285,7 @@ function syncPlayerUI() {
   pbArt.src=artUrl(song,100); pbArt.onerror=()=>pbArt.src=FALLBACK_IMG(46);
   pbTitle.textContent=song.trackName; pbArtist.textContent=song.artistName;
   syncPlayPauseIcons();
-  pbPrev.disabled=queueIdx===0&&audio.currentTime<=3;
+  pbPrev.disabled=(queueIdx===0&&loopMode!==1)&&audio.currentTime<=3;
   pbNext.disabled=queueIdx===queue.length-1&&loopMode===0&&!autoplay;
   updateLyricsPlayBtn();
 }
@@ -2087,6 +2345,12 @@ function syncFullscreen() {
 
 function toggleShuffle() {
   shuffle=!shuffle; localStorage.setItem(LS.SHUFFLE,shuffle);
+  if (queue.length===0||queueIdx<0||queueIdx>=queue.length) {
+    // Nothing to shuffle — just toggle the flag and bail.
+    // New queues created from a play-click will respect the shuffle flag.
+    fsShuffle.classList.toggle('active',shuffle);
+    return;
+  }
   if (shuffle) {
     const cur=queue[queueIdx]; const rest=queue.filter((_,i)=>i!==queueIdx);
     for (let i=rest.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]];}
@@ -2096,8 +2360,19 @@ function toggleShuffle() {
   }
   fsShuffle.classList.toggle('active',shuffle);
 }
+// Shuffle a fresh queue when the user starts playback on a new song — respects the
+// existing shuffle flag so the user's preference actually takes effect.
+function applyShuffleToNewQueue(newQueue, startIdx) {
+  if (!shuffle || newQueue.length <= 1) return { queue: newQueue, origQueue: newQueue, startIdx };
+  const cur = newQueue[startIdx];
+  const rest = newQueue.filter((_,i)=>i!==startIdx);
+  for (let i=rest.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]];}
+  return { queue: [cur,...rest], origQueue: newQueue, startIdx: 0 };
+}
 function toggleLoop() {
-  loopMode=(loopMode+1)%3; localStorage.setItem(LS.LOOP,loopMode);
+  loopMode=(loopMode+1)%3;
+  if (isNaN(loopMode)) loopMode = 0;
+  localStorage.setItem(LS.LOOP,loopMode);
   fsLoop.innerHTML=`<svg><use href="#ic-${loopMode===2?'loop1':'loop'}"/></svg>`;
   fsLoop.classList.toggle('active',loopMode>0); syncPlayerUI();
 }
@@ -2140,6 +2415,8 @@ audio.addEventListener('timeupdate',()=>{
   const p=(audio.currentTime/audio.duration)*100;
   pbFill.style.width=p+'%'; fsFill.style.width=p+'%';
   fsCur.textContent=fmt(audio.currentTime); fsDur.textContent=fmt(audio.duration);
+  // Refresh prev-button enabled state — it depends on audio.currentTime (>3s = restart)
+  if (queueIdx>=0) pbPrev.disabled = (queueIdx===0 && loopMode!==1) && audio.currentTime<=3;
 });
 audio.addEventListener('loadedmetadata',()=>{fsDur.textContent=fmt(audio.duration);audio.playbackRate=speed;});
 audio.addEventListener('error',()=>{if(autoplay||loopMode>0)nextTrack();});
@@ -2257,7 +2534,10 @@ document.addEventListener('click',e=>{
     const cards=container?Array.from(container.querySelectorAll('.song-card[data-track-id]')):[card];
     const newQueue=cards.map(c=>songCache[+c.dataset.trackId]).filter(Boolean);
     const newIdx=newQueue.findIndex(s=>s.trackId===tid);
-    queue=[...newQueue]; origQueue=[...newQueue]; queueCtx=ctx; queueIdx=newIdx>=0?newIdx:0; playCurrent();
+    const startIdx = newIdx>=0 ? newIdx : 0;
+    // Apply shuffle to the freshly-built queue if the flag is on
+    const { queue: shuffledQueue, origQueue: savedOrig, startIdx: finalIdx } = applyShuffleToNewQueue(newQueue, startIdx);
+    queue=[...shuffledQueue]; origQueue=[...savedOrig]; queueCtx=ctx; queueIdx=finalIdx; playCurrent();
     return;
   }
   const heart=e.target.closest('.heart[data-track-id]');
