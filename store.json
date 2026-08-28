@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T02:39:35.554Z",
+  "updated_at": "2026-08-28T02:39:57.032Z",
   "categories": [
     {
       "id": "developers",
@@ -913,7 +913,8 @@
       "path": "Tools/nes<->txt.html",
       "author": "Bluevader",
       "description": "Not needed but cool concept for the nes emulator files",
-      "icon": "📠"
+      "icon": "📠",
+      "isNew": true
     }
   ]
 }
