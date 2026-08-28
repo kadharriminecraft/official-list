@@ -1,0 +1,350 @@
+<!doctype html>
+<!-- By Ion_o_koji -->
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Radio</title>
+    <style>
+      :root {
+        --bg: #B0CFDE;
+        --card: #ffffff;
+        --accent: #3498db;
+        --accent-cta: #4CAF50;
+        --text: #123;
+        --muted: #666;
+        --btn-bg: #2d89d3;
+        --btn-active: #1b6fb0;
+        --loading: #f1c40f;
+        --error: #e74c3c;
+      }
+
+      html,
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        height: 100%;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+        min-height: 100vh;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 720px;
+        background: var(--card);
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        padding: 28px;
+        box-sizing: border-box;
+        text-align: center;
+        position: relative;
+      }
+
+      h1 {
+        margin: 10px 0 6px 0;
+        font-size: 1.8rem;
+        color: var(--accent);
+      }
+
+      p.version {
+        margin: 0 0 25px 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .stations {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .station-btn {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        color: #fff;
+        background: var(--btn-bg);
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform .06s ease, background .12s ease;
+      }
+
+      .station-btn:active {
+        transform: translateY(1px);
+      }
+
+      .station-btn[data-active="true"] {
+        background: var(--btn-active);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      }
+
+      #audio {
+        display: none;
+      }
+
+      .note {
+        margin-top: 12px;
+        font-size: 0.88rem;
+        color: #555;
+      }
+
+      .current {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .loading-bar {
+        width: 100%;
+        height: 8px;
+        background: #ddd;
+        border-radius: 4px;
+        margin-top: 10px;
+        overflow: hidden;
+      }
+
+      .loading-bar-inner {
+        width: 0;
+        height: 100%;
+        background: var(--loading);
+        border-radius: 4px;
+      }
+
+      .loading-bar-inner.playing {
+        background: var(--accent-cta);
+      }
+
+      .loading-bar-inner.error {
+        background: var(--error);
+        width: 100%;
+      }
+
+      .theme-toggle {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        color: #fff;
+        background: #666;
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .dark-mode {
+        --bg: #2c3e50;
+        --card: #34495e;
+        --accent: #1abc9c;
+        --accent-cta: #2ecc71;
+        --text: #ecf0f1;
+        --muted: #bdc3c7;
+        --btn-bg: #1a1d23;
+        --btn-active: #2c3e50;
+        --loading: #f1c40f;
+        --error: #e74c3c;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="card" role="main">
+        <button class="theme-toggle">Dark Mode</button>
+        <h1>Radio</h1>
+        <p class="version">Version 4.0</p>
+        <div id="audio-container" aria-live="polite">
+          <audio id="audio">
+            Your browser does not support the audio element.
+          </audio>
+          <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <button id="play-pause-button" style="padding: 8px 16px; border-radius: 8px; border: 0; cursor: pointer; font-size: 0.9rem; width: 70px;">❚❚</button>
+            <div style="display: flex; align-items: center; margin-left: 10px;">
+              <span>🔊</span>
+              <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="1" style="width: 80%;">
+            </div>
+          </div>
+
+          <div class="loading-bar">
+            <div class="loading-bar-inner" id="loading-bar"></div>
+          </div>
+          <div class="current" id="current-station">No station loaded</div>
+        </div>
+        <div class="stations" role="tablist" aria-label="Station list">
+          <br>
+          <h2>Religious</h2>
+          <button class="station-btn" data-url="https://lds.msvdn.net/icecastRelay/101156/GvaVK70/icecast?rnd=637109878513586401" id="station-1" aria-label="Latter Day Saints Radio">Latter Day Saints Radio</button>
+          <button class="station-btn" data-url="https://nmcdn-lds.msvdn.net/icecastRelay/101158/3nGepF3/icecast?rnd=637109879815090752" id="station-2" aria-label="Tabernacle Choir">Tabernacle Choir</button>
+          <button class="station-btn" data-url="https://nmcdn-lds.msvdn.net/icecastRelay/101155/40TKLCJ/icecast?rnd=637109879608098589" id="station-4" aria-label="Gospel Podcast">Gospel Podcast</button>
+          <button class="station-btn" data-url="https://christianfm.streamguys1.com/live-aac" id="station-8" aria-label="Christian FM">Christian FM</button>
+
+          <h2>University</h2>
+          <button class="station-btn" data-url="https://radiostream.byui.edu/kbyi" id="station-5" aria-label="BYU Radio 94">BYU Radio 94</button>
+          <button class="station-btn" data-url="http://radiostream.byui.edu:8000/kbyr" id="station-6" aria-label="BYU Radio 95">BYU Radio 95</button>
+          <button class="station-btn" data-url="https://cdn.byub.org/byuradio/byuradio_aac" id="station-7" aria-label="BYU Radio Utah">BYU Radio Utah</button>
+
+          <div style="display: flex; flex-direction: column;">
+            <h2>Music</h2>
+            <p>Classical</p>
+          </div>
+          <button class="station-btn" data-url="https://cdn.byub.org/classical89/classical89_aac" id="station-3" aria-label="Classical Music">Classical Music</button>
+
+          <p>Country</p>
+          <button class="station-btn" data-url="http://stream.revma.ihrhls.com/zc4435" id="station-10" aria-label="Country Classics">Country Classics</button>
+          <button class="station-btn" data-url="https://stream.revma.ihrhls.com/zc4418" id="station-11" aria-label="Country Music">Country Music</button>
+
+          <p>Decades</p>
+          <button class="station-btn" data-url="http://stream.laut.fm/70s" id="station-14" aria-label="70s Station">70s Station</button>
+          <button class="station-btn" data-url="https://stream.revma.ihrhls.com/zc6850" id="station-12" aria-label="2000s Music">2000s Music</button>
+          <button class="station-btn" data-url="https://stream.revma.ihrhls.com/zc8478" id="station-13" aria-label="2010s Music">2010s Music</button>
+
+          <p>Other</p>
+          <button class="station-btn" data-url="http://stream.laut.fm/lofi" id="station-15" aria-label="LoFi Radio">LoFi Radio</button>
+          <button class="station-btn" data-url="https://stream.revma.ihrhls.com/zc193" id="station-16" aria-label="Kost FM">Kost FM</button>
+          <button class="station-btn" data-url="https://stream.revma.ihrhls.com/zc173" id="station-17" aria-label="My FM">My FM</button>
+
+          <p>Holiday</p>
+          <button class="station-btn" data-url="https://stream.revma.ihrhls.com/zc4596" id="station-9" aria-label="Christmas Music">Christmas Music</button>
+
+        </div>
+        <p class="note"></p>
+      </div>
+    </div>
+    <script>
+      const audio = document.getElementById("audio");
+      const stationButtons = Array.from(document.querySelectorAll(".station-btn"));
+      const currentLabel = document.getElementById("current-station");
+      const loadingBar = document.getElementById("loading-bar");
+      const themeToggle = document.querySelector('.theme-toggle');
+      const volumeSlider = document.getElementById('volume-slider');
+      const playPauseButton = document.getElementById('play-pause-button');
+      let darkMode = false;
+      let isLoading = false;
+      let isPlaying = false;
+
+      themeToggle.addEventListener('click', () => {
+        darkMode = !darkMode;
+        document.body.classList.toggle('dark-mode', darkMode);
+        themeToggle.textContent = darkMode ? 'Light Mode' : 'Dark Mode';
+      });
+
+      volumeSlider.addEventListener('input', () => {
+        audio.volume = volumeSlider.value;
+      });
+
+      playPauseButton.addEventListener('click', () => {
+        if (isPlaying) {
+          audio.pause();
+          playPauseButton.textContent = '▶';
+          isPlaying = false;
+        } else {
+          audio.play().catch(() => {});
+          playPauseButton.textContent = '❚❚';
+          isPlaying = true;
+        }
+      });
+
+      function setActiveButton(activeBtn) {
+        stationButtons.forEach(btn => {
+          btn.dataset.active = (btn === activeBtn) ? "true" : "false";
+        });
+      }
+
+      function loadStation(button) {
+        if (isLoading) return;
+        isLoading = true;
+        const url = button.dataset.url;
+        const name = button.textContent.trim();
+        if (audio.src === url) {
+          audio.play().catch(() => {});
+          setActiveButton(button);
+          currentLabel.textContent = `Playing: ${name}`;
+          loadingBar.className = 'loading-bar-inner playing';
+          isLoading = false;
+          isPlaying = true;
+          playPauseButton.textContent = '❚❚';
+          return;
+        }
+        audio.src = url;
+        audio.load();
+        loadingBar.className = 'loading-bar-inner';
+        loadingBar.style.width = '0%';
+        loadingBar.style.transition = 'none';
+        setTimeout(() => {
+          loadingBar.style.transition = 'width 0.3s linear';
+          loadingBar.style.width = '30%';
+        }, 100);
+        setTimeout(() => {
+          if (loadingBar.className !== 'loading-bar-inner error') {
+            loadingBar.style.transition = 'width 1s linear';
+            loadingBar.style.width = '90%';
+          }
+        }, 800);
+        setTimeout(() => {
+          if (loadingBar.className !== 'loading-bar-inner error') {
+            loadingBar.style.transition = 'width 10s linear';
+            loadingBar.style.width = '90%';
+          }
+        }, 2000);
+        audio.play().catch(() => {});
+        setActiveButton(button);
+        currentLabel.textContent = `Loading: ${name}`;
+        isPlaying = true;
+        playPauseButton.textContent = '❚❚';
+      }
+
+      stationButtons.forEach(btn => {
+        btn.addEventListener("click", () => loadStation(btn));
+      });
+
+      audio.addEventListener("playing", () => {
+        isLoading = false;
+        const active = stationButtons.find(b => b.dataset.active === "true");
+        currentLabel.textContent = active ? `Playing: ${active.textContent.trim()}` : "Playing";
+        loadingBar.className = 'loading-bar-inner playing';
+        loadingBar.style.transition = 'width 0.3s linear';
+        loadingBar.style.width = '100%';
+        isPlaying = true;
+        playPauseButton.textContent = '❚❚';
+      });
+
+      audio.addEventListener("error", () => {
+        isLoading = false;
+        const active = stationButtons.find(b => b.dataset.active === "true");
+        currentLabel.textContent = active ? `Error loading: ${active.textContent.trim()}` : "Error loading";
+        loadingBar.className = 'loading-bar-inner error';
+        isPlaying = false;
+        playPauseButton.textContent = '▶';
+      });
+
+      audio.addEventListener("pause", () => {
+        isPlaying = false;
+        playPauseButton.textContent = '▶';
+      });
+
+      audio.addEventListener("ended", () => {
+        loadingBar.className = 'loading-bar-inner';
+        loadingBar.style.width = '0%';
+        currentLabel.textContent = "Station ended";
+        isPlaying = false;
+        playPauseButton.textContent = '▶';
+      });
+    </script>
+  </body>
+
+</html>
