@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-08-28T16:23:04.458Z",
+  "updated_at": "2026-08-29T03:50:03.100Z",
   "categories": [
     {
       "id": "developers",
@@ -885,13 +885,14 @@
       "isNew": true
     },
     {
-      "name": "Scry Table",
-      "rawName": "ScryTable.html",
-      "path": "Fun/Tabletop/Magic/ScryTable.html",
-      "author": "Buell",
-      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
-      "icon": "🔮",
+      "name": "Gif",
+      "rawName": "Gif.html",
+      "path": "Tools/Gif.html",
+      "author": "Bluevader🔷",
+      "description": "It searches for gifs. Now that missionaries don't have gifs this is a replacement. Click and hold to copy a gif and paste it in a chat to send",
+      "icon": "😂",
       "featured": true,
+      "isNew": true,
       "pinned": true
     },
     {
@@ -903,13 +904,14 @@
       "icon": "fa:fa-code"
     },
     {
-      "name": "Chess",
-      "rawName": "Chess.html",
-      "path": "Fun/Multiplayer/Chess/Chess.html",
-      "author": "Throk",
-      "icon": "♟️",
-      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
-      "featured": true
+      "name": "Scry Table",
+      "rawName": "ScryTable.html",
+      "path": "Fun/Tabletop/Magic/ScryTable.html",
+      "author": "Buell",
+      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
+      "icon": "🔮",
+      "featured": true,
+      "pinned": true
     },
     {
       "name": "Nes<->Txt",
@@ -954,14 +956,13 @@
       "color": "linear-gradient(135deg, #f97316, #fbbf24)"
     },
     {
-      "name": "Radio V4",
-      "rawName": "Radio v4.html",
-      "path": "Audio/Radio v4.html",
+      "name": "Chess",
+      "rawName": "Chess.html",
+      "path": "Fun/Multiplayer/Chess/Chess.html",
       "author": "Throk",
-      "icon": "fa:fa-radio",
-      "iconColor": "#4f46e5",
-      "featured": true,
-      "pinned": true
+      "icon": "♟️",
+      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
+      "featured": true
     },
     {
       "name": "AIImage Gen V4",
@@ -1007,6 +1008,25 @@
       "author": "Church of Jesus Christ of Latter Day Saints",
       "description": "Please be sending your emails to your mission president every week",
       "icon": "📧"
+    },
+    {
+      "name": "Googleish",
+      "rawName": "Googleish.html",
+      "path": "Other/Googleish.html",
+      "author": "Bluevader🔷️",
+      "description": "This uses SerpApi key to operate as a Google search. It only does the search results nothing deeper",
+      "icon": "🌐",
+      "isNew": true
+    },
+    {
+      "name": "Radio V4",
+      "rawName": "Radio v4.html",
+      "path": "Audio/Radio v4.html",
+      "author": "Throk",
+      "icon": "fa:fa-radio",
+      "iconColor": "#4f46e5",
+      "featured": true,
+      "pinned": true
     }
   ]
 }
