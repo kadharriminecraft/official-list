@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #fff;
+  --fg: #202124;
+  --fg-soft: #4d5156;
+  --fg-muted: #70757a;
+  --link: #1a0dab;
+  --link-visited: #681da8;
+  --border: #dadce0;
+  --border-soft: #ebebeb;
+  --chip-bg: #f1f3f4;
+  --chip-bg-hover: #e8eaed;
+  --card-bg: #fff;
+  --ai-bg: #f8f9fa;
+  --ad-badge-border: #1a73e8;
+  --ad-badge-color: #1a73e8;
+  --shadow: 0 1px 6px rgba(32,33,36,.28);
+  --blue: #1a73e8;
+  --shadow-soft: 0 1px 1px rgba(0,0,0,.1);
+}
+body.dark {
+  --bg: #202124;
+  --fg: #e8eaed;
+  --fg-soft: #bdc1c6;
+  --fg-muted: #9aa0a6;
+  --link: #8ab4f8;
+  --link-visited: #c58af9;
+  --border: #5f6368;
+  --border-soft: #3c4043;
+  --chip-bg: #303134;
+  --chip-bg-hover: #3c4043;
+  --card-bg: #28292c;
+  --ai-bg: #28292c;
+  --ad-badge-border: #8ab4f8;
+  --ad-badge-color: #8ab4f8;
+  --blue: #8ab4f8;
+  --shadow: 0 1px 6px rgba(0,0,0,.5);
+  --shadow-soft: 0 1px 1px rgba(0,0,0,.3);
+}
+body { background: var(--bg); color: var(--fg); font-size: 14px; font-family: arial, sans-serif; transition: background 0.15s, color 0.15s; overflow-x: hidden; width: 100%; }
+html { overflow-x: hidden; max-width: 100vw; }
+
+/* ==================== HOMEPAGE ==================== */
+.homepage { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; position: relative; }
+.homepage.hidden { display: none; }
+.top-right { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; align-items: center; z-index: 10; }
+.icon-btn { width: 36px; height: 36px; border-radius: 50%; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--fg-soft); transition: background 0.15s; }
+.icon-btn:hover { background: var(--chip-bg-hover); }
+.profile-btn { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500; font-size: 14px; }
+.home-logo-text { font-size: 92px; font-weight: 400; letter-spacing: -5px; font-family: 'Product Sans', Arial, sans-serif; margin-bottom: 28px; user-select: none; }
+.home-logo-text span:nth-child(1) { color: #4285f4; }
+.home-logo-text span:nth-child(2) { color: #ea4335; }
+.home-logo-text span:nth-child(3) { color: #fbbc05; }
+.home-logo-text span:nth-child(4) { color: #4285f4; }
+.home-logo-text span:nth-child(5) { color: #34a853; }
+.home-logo-text span:nth-child(6) { color: #ea4335; }
+.home-search { width: 100%; max-width: 584px; position: relative; }
+.home-search-box { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 24px; height: 46px; padding: 0 8px 0 14px; background: var(--bg); transition: box-shadow 0.15s, border-color 0.15s; }
+.home-search-box:hover, .home-search-box:focus-within { box-shadow: var(--shadow); border-color: transparent; }
+.home-search-icon { color: var(--fg-muted); width: 20px; height: 20px; margin-right: 13px; flex-shrink: 0; }
+.home-search-box input { flex: 1; border: none; outline: none; font-size: 16px; background: transparent; color: var(--fg); font-family: arial, sans-serif; }
+.home-search-box .right-icons { display: flex; gap: 4px; align-items: center; }
+.home-buttons { display: flex; gap: 12px; margin-top: 18px; justify-content: center; }
+.home-btn { background: var(--chip-bg); border: 1px solid transparent; border-radius: 4px; color: var(--fg-soft); font-family: arial, sans-serif; font-size: 14px; padding: 0 16px; height: 36px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
+.home-btn:hover { box-shadow: var(--shadow-soft); border: 1px solid var(--border); color: var(--fg); }
+.home-setup { font-size: 13px; color: var(--fg-soft); margin-top: 24px; text-align: center; line-height: 1.6; }
+.home-setup a { color: var(--link); cursor: pointer; text-decoration: none; }
+.home-setup a:hover { text-decoration: underline; }
+
+/* Autocomplete dropdown */
+.autocomplete { position: absolute; top: 48px; left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 0 0 24px 24px; box-shadow: var(--shadow); padding: 8px 0; z-index: 50; display: none; max-height: 60vh; overflow-y: auto; }
+.autocomplete.show { display: block; }
+.ac-item { padding: 6px 14px 6px 56px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--fg); font-size: 16px; position: relative; }
+.ac-item:hover, .ac-item.active { background: var(--chip-bg-hover); }
+.ac-item .ac-icon { position: absolute; left: 18px; color: var(--fg-muted); }
+.ac-item .ac-text { flex: 1; }
+.ac-item .ac-remove { color: var(--fg-muted); font-size: 18px; padding: 0 4px; visibility: hidden; }
+.ac-item.history .ac-remove { visibility: visible; }
+.ac-item .ac-arrow { color: var(--fg-muted); }
+
+/* ==================== HEADER ==================== */
+.header { position: sticky; top: 0; background: var(--bg); z-index: 100; border-bottom: 1px solid var(--border); display: none; }
+.header.show { display: block; }
+.logo-bar { display: flex; align-items: center; padding: 12px 16px 6px; gap: 12px; }
+.logo { font-size: 22px; font-weight: 400; cursor: pointer; font-family: 'Product Sans', Arial, sans-serif; letter-spacing: -1px; flex-shrink: 0; user-select: none; padding-top: 4px; }
+.logo span:nth-child(1) { color: #4285f4; }
+.logo span:nth-child(2) { color: #ea4335; }
+.logo span:nth-child(3) { color: #fbbc05; }
+.logo span:nth-child(4) { color: #4285f4; }
+.logo span:nth-child(5) { color: #34a853; }
+.logo span:nth-child(6) { color: #ea4335; }
+.search-wrap { flex: 1; min-width: 0; max-width: 692px; position: relative; }
+.search-box { display: flex; border: 1px solid var(--border); border-radius: 24px; height: 44px; align-items: center; padding: 0 12px; background: var(--bg); transition: box-shadow 0.15s, border-color 0.15s; overflow: hidden; }
+.search-box:hover, .search-box:focus-within { box-shadow: var(--shadow); border-color: transparent; }
+.search-box input { flex: 1; border: none; outline: none; font-size: 16px; background: transparent; color: var(--fg); font-family: arial, sans-serif; min-width: 0; }
+.search-icon { color: var(--fg-muted); margin-right: 12px; width: 20px; height: 20px; flex-shrink: 0; }
+.search-box .right-icons { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.header-profile { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500; font-size: 14px; flex-shrink: 0; }
+
+/* Tabs row */
+.tabs-row { display: flex; align-items: center; padding: 0 16px; gap: 4px; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--border-soft); scrollbar-width: none; -ms-overflow-style: none; }
+.tabs-row::-webkit-scrollbar { display: none; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; overflow-y: hidden; flex: 1; scrollbar-width: none; -ms-overflow-style: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 12px 16px; color: var(--fg-soft); font-size: 13px; border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; font-family: arial, sans-serif; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; }
+.tab:hover { color: var(--fg); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab .tab-count { font-size: 11px; background: var(--chip-bg); color: var(--fg-soft); padding: 1px 6px; border-radius: 8px; }
+.tab.hidden { display: none; }
+.tools-row { display: flex; gap: 12px; align-items: center; padding: 8px 16px; flex-wrap: wrap; }
+.tool-select, .tool-btn { background: transparent; border: 1px solid transparent; color: var(--fg-soft); font-family: arial, sans-serif; font-size: 13px; padding: 4px 10px; border-radius: 16px; cursor: pointer; }
+.tool-select { background: var(--bg); border: 1px solid var(--border); }
+.tool-btn:hover { background: var(--chip-bg-hover); }
+.tool-btn.active { color: var(--blue); font-weight: 500; }
+
+/* ==================== RESULTS ==================== */
+.container { max-width: 692px; margin: 0; padding: 0 0 80px; }
+@media (min-width: 1100px) { .container { margin-left: 32px; } }
+.stats { padding: 12px 16px; color: var(--fg-muted); font-size: 13px; font-family: arial, sans-serif; }
+.block { padding: 0 16px; margin-bottom: 24px; }
+
+/* AI Overview */
+.ai-overview { background: var(--ai-bg); border-radius: 12px; padding: 16px 20px; margin: 12px 16px; border: 1px solid var(--border); }
+.ai-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ai-icon { width: 22px; height: 22px; background: linear-gradient(135deg, #4285f4, #9b72cb, #d96570); border-radius: 50%; flex-shrink: 0; }
+.ai-title { font-size: 15px; color: var(--fg-soft); font-weight: 500; font-family: 'Google Sans', arial, sans-serif; }
+.ai-text { line-height: 1.65; color: var(--fg); font-family: arial, sans-serif; font-size: 14px; }
+.ai-text h3 { font-size: 16px; font-weight: 500; margin: 16px 0 8px; color: var(--fg); }
+.ai-text p { margin-bottom: 12px; }
+.ai-text ul { padding-left: 22px; margin: 8px 0; }
+.ai-text li { margin-bottom: 8px; }
+.ai-text li strong { display: block; margin-bottom: 2px; color: var(--fg); }
+.ai-text a { color: var(--link); }
+.ai-sources { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+.ai-source { font-size: 12px; color: var(--link); text-decoration: none; background: var(--card-bg); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; }
+.ai-source:hover { background: var(--chip-bg-hover); }
+
+/* Ads */
+.ads-label { font-size: 13px; color: var(--fg-muted); padding: 0 16px; margin: 12px 0 4px; font-family: arial, sans-serif; }
+.ad-item { padding: 10px 16px 16px; border-bottom: 1px solid var(--border-soft); }
+.ad-badge { display: inline-block; background: var(--card-bg); border: 1px solid var(--ad-badge-border); color: var(--ad-badge-color); font-size: 11px; font-weight: bold; padding: 1px 6px; border-radius: 4px; margin-bottom: 6px; font-family: arial, sans-serif; }
+.ad-title { font-size: 20px; color: var(--link); margin-bottom: 2px; font-family: arial, sans-serif; line-height: 1.3; cursor: pointer; }
+.ad-title:hover { text-decoration: underline; }
+.ad-displayed { color: var(--fg); font-size: 13px; margin-bottom: 4px; font-family: arial, sans-serif; display: flex; align-items: center; gap: 6px; }
+.ad-desc { color: var(--fg-soft); font-size: 14px; line-height: 1.4; font-family: arial, sans-serif; }
+
+/* Shopping */
+.shopping-carousel { display: flex; gap: 12px; overflow-x: auto; padding: 12px 16px; }
+.shop-item { min-width: 150px; max-width: 150px; cursor: pointer; }
+.shop-img { width: 150px; height: 150px; object-fit: contain; border-radius: 8px; background: var(--ai-bg); }
+.shop-title { font-size: 13px; color: var(--fg); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-family: arial, sans-serif; line-height: 1.35; }
+.shop-price { font-size: 15px; font-weight: 500; color: var(--fg); margin-top: 4px; font-family: arial, sans-serif; }
+.shop-source { font-size: 12px; color: var(--fg-muted); margin-top: 2px; font-family: arial, sans-serif; }
+.shop-rating { font-size: 12px; color: var(--fg-soft); margin-top: 2px; }
+
+/* Answer Box */
+.answer-box { border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 12px 16px; background: var(--card-bg); }
+.answer-box h3 { font-size: 22px; font-weight: 400; margin-bottom: 8px; font-family: arial, sans-serif; color: var(--fg); }
+.answer-box.source { font-size: 12px; color: var(--fg-soft); margin-bottom: 8px; font-family: arial, sans-serif; }
+.answer-box.snippet { line-height: 1.58; font-family: arial, sans-serif; color: var(--fg); }
+.answer-box ul { padding-left: 22px; margin-top: 8px; }
+.answer-box li { margin-bottom: 6px; line-height: 1.58; font-family: arial, sans-serif; }
+.answer-box img { max-width: 100%; border-radius: 8px; margin-top: 12px; }
+
+/* Knowledge Graph */
+.kg-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 12px 16px; background: var(--card-bg); display: flex; gap: 16px; flex-wrap: wrap; }
+.kg-main { flex: 1; min-width: 200px; }
+.kg-title { font-size: 30px; margin-bottom: 4px; font-family: 'Google Sans', arial, sans-serif; color: var(--fg); font-weight: 400; }
+.kg-type { color: var(--fg-muted); margin-bottom: 12px; font-family: arial, sans-serif; font-size: 14px; }
+.kg-desc { line-height: 1.58; margin-bottom: 12px; font-family: arial, sans-serif; color: var(--fg); }
+.kg-facts { font-size: 14px; font-family: arial, sans-serif; }
+.kg-facts div { margin-bottom: 8px; line-height: 1.5; }
+.kg-facts b { font-weight: 600; color: var(--fg); }
+.kg-facts .kg-fact-label { color: var(--fg-soft); display: inline-block; min-width: 110px; }
+.kg-img { max-width: 180px; max-height: 220px; border-radius: 8px; object-fit: cover; cursor: pointer; }
+.kg-attrs { font-size: 13px; color: var(--fg-soft); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft); display: flex; flex-wrap: wrap; gap: 16px; }
+.kg-attr a { color: var(--link); text-decoration: none; }
+.kg-attr a:hover { text-decoration: underline; }
+
+/* Organic results */
+.result { margin-bottom: 24px; }
+.result-source { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.result-favicon { width: 26px; height: 26px; border-radius: 50%; object-fit: contain; background: var(--ai-bg); }
+.result-displayed { color: var(--fg); font-size: 13px; font-family: arial, sans-serif; display: flex; flex-direction: column; line-height: 1.2; }
+.result-displayed .site { font-size: 14px; }
+.result-displayed .url { font-size: 12px; color: var(--fg-muted); }
+.result-title { font-size: 20px; color: var(--link); line-height: 1.3; margin-bottom: 4px; display: block; font-family: arial, sans-serif; cursor: pointer; }
+.result-title:hover { text-decoration: underline; }
+.result-title.visited { color: var(--link-visited); }
+.result-snippet { color: var(--fg-soft); line-height: 1.58; font-family: arial, sans-serif; font-size: 14px; }
+.result-snippet b { font-weight: bold; color: var(--fg); }
+.result-snippet .date { color: var(--fg-muted); }
+.result-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+.result-action { font-size: 12px; color: var(--blue); padding: 4px 10px; border: 1px solid var(--border); border-radius: 14px; cursor: pointer; background: transparent; font-family: arial, sans-serif; }
+.result-action:hover { background: var(--chip-bg-hover); }
+.sitelinks { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; max-width: 600px; }
+.sitelink { font-size: 14px; color: var(--link); text-decoration: none; font-family: arial, sans-serif; cursor: pointer; padding: 4px 0; }
+.sitelink:hover { text-decoration: underline; }
+.sitelink-desc { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+.sitelinks.inline { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.sitelinks.inline .sitelink { font-size: 14px; }
+
+/* Videos */
+.videos-section { padding: 0 16px; margin: 20px 0; }
+.videos-header { font-size: 20px; font-weight: 400; margin-bottom: 12px; font-family: arial, sans-serif; color: var(--fg); }
+.video-carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.video-item { min-width: 220px; max-width: 220px; cursor: pointer; }
+.video-thumb-wrap { position: relative; width: 220px; height: 124px; }
+.video-thumb { width: 220px; height: 124px; object-fit: cover; border-radius: 8px; background: var(--chip-bg); }
+.video-duration { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.8); color: white; font-size: 11px; padding: 2px 5px; border-radius: 3px; }
+.video-title { font-size: 14px; color: var(--link); margin-top: 6px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-family: arial, sans-serif; }
+.video-meta { font-size: 12px; color: var(--fg-muted); margin-top: 2px; font-family: arial, sans-serif; }
+
+/* News */
+.news-item { padding: 16px; border-bottom: 1px solid var(--border-soft); cursor: pointer; }
+.news-item:hover { background: var(--chip-bg); }
+.news-source { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.news-favicon { width: 16px; height: 16px; border-radius: 50%; }
+.news-publisher { font-size: 13px; color: var(--fg-soft); font-family: arial, sans-serif; }
+.news-date { font-size: 12px; color: var(--fg-muted); margin-left: auto; }
+.news-title { font-size: 18px; color: var(--link); line-height: 1.3; margin-bottom: 6px; font-family: arial, sans-serif; }
+.news-title:hover { text-decoration: underline; }
+.news-snippet { color: var(--fg-soft); font-size: 14px; line-height: 1.4; margin-bottom: 4px; font-family: arial, sans-serif; }
+.news-thumb { float: right; margin-left: 12px; width: 90px; height: 90px; object-fit: cover; border-radius: 8px; }
+.news-story-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 13px; color: var(--fg-soft); flex-wrap: wrap; }
+
+/* Images */
+.image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; padding: 12px 16px; }
+.image-grid-item { position: relative; cursor: pointer; }
+.image-grid-item img { width: 100%; height: 170px; object-fit: cover; border-radius: 8px; transition: transform 0.15s; }
+.image-grid-item:hover img { transform: scale(1.02); }
+.image-grid-title { font-size: 12px; color: var(--fg-soft); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: arial, sans-serif; }
+.image-grid-source { font-size: 11px; color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* People Also Ask */
+.paa { border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); margin: 24px 0; }
+.paa h3 { padding: 12px 16px; font-size: 20px; font-weight: 400; font-family: arial, sans-serif; color: var(--fg); margin: 0; }
+.paa-item { border-top: 1px solid var(--border-soft); padding: 12px 16px; cursor: pointer; }
+.paa-q { color: var(--fg); font-family: arial, sans-serif; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+.paa-q .arrow { color: var(--fg-muted); transition: transform 0.15s; }
+.paa-item.open .paa-q .arrow { transform: rotate(180deg); color: var(--blue); }
+.paa-item.open .paa-q { color: var(--blue); }
+.paa-a { display: none; padding: 12px 0 4px; color: var(--fg); font-size: 14px; line-height: 1.58; }
+.paa-item.open .paa-a { display: block; }
+.paa-a-source { margin-top: 8px; font-size: 12px; color: var(--fg-soft); display: flex; align-items: center; gap: 6px; }
+
+/* Related searches */
+.related { padding: 0 16px; margin-top: 32px; }
+.related h3 { font-size: 18px; font-weight: 400; padding: 12px 0; border-bottom: 1px solid var(--border-soft); margin-bottom: 12px; font-family: arial, sans-serif; color: var(--fg); }
+.related-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.related-item { background: var(--chip-bg); border-radius: 100px; padding: 8px 16px; color: var(--fg); text-decoration: none; font-size: 14px; cursor: pointer; font-family: arial, sans-serif; display: flex; align-items: center; gap: 6px; }
+.related-item:hover { background: var(--chip-bg-hover); }
+
+/* Img carousel on All tab */
+.img-carousel { display: flex; gap: 8px; overflow-x: auto; padding: 12px 16px; }
+.img-item { min-width: 110px; cursor: pointer; }
+.img-item img { width: 110px; height: 110px; object-fit: cover; border-radius: 8px; }
+.img-item-title { font-size: 12px; color: var(--fg-soft); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-family: arial, sans-serif; }
+
+/* Local results */
+.local-results { border: 1px solid var(--border); border-radius: 8px; margin: 12px 16px; background: var(--card-bg); }
+.local-map { width: 100%; height: 200px; background: linear-gradient(135deg, #e8f0fe, #f8f9fa); border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; color: var(--fg-muted); }
+.local-item { padding: 16px 20px; border-bottom: 1px solid var(--border-soft); }
+.local-item:last-child { border-bottom: none; }
+.local-title { color: var(--link); font-size: 18px; margin-bottom: 4px; font-family: arial, sans-serif; cursor: pointer; }
+.local-title:hover { text-decoration: underline; }
+.local-data { color: var(--fg-soft); font-size: 13px; line-height: 1.5; font-family: arial, sans-serif; }
+.local-rating { color: #fbbc05; }
+.local-rating-num { color: var(--fg-soft); margin-left: 4px; }
+
+/* Pagination */
+.pagination { display: flex; justify-content: center; align-items: center; padding: 32px 16px; gap: 8px; flex-wrap: wrap; }
+.pagination .google-logo-mini { font-size: 24px; font-family: 'Product Sans', Arial, sans-serif; margin-right: 16px; letter-spacing: -1px; }
+.pagination .google-logo-mini span:nth-child(1) { color: #4285f4; }
+.pagination .google-logo-mini span:nth-child(2) { color: #ea4335; }
+.pagination .google-logo-mini span:nth-child(3) { color: #fbbc05; }
+.pagination .google-logo-mini span:nth-child(4) { color: #4285f4; }
+.pagination .google-logo-mini span:nth-child(5) { color: #34a853; }
+.pagination .google-logo-mini span:nth-child(6) { color: #ea4335; }
+.page-numbers { display: flex; align-items: center; gap: 4px; }
+.page-num { padding: 8px 12px; color: var(--link); cursor: pointer; font-size: 15px; font-family: arial, sans-serif; border-radius: 50%; }
+.page-num:hover { background: var(--chip-bg); }
+.page-num.active { color: var(--fg); font-weight: 500; cursor: default; }
+.page-num.active:hover { background: transparent; }
+.page-prev, .page-next { color: var(--blue); cursor: pointer; padding: 8px 12px; font-family: arial, sans-serif; font-size: 14px; display: flex; align-items: center; gap: 4px; }
+.page-prev:hover, .page-next:hover { text-decoration: underline; }
+
+/* Loading & error */
+.loading { text-align: center; padding: 40px 16px; color: var(--fg-muted); font-family: arial, sans-serif; }
+.loading-dots { display: inline-flex; gap: 4px; margin-top: 12px; }
+.loading-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); animation: bounce 1.4s infinite ease-in-out both; }
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+.error { background: #fce8e6; color: #c5221f; padding: 16px; margin: 12px 16px; border-radius: 8px; font-family: arial, sans-serif; border: 1px solid #f28b82; }
+body.dark .error { background: #4a2a2a; color: #f28b82; border-color: #c5221f; }
+.error-title { font-weight: 500; margin-bottom: 4px; }
+.error-hint { font-size: 13px; margin-top: 8px; color: inherit; opacity: 0.85; }
+
+/* Modals */
+.modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal.show { display: flex; }
+.modal-content { background: var(--bg); border-radius: 12px; padding: 24px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }
+.modal-content h2 { margin-bottom: 16px; font-size: 22px; font-family: 'Google Sans', arial, sans-serif; font-weight: 400; color: var(--fg); }
+.modal-content input[type="password"], .modal-content input[type="text"], .modal-content select, .modal-content textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 12px; font-family: arial, sans-serif; background: var(--bg); color: var(--fg); }
+.modal-content input:focus, .modal-content select:focus, .modal-content textarea:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+.modal-content button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; margin-bottom: 8px; font-family: arial, sans-serif; cursor: pointer; }
+.save-btn { background: var(--blue); color: white; }
+.save-btn:hover { background: #1765cc; }
+.cancel-btn { background: var(--chip-bg); color: var(--fg-soft); }
+.cancel-btn:hover { background: var(--chip-bg-hover); }
+.key-status { font-size: 12px; color: #34a853; margin-top: 8px; font-family: arial, sans-serif; }
+body.dark .key-status { color: #81c995; }
+.setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border-soft); }
+.setting-row:last-of-type { border-bottom: none; }
+.setting-label { font-size: 14px; font-family: arial, sans-serif; color: var(--fg); }
+.setting-desc { font-size: 12px; color: var(--fg-muted); margin-top: 2px; font-family: arial, sans-serif; }
+.toggle { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+.toggle.active { background: var(--blue); }
+.toggle-knob { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; }
+.toggle.active .toggle-knob { transform: translateX(20px); }
+.modal-divider { height: 1px; background: var(--border-soft); margin: 16px 0; }
+.modal-link { color: var(--link); cursor: pointer; text-decoration: none; font-size: 13px; }
+.modal-link:hover { text-decoration: underline; }
+
+/* Lightbox */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 300; display: none; align-items: center; justify-content: center; padding: 24px; flex-direction: column; }
+.lightbox.show { display: flex; }
+.lightbox img { max-width: 90%; max-height: 75vh; border-radius: 8px; object-fit: contain; }
+.lightbox-meta { color: white; margin-top: 16px; text-align: center; max-width: 600px; }
+.lightbox-title { font-size: 16px; margin-bottom: 4px; }
+.lightbox-source { font-size: 13px; opacity: 0.7; }
+.lightbox-source a { color: #8ab4f8; }
+.lightbox-close { position: absolute; top: 16px; right: 16px; color: white; cursor: pointer; font-size: 24px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.lightbox-actions { margin-top: 12px; display: flex; gap: 12px; }
+.lightbox-actions a { color: white; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 13px; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #323232; color: white; padding: 12px 24px; border-radius: 4px; font-family: arial, sans-serif; font-size: 14px; z-index: 400; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+/* Hidden util */
+.hidden { display: none !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; border: 3px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+
+/* ==================== MOBILE OPTIMIZATIONS ==================== */
+@media (max-width: 768px) {
+  /* Hide Google Search / I'm Feeling Lucky buttons on mobile (keyboard has Go) */
+  .home-buttons { display: none; }
+  .home-logo-text { font-size: 64px; letter-spacing: -3px; margin-bottom: 24px; }
+  .home-search { max-width: 100%; }
+  .home-search-box { height: 44px; }
+
+  /* Logo bar: tighter on mobile — shrink logo, give search box max room */
+  .logo-bar { padding: 8px 8px 4px; gap: 6px; }
+  .logo { font-size: 16px; letter-spacing: -1px; padding-top: 2px; }
+  .search-wrap { max-width: none; }
+  .search-box { height: 40px; padding: 0 8px; }
+  .search-box input { font-size: 15px; }
+  .search-icon { margin-right: 8px; width: 18px; height: 18px; }
+  .header-profile { width: 28px; height: 28px; font-size: 13px; }
+
+  /* Tools row: hidden by default, toggled by Tools button */
+  .tools-row { display: none; padding: 8px 12px; gap: 8px; }
+  .tools-row.show { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .tools-row.show .tool-select,
+  .tools-row.show .tool-btn { width: 100%; text-align: left; }
+  .tools-toggle { display: flex !important; }
+
+  /* Tabs: tighter spacing */
+  .tabs-row { padding: 0 8px; }
+  .tab { padding: 10px 12px; font-size: 13px; }
+
+  /* Container: full width, small padding */
+  .container { max-width: 100%; padding: 0 0 60px; }
+  .stats { padding: 8px 12px; font-size: 12px; }
+  .block { padding: 0 12px; }
+
+  /* AI overview */
+  .ai-overview { margin: 8px 12px; padding: 14px; }
+
+  /* Answer box / KG */
+  .answer-box, .kg-card { margin: 8px 12px; padding: 14px; }
+  .kg-title { font-size: 24px; }
+  .answer-box h3 { font-size: 18px; }
+
+  /* Result items */
+  .result-title { font-size: 17px; }
+  .result-snippet { font-size: 13px; line-height: 1.5; }
+  .result-displayed .url { font-size: 11px; }
+  .sitelinks { grid-template-columns: 1fr; }
+
+  /* Carousels */
+  .videos-section, .shopping-carousel, .img-carousel { padding: 8px 12px; }
+  .video-item { min-width: 180px; max-width: 180px; }
+  .video-thumb-wrap { width: 180px; height: 101px; }
+  .video-thumb { width: 180px; height: 101px; }
+  .shop-item { min-width: 130px; max-width: 130px; }
+  .shop-img { width: 130px; height: 130px; }
+
+  /* News */
+  .news-item { padding: 12px; }
+  .news-title { font-size: 16px; }
+  .news-thumb { width: 72px; height: 72px; }
+
+  /* Images grid */
+  .image-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding: 8px 12px; }
+  .image-grid-item img { height: 130px; }
+
+  /* PAA / Related */
+  .paa h3, .related h3 { font-size: 17px; padding: 10px 12px; }
+  .paa-item { padding: 10px 12px; }
+  .related { padding: 0 12px; }
+
+  /* Pagination */
+  .pagination { padding: 24px 12px; gap: 4px; }
+  .page-num { padding: 6px 10px; font-size: 14px; }
+  .google-logo-mini { font-size: 20px; margin-right: 8px; }
+
+  /* Modal */
+  .modal-content { margin: 8px; padding: 16px; max-width: calc(100vw - 16px); }
+
+  /* Ads */
+  .ad-title { font-size: 17px; }
+  .ad-item { padding: 8px 12px 12px; }
+  .ads-label { padding: 0 12px; }
+}
+
+/* Desktop: show tools toggle only as a button, tools row is always visible */
+@media (min-width: 769px) {
+  .tools-toggle { display: none !important; }
+}
+
+/* Tools toggle button (sits in tabs row on mobile) */
+.tools-toggle {
+  padding: 10px 12px;
+  color: var(--fg-soft);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: arial, sans-serif;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+.tools-toggle:hover { color: var(--fg); }
+
+/* Tab loading state */
+.tab.loading { opacity: 0.5; pointer-events: none; }
+.tab.loading::after { content: '…'; }
+</style>
+</head>
+<body>
+
+<!-- ============ HOMEPAGE ============ -->
+<div class="homepage" id="homepage">
+  <div class="top-right">
+    <button class="profile-btn" onclick="openSettings()">K</button>
+  </div>
+  <div class="home-logo-text"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+  <div class="home-search">
+    <div class="home-search-box">
+      <svg class="home-search-icon" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="text" id="homeSearchInput" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="autocomplete" id="homeAutocomplete"></div>
+    <div class="home-buttons">
+      <button class="home-btn" onclick="doSearch(document.getElementById('homeSearchInput').value)">Google Search</button>
+      <button class="home-btn" onclick="feelingLucky()">I'm Feeling Lucky</button>
+    </div>
+  </div>
+  <div class="home-setup" id="homeSetup"></div>
+</div>
+
+<!-- ============ HEADER (results page) ============ -->
+<div class="header" id="header">
+  <div class="logo-bar">
+    <div class="logo" onclick="goHome()"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg class="search-icon" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="cursor:pointer;" onclick="doSearch(document.getElementById('searchInput').value)"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="searchInput" autocomplete="off" spellcheck="false" />
+        <div class="right-icons">
+          <button class="icon-btn" id="clearBtn" title="Clear" onclick="clearSearch()" style="width:32px;height:32px;display:none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="autocomplete" id="headerAutocomplete"></div>
+    </div>
+    <button class="header-profile" onclick="openSettings()">K</button>
+  </div>
+  <div class="tabs-row">
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="all" id="tab-all">All</div>
+      <div class="tab" data-tab="images" id="tab-images">Images</div>
+      <div class="tab" data-tab="news" id="tab-news">News</div>
+      <div class="tab" data-tab="videos" id="tab-videos">Videos</div>
+      <div class="tab" data-tab="shopping" id="tab-shopping">Shopping</div>
+    </div>
+    <button class="tools-toggle" onclick="toggleTools()">Tools</button>
+  </div>
+  <div class="tools-row" id="toolsRow">
+    <select class="tool-select" id="locationSelect" title="Location" onchange="changeLocation(this.value)">
+      <option value="us">🇺🇸 United States</option>
+      <option value="uk">🇬🇧 United Kingdom</option>
+      <option value="ca">🇨🇦 Canada</option>
+      <option value="au">🇦🇺 Australia</option>
+      <option value="de">🇩🇪 Germany</option>
+      <option value="fr">🇫🇷 France</option>
+      <option value="jp">🇯🇵 Japan</option>
+      <option value="in">🇮🇳 India</option>
+      <option value="br">🇧🇷 Brazil</option>
+      <option value="">🌐 Worldwide</option>
+    </select>
+    <select class="tool-select" id="langSelect" title="Language" onchange="changeLang(this.value)">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="ja">日本語</option>
+      <option value="zh-CN">中文</option>
+      <option value="pt">Português</option>
+      <option value="ar">العربية</option>
+    </select>
+    <select class="tool-select" id="timeSelect" title="Time filter" onchange="changeTime(this.value)">
+      <option value="">Any time</option>
+      <option value="h_1">Past hour</option>
+      <option value="d_1">Past 24 hours</option>
+      <option value="w_1">Past week</option>
+      <option value="m_1">Past month</option>
+      <option value="y_1">Past year</option>
+    </select>
+    <button class="tool-btn" id="safeBtn" onclick="toggleSafe()" title="Safe search">SafeSearch: off</button>
+    <button class="tool-btn" onclick="downloadResults('json')" title="Download as JSON">⬇ JSON</button>
+    <button class="tool-btn" onclick="downloadResults('csv')" title="Download as CSV">⬇ CSV</button>
+  </div>
+</div>
+
+<!-- ============ RESULTS CONTAINER ============ -->
+<div id="results" class="container"></div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <h2>Settings</h2>
+    <label style="font-size:13px;color:var(--fg-soft);display:block;margin-bottom:6px;">SerpApi Key</label>
+    <input type="password" id="keyInput" placeholder="Paste your SerpApi key here" />
+    <div class="key-status" id="keyStatus"></div>
+    <div class="modal-divider"></div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">AI Overview</div>
+        <div class="setting-desc">Show Google AI overview at top</div>
+      </div>
+      <div class="toggle" id="aiToggle" onclick="toggleSetting('ai')"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Safe Search</div>
+        <div class="setting-desc">Filter explicit results</div>
+      </div>
+      <div class="toggle" id="safeToggle" onclick="toggleSetting('safe')"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Dark Mode</div>
+        <div class="setting-desc">Use dark theme</div>
+      </div>
+      <div class="toggle" id="darkToggleSetting" onclick="toggleSetting('dark')"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Open links in new tab</div>
+        <div class="setting-desc">Open result links in a new browser tab</div>
+      </div>
+      <div class="toggle" id="newTabToggle" onclick="toggleSetting('newTab')"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Save search history</div>
+        <div class="setting-desc">Keep your last 50 searches locally</div>
+      </div>
+      <div class="toggle" id="historyToggle" onclick="toggleSetting('history')"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="modal-divider"></div>
+    <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+    <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
+    <p style="font-size:12px;color:var(--fg-muted);margin-top:16px;line-height:1.5;">
+      Each search uses 1 SerpApi call (sometimes 2 when fetching AI Overview pagination tokens).
+      Get a key at <a href="https://serpapi.com/manage-api-key" target="_blank" style="color:var(--link);">serpapi.com</a>.
+    </p>
+    <a class="modal-link" onclick="clearHistory()">Clear search history</a>
+  </div>
+</div>
+
+<!-- ============ LIGHTBOX ============ -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+  <img id="lightboxImg" src="" alt="" />
+  <div class="lightbox-meta">
+    <div class="lightbox-title" id="lightboxTitle"></div>
+    <div class="lightbox-source" id="lightboxSource"></div>
+    <div class="lightbox-actions">
+      <a id="lightboxVisit" href="#" target="_blank">Visit page</a>
+      <a id="lightboxDownload" href="#" download>Download image</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  CONFIG & STATE
+// ============================================================
+const WORKER_URL = 'https://serpapi.kadharri-minecraft.workers.dev/';
+const SERPAPI_BASE = 'https://serpapi.com/search.json';
+const PAGE_SIZE = 10;
+
+// DOM refs
+const homepage = document.getElementById('homepage');
+const header = document.getElementById('header');
+const results = document.getElementById('results');
+const searchInput = document.getElementById('searchInput');
+const homeSearchInput = document.getElementById('homeSearchInput');
+const settingsModal = document.getElementById('settingsModal');
+const keyInput = document.getElementById('keyInput');
+const keyStatus = document.getElementById('keyStatus');
+const aiToggle = document.getElementById('aiToggle');
+const safeToggle = document.getElementById('safeToggle');
+const darkToggleSetting = document.getElementById('darkToggleSetting');
+const newTabToggle = document.getElementById('newTabToggle');
+const historyToggle = document.getElementById('historyToggle');
+const tabs = document.getElementById('tabs');
+const homeSetup = document.getElementById('homeSetup');
+const clearBtn = document.getElementById('clearBtn');
+
+// Settings (persisted in localStorage)
+let settings = {
+  ai: localStorage.getItem('setting_ai') !== 'false',
+  safe: localStorage.getItem('setting_safe') === 'true',
+  dark: localStorage.getItem('setting_dark') === 'true',
+  newTab: localStorage.getItem('setting_newTab') === 'true',
+  history: localStorage.getItem('setting_history') !== 'false'
+};
+
+// Search state
+let currentData = null;
+let currentQuery = '';
+let currentTab = 'all';
+let currentPage = 1; // 1-based page number
+let currentLocation = localStorage.getItem('setting_location') || 'us';
+let currentLang = localStorage.getItem('setting_lang') || 'en';
+let currentTime = localStorage.getItem('setting_time') || '';
+let hasSearched = false;
+let abortController = null;
+
+// Tab data cache: { query: { all: data, images: imgData, videos: vidData, ... } }
+// Prevents re-fetching the same tab data when switching back and forth
+let tabCache = {};
+// Track which tabs are currently loading to prevent double-fetches
+let tabLoading = {};
+
+// ============================================================
+//  TOOLS TOGGLE (mobile)
+// ============================================================
+function toggleTools() {
+  const row = document.getElementById('toolsRow');
+  if (row) row.classList.toggle('show');
+}
+
+// ============================================================
+//  UTILITIES
+// ============================================================
+function getKey() { return localStorage.getItem('serpapi_key') || ''; }
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function targetAttr() { return settings.newTab ? ' target="_blank" rel="noopener"' : ''; }
+function domainFromUrl(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+}
+
+// ============================================================
+//  SETTINGS UI
+// ============================================================
+function updateKeyStatus() {
+  const key = getKey();
+  if (key) keyStatus.textContent = `✓ Key saved: ${key.slice(0,6)}…${key.slice(-4)}`;
+  else keyStatus.textContent = 'No key saved yet';
+  aiToggle.classList.toggle('active', settings.ai);
+  safeToggle.classList.toggle('active', settings.safe);
+  darkToggleSetting.classList.toggle('active', settings.dark);
+  newTabToggle.classList.toggle('active', settings.newTab);
+  historyToggle.classList.toggle('active', settings.history);
+  if (key) {
+    homeSetup.innerHTML = '';
+  } else {
+    homeSetup.innerHTML = 'Tap the profile picture (top-right) to set up your SerpApi key.<br>Don\'t have one? Get a free key at <a href="https://serpapi.com/manage-api-key" target="_blank">serpapi.com</a>.';
+  }
+}
+function openSettings() {
+  keyInput.value = getKey();
+  updateKeyStatus();
+  settingsModal.classList.add('show');
+}
+function closeSettings() { settingsModal.classList.remove('show'); }
+function toggleSetting(type) {
+  settings[type] = !settings[type];
+  if (type === 'ai') aiToggle.classList.toggle('active');
+  if (type === 'safe') {
+    safeToggle.classList.toggle('active');
+    updateSafeBtn();
+  }
+  if (type === 'dark') { darkToggleSetting.classList.toggle('active'); applyDark(); }
+  if (type === 'newTab') newTabToggle.classList.toggle('active');
+  if (type === 'history') historyToggle.classList.toggle('active');
+}
+function saveSettings() {
+  const key = keyInput.value.trim();
+  if (key) localStorage.setItem('serpapi_key', key);
+  localStorage.setItem('setting_ai', settings.ai);
+  localStorage.setItem('setting_safe', settings.safe);
+  localStorage.setItem('setting_dark', settings.dark);
+  localStorage.setItem('setting_newTab', settings.newTab);
+  localStorage.setItem('setting_history', settings.history);
+  localStorage.setItem('setting_location', currentLocation);
+  localStorage.setItem('setting_lang', currentLang);
+  updateKeyStatus();
+  closeSettings();
+  showToast('Settings saved');
+}
+settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
+
+// ============================================================
+//  DARK MODE
+// ============================================================
+function applyDark() { document.body.classList.toggle('dark', settings.dark); }
+function toggleDark() {
+  settings.dark = !settings.dark;
+  applyDark();
+  localStorage.setItem('setting_dark', settings.dark);
+  darkToggleSetting.classList.toggle('active', settings.dark);
+}
+
+// ============================================================
+//  SAFE SEARCH
+// ============================================================
+function updateSafeBtn() {
+  const btn = document.getElementById('safeBtn');
+  if (btn) btn.textContent = 'SafeSearch: ' + (settings.safe ? 'on' : 'off');
+}
+function toggleSafe() {
+  settings.safe = !settings.safe;
+  updateSafeBtn();
+  safeToggle.classList.toggle('active', settings.safe);
+  localStorage.setItem('setting_safe', settings.safe);
+  if (hasSearched) doSearch(currentQuery);
+}
+
+// ============================================================
+//  LOCATION / LANGUAGE / TIME
+// ============================================================
+function changeLocation(v) { currentLocation = v; localStorage.setItem('setting_location', v); if (hasSearched) doSearch(currentQuery); }
+function changeLang(v) { currentLang = v; localStorage.setItem('setting_lang', v); if (hasSearched) doSearch(currentQuery); }
+function changeTime(v) { currentTime = v; localStorage.setItem('setting_time', v); if (hasSearched) doSearch(currentQuery); }
+
+// ============================================================
+//  SEARCH INPUT WIRING
+// ============================================================
+searchInput.addEventListener('input', () => {
+  clearBtn.style.display = searchInput.value ? 'flex' : 'none';
+});
+searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') { hideAutocomplete('header'); doSearch(searchInput.value); } });
+homeSearchInput.addEventListener('keypress', e => { if (e.key === 'Enter') { hideAutocomplete('home'); doSearch(homeSearchInput.value); } });
+searchInput.addEventListener('input', () => requestAutocomplete('header', searchInput.value));
+homeSearchInput.addEventListener('input', () => requestAutocomplete('home', homeSearchInput.value));
+
+function clearSearch() {
+  searchInput.value = '';
+  clearBtn.style.display = 'none';
+  searchInput.focus();
+  hideAutocomplete('header');
+}
+
+document.addEventListener('click', e => {
+  // Close autocomplete when clicking outside
+  if (!e.target.closest('.search-wrap') && !e.target.closest('.home-search')) {
+    hideAutocomplete('home');
+    hideAutocomplete('header');
+  }
+  // Search trigger clicks (PAA, related, sitelinks, etc.)
+  const el = e.target.closest('.search-trigger');
+  if (el && el.dataset.query) {
+    e.preventDefault();
+    searchInput.value = el.dataset.query;
+    homeSearchInput.value = el.dataset.query;
+    doSearch(el.dataset.query);
+    window.scrollTo(0, 0);
+  }
+  // Result clicks -> mark visited
+  const r = e.target.closest('.result-title, .result-link');
+  if (r) r.classList.add('visited');
+});
+
+// ============================================================
+//  AUTOCOMPLETE  (SerpApi autocomplete engine)
+// ============================================================
+let acTimer = null;
+let acActiveIdx = -1;
+let acCache = {};
+let acLastQuery = '';
+function requestAutocomplete(scope, q) {
+  clearTimeout(acTimer);
+  if (!q || q.trim().length < 2) { hideAutocomplete(scope); return; }
+  // Debounce 300ms to reduce API calls
+  acTimer = setTimeout(() => fetchAutocomplete(scope, q.trim()), 300);
+}
+async function fetchAutocomplete(scope, q) {
+  // Skip if query unchanged since last fetch (prevents refire on blur/refocus)
+  if (q === acLastQuery && document.querySelector((scope === 'home' ? '#homeAutocomplete' : '#headerAutocomplete') + '.show')) return;
+  acLastQuery = q;
+
+  const suggestions = [];
+  // 1. History matches first (instant, no API call)
+  let historyCount = 0;
+  if (settings.history) {
+    const hist = getHistory().filter(h => h.toLowerCase().includes(q.toLowerCase())).slice(0, 5);
+    historyCount = hist.length;
+    hist.forEach(h => suggestions.push({ type: 'history', text: h }));
+  }
+  // 2. SerpApi autocomplete — only fire if we have a key AND not enough history matches
+  //    (if history already has 3+ matches, skip the API call to save quota)
+  if (historyCount < 3) {
+    try {
+      if (acCache[q]) {
+        acCache[q].forEach(s => suggestions.push({ type: 'suggest', text: s }));
+      } else {
+        const key = getKey();
+        if (key) {
+          const url = `${SERPAPI_BASE}?engine=google_autocomplete&q=${encodeURIComponent(q)}&api_key=${key}`;
+          const data = await fetchViaWorker(url);
+          if (data.suggestions?.length) {
+            acCache[q] = data.suggestions.map(s => s.value);
+            acCache[q].forEach(s => suggestions.push({ type: 'suggest', text: s }));
+          }
+        }
+      }
+    } catch (e) { /* silent */ }
+  }
+  renderAutocomplete(scope, suggestions, q);
+}
+function renderAutocomplete(scope, suggestions, q) {
+  const box = scope === 'home' ? document.getElementById('homeAutocomplete') : document.getElementById('headerAutocomplete');
+  if (!suggestions.length) { hideAutocomplete(scope); return; }
+  // Deduplicate
+  const seen = new Set();
+  const items = suggestions.filter(s => { if (seen.has(s.text.toLowerCase())) return false; seen.add(s.text.toLowerCase()); return true; }).slice(0, 10);
+  let html = '';
+  items.forEach((s, i) => {
+    const icon = s.type === 'history'
+      ? '<svg class="ac-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>'
+      : '<svg class="ac-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"/></svg>';
+    html += `<div class="ac-item ${s.type}" data-idx="${i}" data-text="${escapeAttr(s.text)}">${icon}<span class="ac-text">${escapeHtml(s.text)}</span><span class="ac-remove" onclick="event.stopPropagation();removeHistoryItem('${escapeAttr(s.text)}');">&times;</span><svg class="ac-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z" transform="scale(0.7) translate(5 5)"/></svg></div>`;
+  });
+  box.innerHTML = html;
+  box.classList.add('show');
+  acActiveIdx = -1;
+  box.querySelectorAll('.ac-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const txt = item.dataset.text;
+      const target = scope === 'home' ? homeSearchInput : searchInput;
+      target.value = txt;
+      hideAutocomplete(scope);
+      doSearch(txt);
+    });
+  });
+}
+function hideAutocomplete(scope) {
+  const box = scope === 'home' ? document.getElementById('homeAutocomplete') : document.getElementById('headerAutocomplete');
+  box.classList.remove('show');
+}
+
+// Keyboard nav for autocomplete
+[homeSearchInput, searchInput].forEach((inp, idx) => {
+  const scope = idx === 0 ? 'home' : 'header';
+  inp.addEventListener('keydown', e => {
+    const box = scope === 'home' ? document.getElementById('homeAutocomplete') : document.getElementById('headerAutocomplete');
+    const items = box.querySelectorAll('.ac-item');
+    if (!box.classList.contains('show') || !items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); acActiveIdx = (acActiveIdx + 1) % items.length; updateAcActive(box, items); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); acActiveIdx = (acActiveIdx - 1 + items.length) % items.length; updateAcActive(box, items); }
+    else if (e.key === 'Escape') { hideAutocomplete(scope); }
+  });
+});
+function updateAcActive(box, items) {
+  items.forEach((it, i) => it.classList.toggle('active', i === acActiveIdx));
+  if (items[acActiveIdx]) items[acActiveIdx].scrollIntoView({ block: 'nearest' });
+}
+
+// ============================================================
+//  HISTORY (localStorage, max 50)
+// ============================================================
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('search_history') || '[]'); } catch { return []; }
+}
+function addHistory(q) {
+  if (!settings.history || !q) return;
+  let h = getHistory();
+  h = h.filter(x => x.toLowerCase() !== q.toLowerCase());
+  h.unshift(q);
+  h = h.slice(0, 50);
+  localStorage.setItem('search_history', JSON.stringify(h));
+}
+function removeHistoryItem(q) {
+  let h = getHistory().filter(x => x.toLowerCase() !== q.toLowerCase());
+  localStorage.setItem('search_history', JSON.stringify(h));
+  // Re-trigger autocomplete
+  const scope = document.activeElement === homeSearchInput ? 'home' : 'header';
+  requestAutocomplete(scope, (scope === 'home' ? homeSearchInput : searchInput).value);
+}
+function clearHistory() {
+  localStorage.removeItem('search_history');
+  showToast('Search history cleared');
+  hideAutocomplete('home');
+  hideAutocomplete('header');
+}
+
+// ============================================================
+//  SERPAPI FETCH (via Cloudflare worker proxy)
+// ============================================================
+async function fetchViaWorker(serpUrl) {
+  const encoded = encodeURIComponent(serpUrl);
+  const res = await fetch(`${WORKER_URL}?${encoded}`);
+  let data;
+  try { data = await res.json(); }
+  catch { throw new Error(`Worker returned non-JSON response (HTTP ${res.status}). The proxy may be down.`); }
+  if (!res.ok) {
+    const msg = data?.error || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+// Build the SerpApi URL with all our params
+function buildSerpUrl(q, opts = {}) {
+  const key = getKey();
+  const page = opts.page || currentPage;
+  const engine = opts.engine || 'google';
+  const start = (page - 1) * PAGE_SIZE;
+  const params = new URLSearchParams();
+  params.set('engine', engine);
+  params.set('q', q);
+  params.set('api_key', key);
+  params.set('num', PAGE_SIZE * 2); // fetch 20 results per call for richer All tab
+  params.set('no_cache', 'true');
+  params.set('start', start);
+  if (currentLocation) { params.set('gl', currentLocation); }
+  if (currentLang) { params.set('hl', currentLang); }
+  if (settings.safe) { params.set('safe', 'active'); }
+  if (settings.ai && engine === 'google') { params.set('ai_mode', 'true'); }
+  if (currentTime) {
+    // SerpApi uses tbs param: qdr:h, qdr:d, qdr:w, qdr:m, qdr:y
+    const tbsMap = { h_1: 'qdr:h', d_1: 'qdr:d', w_1: 'qdr:w', m_1: 'qdr:m', y_1: 'qdr:y' };
+    if (tbsMap[currentTime]) params.set('tbs', tbsMap[currentTime]);
+  }
+  return `${SERPAPI_BASE}?${params.toString()}`;
+}
+
+// ============================================================
+//  TAB DATA FETCHING (with caching to minimize API calls)
+// ============================================================
+
+// Map tab name -> SerpApi engine name
+const TAB_ENGINES = {
+  images: 'google_images',
+  videos: 'google_videos',
+  news: 'google_news',
+  shopping: 'google_shopping'
+  // 'maps' uses local_results from main search, no separate engine
+};
+
+// Check if the main search response already contains data for a tab
+function tabHasData(data, tab) {
+  if (!data) return false;
+  switch (tab) {
+    case 'all': return !!data.organic_results?.length;
+    case 'images': return !!data.images_results?.length;
+    case 'news': return !!(data.news_results?.length || data.top_stories?.length);
+    case 'videos': return !!((data.inline_videos?.length) || (data.short_videos?.length));
+    case 'shopping': return !!data.shopping_results?.length;
+    default: return false;
+  }
+}
+
+// Fetch data for a specific tab using its dedicated engine
+async function fetchTabData(tab, query) {
+  const engine = TAB_ENGINES[tab];
+  if (!engine) return null;
+
+  // Check cache first — never re-fetch the same query+tab
+  if (!tabCache[query]) tabCache[query] = {};
+  if (tabCache[query][tab]) return tabCache[query][tab];
+
+  const key = getKey();
+  if (!key) return null;
+
+  const params = new URLSearchParams();
+  params.set('engine', engine);
+  params.set('q', query);
+  params.set('api_key', key);
+  params.set('no_cache', 'true');
+  if (currentLocation) params.set('gl', currentLocation);
+  if (currentLang) params.set('hl', currentLang);
+  if (settings.safe) params.set('safe', 'active');
+  const url = `${SERPAPI_BASE}?${params.toString()}`;
+
+  const data = await fetchViaWorker(url);
+  if (data.error) throw new Error(data.error);
+
+  // Normalize: map engine-specific keys to the keys our renderers expect
+  let normalized = {};
+  if (tab === 'images' && data.images_results) {
+    normalized.images_results = data.images_results;
+  } else if (tab === 'videos') {
+    // google_videos returns 'video_results', our renderer expects 'inline_videos'
+    normalized.inline_videos = data.video_results || [];
+  } else if (tab === 'news' && data.news_results) {
+    normalized.news_results = data.news_results;
+  } else if (tab === 'shopping' && data.shopping_results) {
+    normalized.shopping_results = data.shopping_results;
+  }
+
+  // Cache it
+  tabCache[query][tab] = normalized;
+  return normalized;
+}
+
+// Load a tab: use cached/main-search data, or fetch from specific engine
+// IMPORTANT: Tab data is kept SEPARATE from the All tab data to prevent pollution
+async function loadTab(tab) {
+  if (!currentData) return;
+
+  // 'all' tab always uses the original main search data (never polluted)
+  if (tab === 'all') {
+    renderTab('all');
+    return;
+  }
+
+  // If main search already has data for this tab, render directly (no API call, no merge)
+  if (tabHasData(currentData, tab)) {
+    renderTab(tab);
+    return;
+  }
+
+  // If we already fetched this tab's data before, render from cache (no API call, no merge into currentData)
+  if (tabCache[currentQuery]?.[tab]) {
+    renderTabFromCache(tab);
+    return;
+  }
+
+  // Need to fetch from specific engine — show loading
+  const tabEl = document.getElementById('tab-' + tab);
+  if (tabEl) tabEl.classList.add('loading');
+  results.innerHTML = `<div class="loading">Loading ${tab}…<div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+
+  // Prevent double-fetch
+  const loadKey = currentQuery + ':' + tab;
+  if (tabLoading[loadKey]) return;
+  tabLoading[loadKey] = true;
+
+  try {
+    const tabData = await fetchTabData(tab, currentQuery);
+    // Cache is already set inside fetchTabData — do NOT merge into currentData
+    renderTabFromCache(tab);
+  } catch (err) {
+    console.error('Tab fetch error:', err);
+    results.innerHTML = `<div class="error"><div class="error-title">Failed to load ${tab}</div><div>${escapeHtml(err.message)}</div></div>`;
+  } finally {
+    tabLoading[loadKey] = false;
+    if (tabEl) tabEl.classList.remove('loading');
+  }
+}
+
+// Render a tab using cached data WITHOUT modifying currentData (keeps All tab clean)
+function renderTabFromCache(tab) {
+  if (!currentData) return;
+  const cached = tabCache[currentQuery]?.[tab];
+  if (!cached) { renderTab(tab); return; }
+  // Build a temporary data object: start from main search data, overlay cached tab data
+  // This is a LOCAL variable — currentData is never modified
+  const tempData = { ...currentData, ...cached };
+  renderTabWithData(tab, tempData);
+}
+
+// ============================================================
+//  HIGHLIGHTING
+// ============================================================
+function renderHighlighted(text, words) {
+  if (!text) return '';
+  let html = escapeHtml(text);
+  if (words && words.length) {
+    words.forEach(w => {
+      const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`(${escaped})`, 'gi');
+      html = html.replace(re, '<b>$1</b>');
+    });
+  }
+  return html;
+}
+
+// ============================================================
+//  RENDER: AI OVERVIEW
+// ============================================================
+
+// Build a synthetic AI overview from answer_box / knowledge_graph data
+// so the AI Overview section always appears when the setting is on
+function synthesizeAIOverview(data) {
+  const blocks = [];
+  const refs = [];
+
+  // Pull from knowledge graph first (more structured)
+  if (data.knowledge_graph) {
+    const kg = data.knowledge_graph;
+    if (kg.description) {
+      blocks.push({ type: 'paragraph', snippet: kg.description });
+    }
+    if (kg.title && kg.type) {
+      blocks.unshift({ type: 'heading', snippet: kg.title + ' — ' + kg.type });
+    }
+    // Add facts as a list
+    if (kg.facts) {
+      const listItems = Object.entries(kg.facts).slice(0, 5).map(([key, val]) => {
+        const valStr = Array.isArray(val) ? val.join(', ') : (typeof val === 'object' ? (val.label || val.text || '') : String(val));
+        return { title: key, snippet: valStr };
+      });
+      if (listItems.length) blocks.push({ type: 'list', list: listItems });
+    }
+  }
+
+  // Pull from answer box
+  if (data.answer_box) {
+    const ab = data.answer_box;
+    if (ab.snippet && !blocks.length) {
+      blocks.push({ type: 'paragraph', snippet: ab.snippet });
+    } else if (ab.answer && !blocks.length) {
+      blocks.push({ type: 'paragraph', snippet: ab.answer });
+    }
+    if (ab.list && ab.list.length) {
+      blocks.push({ type: 'list', list: ab.list.slice(0, 5).map(i => ({ snippet: i })) });
+    }
+    // Add answer box source as a reference
+    if (ab.source?.link) {
+      refs.push({ title: ab.source?.info || domainFromUrl(ab.source.link), link: ab.source.link });
+    }
+  }
+
+  // Add top organic result as a source
+  if (data.organic_results?.[0]?.link) {
+    const r = data.organic_results[0];
+    refs.push({ title: r.displayed_link || domainFromUrl(r.link), link: r.link });
+  }
+
+  if (!blocks.length) return null;
+  return { text_blocks: blocks, references: refs };
+}
+
+function renderAIOverview(ai) {
+  if (!ai) return '';
+  console.log('AI Overview data:', JSON.stringify(ai).slice(0, 500));
+
+  // SerpApi returns AI overviews in various formats:
+  // 1. ai_overview.text_blocks: [{type: 'paragraph'|'heading'|'list', snippet, list}]
+  // 2. ai_overview.text: plain string
+  // 3. ai_overview.snippet: plain string
+  // 4. ai_overview.summary: plain string (sometimes)
+  // 5. ai_overview.sections: [{type, text, list}] (newer format)
+  // Gather text from whichever fields exist
+  const blocks = ai.text_blocks || ai.sections || [];
+  const hasText = blocks.length || ai.text || ai.snippet || ai.summary || ai.overview;
+
+  if (!hasText) {
+    console.log('AI Overview: no text content found in response');
+    return '';
+  }
+
+  let html = `<div class="ai-overview">
+    <div class="ai-header">
+      <div class="ai-icon"></div>
+      <div class="ai-title">AI Overview</div>
+    </div>
+    <div class="ai-text">`;
+
+  if (blocks.length) {
+    blocks.forEach(block => {
+      // Handle various block formats
+      const blockText = block.snippet || block.text || block.snippet_text || '';
+      const blockType = block.type || 'paragraph';
+      if (blockType === 'paragraph' || blockType === 'text') {
+        html += `<p>${escapeHtml(blockText)}</p>`;
+      } else if (blockType === 'heading') {
+        html += `<h3>${escapeHtml(blockText)}</h3>`;
+      } else if (blockType === 'list' && block.list) {
+        html += `<ul>`;
+        block.list.forEach(item => {
+          html += `<li>`;
+          if (item.title) html += `<strong>${escapeHtml(item.title)}</strong> `;
+          if (item.snippet || item.text) html += escapeHtml(item.snippet || item.text);
+          html += `</li>`;
+        });
+        html += `</ul>`;
+      }
+    });
+  }
+  // Fallback: plain text fields
+  if (ai.text) html += `<p>${escapeHtml(ai.text)}</p>`;
+  if (ai.snippet && !ai.text) html += `<p>${escapeHtml(ai.snippet)}</p>`;
+  if (ai.summary && !ai.text && !ai.snippet) html += `<p>${escapeHtml(ai.summary)}</p>`;
+  if (ai.overview && !ai.text && !ai.snippet && !ai.summary) html += `<p>${escapeHtml(ai.overview)}</p>`;
+
+  html += `</div>`;
+
+  // Sources/references
+  const refs = ai.references || ai.sources || ai.citations || [];
+  if (refs.length) {
+    html += `<div class="ai-sources"><div style="font-size:12px;color:var(--fg-muted);width:100%;margin-bottom:4px;">Sources</div>`;
+    refs.slice(0, 8).forEach(ref => {
+      const title = ref.title || ref.source || ref.name || domainFromUrl(ref.link || ref.url || '');
+      const link = ref.link || ref.url || '#';
+      html += `<a class="ai-source" href="${escapeAttr(link)}" ${targetAttr()}>${escapeHtml(title)}</a>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: VIDEOS
+// ============================================================
+function renderVideos(videos, title) {
+  if (!videos || !videos.length) return '';
+  let html = `<div class="videos-section"><div class="videos-header">${escapeHtml(title)}</div><div class="video-carousel">`;
+  videos.forEach(v => {
+    const link = v.link || '#';
+    html += `<div class="video-item" onclick="window.open('${escapeAttr(link)}', '${settings.newTab ? '_blank' : '_self'}')">
+      <div class="video-thumb-wrap">
+        <img src="${escapeAttr(v.thumbnail || '')}" class="video-thumb" loading="lazy" onerror="this.style.background='var(--chip-bg)';this.removeAttribute('src')">
+        ${v.duration ? `<div class="video-duration">${escapeHtml(v.duration)}</div>` : ''}
+      </div>
+      <div class="video-title">${escapeHtml(v.title || '')}</div>
+      <div class="video-meta">${escapeHtml(v.source || '')}${v.views ? ' · ' + escapeHtml(v.views) : ''}${v.date ? ' · ' + escapeHtml(v.date) : ''}</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: KNOWLEDGE GRAPH
+// ============================================================
+function renderKG(k) {
+  let html = `<div class="kg-card">`;
+  html += `<div class="kg-main">`;
+  html += `<div class="kg-title">${escapeHtml(k.title || '')}</div>`;
+  if (k.type) html += `<div class="kg-type">${escapeHtml(k.type)}</div>`;
+  if (k.description) html += `<div class="kg-desc">${escapeHtml(k.description)}</div>`;
+  if (k.facts) {
+    html += `<div class="kg-facts">`;
+    Object.entries(k.facts).forEach(([key, val]) => {
+      const valStr = Array.isArray(val) ? val.join(', ') : (typeof val === 'object' ? (val.label || val.text || JSON.stringify(val)) : String(val));
+      html += `<div><span class="kg-fact-label">${escapeHtml(key)}:</span> ${escapeHtml(valStr)}</div>`;
+    });
+    html += `</div>`;
+  }
+  if (k.attributes) {
+    html += `<div class="kg-attrs">`;
+    Object.entries(k.attributes).forEach(([key, val]) => {
+      const v = (typeof val === 'object') ? (val.link ? `<a href="${escapeAttr(val.link)}" ${targetAttr()}>${escapeHtml(val.label || val.text || '')}</a>` : escapeHtml(val.label || val.text || '')) : escapeHtml(val);
+      html += `<div><b>${escapeHtml(key)}:</b> ${v}</div>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div>`;
+  if (k.image) {
+    html += `<img src="${escapeAttr(k.image)}" class="kg-img" loading="lazy" onclick="openLightbox('${escapeAttr(k.image)}', ${JSON.stringify(k.title).replace(/"/g, '&quot;')}, '')">`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: ANSWER BOX
+// ============================================================
+function renderAnswerBox(a) {
+  let html = `<div class="answer-box">`;
+  if (a.type) html += `<div style="font-size:12px;color:var(--fg-muted);margin-bottom:4px;">${escapeHtml(a.type)}</div>`;
+  if (a.title) html += `<h3>${escapeHtml(a.title)}</h3>`;
+  if (a.source?.link) html += `<div class="source">From <a href="${escapeAttr(a.source.link)}" ${targetAttr()} style="color:var(--link);text-decoration:none;">${escapeHtml(a.source?.info || domainFromUrl(a.source.link))}</a></div>`;
+  else if (a.displayed_link) html += `<div class="source">${escapeHtml(a.displayed_link)}</div>`;
+  if (a.snippet) html += `<div class="snippet">${renderHighlighted(a.snippet, a.snippet_highlighted_words)}</div>`;
+  if (a.answer) html += `<div class="snippet">${escapeHtml(a.answer)}</div>`;
+  if (a.list) html += `<ul>${a.list.map(i => `<li>${renderHighlighted(i, a.snippet_highlighted_words)}</li>`).join('')}</ul>`;
+  if (a.table) {
+    html += `<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:13px;">`;
+    if (a.table.headings) {
+      html += `<tr>`;
+      a.table.headings.forEach(h => html += `<th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);">${escapeHtml(h)}</th>`);
+      html += `</tr>`;
+    }
+    if (a.table.rows) {
+      a.table.rows.forEach(r => {
+        html += `<tr>`;
+        r.forEach(c => html += `<td style="padding:6px 8px;border-bottom:1px solid var(--border-soft);">${escapeHtml(c)}</td>`);
+        html += `</tr>`;
+      });
+    }
+    html += `</table>`;
+  }
+  if (a.image) html += `<img src="${escapeAttr(a.image)}" loading="lazy">`;
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: ORGANIC RESULTS
+// ============================================================
+function renderOrganicResults(results) {
+  if (!results || !results.length) return '';
+  let html = `<div class="block">`;
+  results.forEach(r => {
+    const link = r.link || '#';
+    const displayed = r.displayed_link || domainFromUrl(link);
+    html += `<div class="result">`;
+    html += `<div class="result-source">`;
+    if (r.favicon) html += `<img src="${escapeAttr(r.favicon)}" class="result-favicon" loading="lazy" onerror="this.style.visibility='hidden'">`;
+    else {
+      // Generate a letter favicon
+      const letter = (displayed[0] || 'G').toUpperCase();
+      html += `<div class="result-favicon" style="display:flex;align-items:center;justify-content:center;background:var(--chip-bg);color:var(--fg-soft);font-weight:500;font-size:12px;">${escapeHtml(letter)}</div>`;
+    }
+    html += `<div class="result-displayed"><span class="site">${escapeHtml(displayed)}</span><span class="url">${escapeHtml(link)}</span></div></div>`;
+    html += `<a class="result-title result-link" href="${escapeAttr(link)}" ${targetAttr()}>${escapeHtml(r.title || '')}</a>`;
+    if (r.date) html += `<div class="result-snippet"><span class="date">${escapeHtml(r.date)}</span> — </div>`;
+    if (r.snippet) html += `<div class="result-snippet">${renderHighlighted(r.snippet, r.snippet_highlighted_words)}</div>`;
+    // Sitelinks (full or inline)
+    if (r.sitelinks?.inline?.length) {
+      html += `<div class="sitelinks inline">`;
+      r.sitelinks.inline.forEach(s => {
+        const sl = s.link || '#';
+        html += `<a class="sitelink" href="${escapeAttr(sl)}" ${targetAttr()}>${escapeHtml(s.title)}</a>`;
+      });
+      html += `</div>`;
+    } else if (r.sitelinks?.list?.length) {
+      html += `<div class="sitelinks">`;
+      r.sitelinks.list.slice(0, 4).forEach(s => {
+        const sl = s.link || '#';
+        html += `<div><a class="sitelink" href="${escapeAttr(sl)}" ${targetAttr()}>${escapeHtml(s.title)}</a>${s.description ? `<div class="sitelink-desc">${escapeHtml(s.description)}</div>` : ''}</div>`;
+      });
+      html += `</div>`;
+    }
+    // Actions
+    html += `<div class="result-actions">
+      <a class="result-action" href="${escapeAttr(link)}" ${targetAttr()}>Visit</a>
+      <button class="result-action" onclick="copyToClipboard('${escapeAttr(link)}')">Copy URL</button>
+      <button class="result-action" onclick="openLightboxFromResult('${escapeAttr(link)}', ${JSON.stringify(r.title).replace(/"/g, '&quot;')})">Preview</button>
+    </div>`;
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: SHOPPING
+// ============================================================
+function renderShopping(items) {
+  if (!items || !items.length) return '';
+  let html = `<div class="videos-section"><div class="videos-header">Shopping results</div><div class="shopping-carousel">`;
+  items.slice(0, 12).forEach(s => {
+    const link = s.link || s.source_link || '#';
+    html += `<div class="shop-item" onclick="window.open('${escapeAttr(link)}', '${settings.newTab ? '_blank' : '_self'}')">
+      <img src="${escapeAttr(s.thumbnail || '')}" class="shop-img" loading="lazy" onerror="this.style.background='var(--chip-bg)';this.removeAttribute('src')">
+      <div class="shop-title">${escapeHtml(s.title || '')}</div>
+      <div class="shop-price">${escapeHtml(s.price || '')}</div>
+      ${s.rating ? `<div class="shop-rating">★ ${escapeHtml(s.rating)}${s.reviews ? ` (${escapeHtml(s.reviews)})` : ''}</div>` : ''}
+      <div class="shop-source">${escapeHtml(s.source || '')}</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: NEWS
+// ============================================================
+function renderNews(items) {
+  if (!items || !items.length) return '';
+  let html = '';
+  items.forEach(n => {
+    const link = n.link || '#';
+    const publisher = n.source?.name || (typeof n.source === 'string' ? n.source : '');
+    html += `<div class="news-item" onclick="window.open('${escapeAttr(link)}', '${settings.newTab ? '_blank' : '_self'}')">
+      <div class="news-source">
+        ${n.source?.icon ? `<img src="${escapeAttr(n.source.icon)}" class="news-favicon" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}
+        <div class="news-publisher">${escapeHtml(publisher)}</div>
+        ${n.date ? `<div class="news-date">${escapeHtml(n.date)}</div>` : ''}
+      </div>
+      <div style="overflow:auto;">
+        ${n.thumbnail ? `<img src="${escapeAttr(n.thumbnail)}" class="news-thumb" loading="lazy" onerror="this.style.display='none'">` : ''}
+        <div class="news-title">${escapeHtml(n.title || '')}</div>
+        <div class="news-snippet">${escapeHtml(n.snippet || '')}</div>
+        ${n.stories?.length ? `<div class="news-story-row">${n.stories.slice(0, 4).map(s => `<span>${escapeHtml(s.source?.name || '')}</span>`).join('<span>·</span>')}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+// ============================================================
+//  RENDER: IMAGES
+// ============================================================
+function renderImageGrid(images) {
+  if (!images || !images.length) return '';
+  let html = `<div class="image-grid">`;
+  images.forEach((img, idx) => {
+    const src = img.original || img.thumbnail;
+    const thumb = img.thumbnail || img.original;
+    const link = img.context_link || img.link || '#';
+    html += `<div class="image-grid-item" onclick="openLightbox('${escapeAttr(src)}', ${JSON.stringify(img.title || '').replace(/"/g, '&quot;')}, '${escapeAttr(link)}')">
+      <img src="${escapeAttr(thumb)}" loading="lazy" onerror="this.style.background='var(--chip-bg)';this.removeAttribute('src')">
+      <div class="image-grid-title">${escapeHtml(img.title || '')}</div>
+      <div class="image-grid-source">${escapeHtml(domainFromUrl(link))}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: LOCAL RESULTS
+// ============================================================
+function renderLocal(local) {
+  const places = local.places || [];
+  if (!places.length) return '';
+  let html = `<div class="local-results">`;
+  if (local.map_link) {
+    html += `<a href="${escapeAttr(local.map_link)}" ${targetAttr()} style="display:block;"><div class="local-map">🗺️ View on Maps</div></a>`;
+  }
+  places.forEach(p => {
+    const link = p.link || p.website || '#';
+    html += `<div class="local-item">
+      <div class="local-title" onclick="window.open('${escapeAttr(link)}', '${settings.newTab ? '_blank' : '_self'}')">${escapeHtml(p.title || '')}</div>
+      <div class="local-data">
+        ${p.rating ? `<span class="local-rating">★</span><span class="local-rating-num">${escapeHtml(p.rating)} (${escapeHtml(p.reviews || 0)}) · </span>` : ''}
+        ${p.type ? escapeHtml(p.type) : ''}
+      </div>
+      <div class="local-data">${escapeHtml(p.address || '')}</div>
+      ${p.hours ? `<div class="local-data">${escapeHtml(p.hours)}</div>` : ''}
+      ${p.phone ? `<div class="local-data">📞 ${escapeHtml(p.phone)}</div>` : ''}
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+//  RENDER: PAA
+// ============================================================
+function renderPAA(questions) {
+  if (!questions || !questions.length) return '';
+  let html = `<div class="paa"><h3>People also ask</h3>`;
+  questions.forEach((q, i) => {
+    const question = q.question || q;
+    const answer = q.snippet || '';
+    const title = q.title || '';
+    const link = q.link || '';
+    html += `<div class="paa-item" data-idx="${i}" onclick="togglePAA(this)">
+      <div class="paa-q">${escapeHtml(question)} <span class="arrow">▾</span></div>
+      <div class="paa-a">
+        ${title ? `<div style="font-weight:500;margin-bottom:6px;">${escapeHtml(title)}</div>` : ''}
+        ${answer ? `<div>${renderHighlighted(answer, [])}</div>` : ''}
+        ${link ? `<div class="paa-a-source">From <a href="${escapeAttr(link)}" ${targetAttr()} style="color:var(--link);text-decoration:none;">${escapeHtml(domainFromUrl(link))}</a></div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+function togglePAA(el) {
+  el.classList.toggle('open');
+}
+
+// ============================================================
+//  RENDER: RELATED SEARCHES
+// ============================================================
+function renderRelated(items) {
+  if (!items || !items.length) return '';
+  let html = `<div class="related"><h3>Related searches</h3><div class="related-items">`;
+  items.forEach(rs => {
+    const q = rs.query || rs;
+    html += `<div class="related-item search-trigger" data-query="${escapeAttr(q)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"/></svg>${escapeHtml(q)}</div>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+// ============================================================
+//  TAB VISIBILITY (only show tabs that have results)
+// ============================================================
+// Update tab count badges — all tabs stay visible, this just shows/hides count numbers
+function updateTabCounts(d) {
+  const counts = {
+    all: 0,
+    images: d.images_results?.length || 0,
+    news: d.news_results?.length || d.top_stories?.length || 0,
+    videos: (d.inline_videos?.length || 0) + (d.short_videos?.length || 0),
+    shopping: d.shopping_results?.length || 0
+  };
+  Object.entries(counts).forEach(([tab, count]) => {
+    const el = document.getElementById('tab-' + tab);
+    if (!el) return;
+    let badge = el.querySelector('.tab-count');
+    if (count > 0 && tab !== 'all') {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'tab-count'; el.appendChild(badge); }
+      badge.textContent = count > 999 ? '999+' : count;
+    } else if (badge) {
+      badge.remove();
+    }
+  });
+}
+
+// ============================================================
+//  RENDER TAB
+// ============================================================
+function renderTabWithData(tab, data) {
+  if (!data) return;
+  const d = data;
+  let html = '';
+
+  if (tab === 'all') {
+    if (d.search_information) {
+      const total = d.search_information.total_results?.toLocaleString() || '0';
+      const time = d.search_information.time_taken_displayed || d.search_information.total_time || 0;
+      html += `<div class="stats">About ${total} results (${time} seconds)</div>`;
+    }
+    if (settings.ai) {
+      // Check all possible keys where SerpApi might return AI overview data
+      const aiData = d.ai_overview || d.ai_overview_v2 || d.ai_answer || d.instant_answers;
+      if (aiData) {
+        console.log('Rendering AI overview from:', d.ai_overview ? 'ai_overview' : d.ai_overview_v2 ? 'ai_overview_v2' : d.ai_answer ? 'ai_answer' : 'instant_answers');
+        html += renderAIOverview(aiData);
+      } else {
+        console.log('No AI overview data found in response');
+      }
+    }
+    if (d.ads?.length) {
+      html += `<div class="ads-label">Sponsored</div>`;
+      d.ads.forEach(ad => {
+        const link = ad.link || '#';
+        html += `<div class="ad-item">
+          <div class="ad-badge">Ad</div>
+          <a class="ad-title" href="${escapeAttr(link)}" ${targetAttr()}>${escapeHtml(ad.title || '')}</a>
+          <div class="ad-displayed">${escapeHtml(ad.displayed_link || domainFromUrl(link))}</div>
+          <div class="ad-desc">${escapeHtml(ad.description || '')}</div>
+        </div>`;
+      });
+    }
+    if (d.shopping_results?.length) {
+      html += renderShopping(d.shopping_results);
+    }
+    if (d.answer_box) {
+      html += renderAnswerBox(d.answer_box);
+    }
+    if (d.knowledge_graph) {
+      html += renderKG(d.knowledge_graph);
+    }
+    if (d.organic_results?.length) {
+      html += renderOrganicResults(d.organic_results);
+    }
+    if (d.inline_videos?.length) html += renderVideos(d.inline_videos, 'Videos');
+    if (d.short_videos?.length) html += renderVideos(d.short_videos, 'Short videos');
+    if (d.news_results?.length || d.top_stories?.length) {
+      const news = d.news_results || d.top_stories;
+      html += `<div class="videos-section"><div class="videos-header">Top stories</div>` + renderNews(news.slice(0, 5)) + `</div>`;
+    }
+    if (d.local_results?.places?.length) {
+      html += renderLocal(d.local_results);
+    }
+    if (d.images_results?.length) {
+      html += `<div class="videos-section"><div class="videos-header">Images</div><div class="img-carousel">`;
+      d.images_results.slice(0, 12).forEach(img => {
+        const link = img.context_link || img.link || '#';
+        html += `<div class="img-item" onclick="openLightbox('${escapeAttr(img.original || img.thumbnail)}', ${JSON.stringify(img.title || '').replace(/"/g, '&quot;')}, '${escapeAttr(link)}')">
+          <img src="${escapeAttr(img.thumbnail)}" loading="lazy" onerror="this.style.background='var(--chip-bg)';this.removeAttribute('src')">
+          <div class="img-item-title">${escapeHtml(img.title || '')}</div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
+    if (d.related_questions?.length) {
+      html += renderPAA(d.related_questions);
+    }
+    if (d.related_searches?.length) {
+      html += renderRelated(d.related_searches);
+    }
+  } else if (tab === 'images') {
+    if (d.images_results?.length) {
+      html += renderImageGrid(d.images_results);
+    } else {
+      html = '<div class="loading">No images found</div>';
+    }
+  } else if (tab === 'news') {
+    if (d.news_results?.length || d.top_stories?.length) {
+      const news = d.news_results || d.top_stories;
+      html = renderNews(news);
+    } else {
+      html = '<div class="loading">No news results</div>';
+    }
+  } else if (tab === 'videos') {
+    let vh = '';
+    if (d.inline_videos?.length) vh += renderVideos(d.inline_videos, 'Videos');
+    if (d.short_videos?.length) vh += renderVideos(d.short_videos, 'Short videos');
+    html = vh || '<div class="loading">No videos found</div>';
+  } else if (tab === 'shopping') {
+    if (d.shopping_results?.length) {
+      html = renderShopping(d.shopping_results);
+    } else {
+      html = '<div class="loading">No shopping results found</div>';
+    }
+  }
+
+  if (!html) html = '<div class="loading">No results found</div>';
+  results.innerHTML = html;
+
+  // Append pagination
+  if (tab === 'all' && d.organic_results?.length) {
+    results.innerHTML += renderPagination();
+  }
+}
+
+// Wrapper: render a tab using currentData (the main search data)
+function renderTab(tab) {
+  renderTabWithData(tab, currentData);
+}
+
+function renderPagination() {
+  const totalPages = 10;
+  let html = `<div class="pagination">
+    <div class="google-logo-mini"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+    <div class="page-numbers">`;
+  if (currentPage > 1) html += `<div class="page-prev" onclick="goToPage(${currentPage - 1})"><span>‹</span> Previous</div>`;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+      html += `<div class="page-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</div>`;
+    } else if (Math.abs(i - currentPage) === 3) {
+      html += `<div class="page-num">…</div>`;
+    }
+  }
+  if (currentPage < totalPages) html += `<div class="page-next" onclick="goToPage(${currentPage + 1})">Next <span>›</span></div>`;
+  html += `</div></div>`;
+  return html;
+}
+
+function goToPage(p) {
+  currentPage = p;
+  doSearch(currentQuery, { keepPage: true });
+  window.scrollTo(0, 0);
+}
+
+// ============================================================
+//  TAB CLICK
+// ============================================================
+tabs.addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab || !hasSearched) return;
+  // Don't allow clicking a tab that's currently loading
+  if (tab.classList.contains('loading')) return;
+  tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  currentTab = tab.dataset.tab;
+  loadTab(currentTab);
+  window.scrollTo(0, 0);
+});
+
+// ============================================================
+//  GO HOME
+// ============================================================
+function goHome() {
+  if (searchInput) searchInput.value = '';
+  if (homeSearchInput) homeSearchInput.value = '';
+  currentData = null;
+  hasSearched = false;
+  currentTab = 'all';
+  currentPage = 1;
+  if (homepage) homepage.classList.remove('hidden');
+  if (header) header.classList.remove('show');
+  if (results) results.innerHTML = '';
+  if (tabs) {
+    tabs.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'all'));
+    // Close tools row if open
+    const tr = document.getElementById('toolsRow');
+    if (tr) tr.classList.remove('show');
+  }
+  updateKeyStatus();
+  if (homeSearchInput) homeSearchInput.focus();
+}
+
+// ============================================================
+//  "I'M FEELING LUCKY"
+// ============================================================
+async function feelingLucky() {
+  const q = homeSearchInput.value.trim();
+  if (!q) { showToast('Type a search first'); return; }
+  const key = getKey();
+  if (!key) { openSettings(); return; }
+  homeSetup.innerHTML = '<div class="loading">Taking you to the best result…</div>';
+  try {
+    const url = `${SERPAPI_BASE}?engine=google_i_lucky&q=${encodeURIComponent(q)}&api_key=${key}`;
+    const data = await fetchViaWorker(url);
+    if (data.url) { window.location.href = data.url; return; }
+    if (data.organic_results?.[0]?.link) { window.location.href = data.organic_results[0].link; return; }
+    homeSetup.innerHTML = '<div class="error">No direct result found. Try a normal search instead.</div>';
+  } catch (err) {
+    homeSetup.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ============================================================
+//  MAIN SEARCH FUNCTION
+// ============================================================
+async function doSearch(q, opts = {}) {
+  q = (q || '').trim();
+  if (!q) return;
+  const key = getKey();
+  if (!key) { openSettings(); return; }
+
+  // Track search
+  currentQuery = q;
+  if (!opts.keepPage) currentPage = 1;
+  currentTab = 'all';
+
+  // Show header, hide homepage
+  if (homepage) homepage.classList.add('hidden');
+  if (header) header.classList.add('show');
+  if (searchInput) searchInput.value = q;
+  if (homeSearchInput) homeSearchInput.value = q;
+  if (clearBtn) clearBtn.style.display = 'flex';
+
+  // All tabs are always visible now; just set 'all' as active
+  if (tabs) tabs.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'all'));
+  // Close tools row if open on mobile
+  const tr = document.getElementById('toolsRow');
+  if (tr) tr.classList.remove('show');
+
+  results.innerHTML = `<div class="loading">Searching for "${escapeHtml(q)}"<div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+
+  // Abort any in-flight request
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+
+  try {
+    let url = buildSerpUrl(q);
+    let data = await fetchViaWorker(url);
+    console.log('SerpApi response:', data);
+    console.log('SerpApi response keys:', Object.keys(data));
+
+    if (data.error) throw new Error(data.error);
+
+    // Debug: log AI-related fields specifically
+    const aiKeys = Object.keys(data).filter(k => k.includes('ai') || k.includes('overview') || k.includes('answer') || k.includes('summary'));
+    console.log('AI-related keys in response:', aiKeys);
+    if (data.ai_overview) console.log('ai_overview content:', data.ai_overview);
+    if (data.ai_overview_v2) console.log('ai_overview_v2 content:', data.ai_overview_v2);
+
+    // Fetch AI overview pagination if needed (merge instead of replace)
+    if (settings.ai && data.ai_overview?.page_token) {
+      console.log('Fetching AI Overview continuation…');
+      try {
+        const aiUrl = `${SERPAPI_BASE}?engine=google_ai_overview&page_token=${data.ai_overview.page_token}&api_key=${key}`;
+        const aiData = await fetchViaWorker(aiUrl);
+        if (aiData.ai_overview) {
+          // MERGE: keep original metadata + add new text_blocks/references
+          data.ai_overview = {
+            ...data.ai_overview,
+            ...aiData.ai_overview,
+            text_blocks: [
+              ...(data.ai_overview.text_blocks || []),
+              ...(aiData.ai_overview.text_blocks || [])
+            ],
+            references: [
+              ...(data.ai_overview.references || []),
+              ...(aiData.ai_overview.references || [])
+            ]
+          };
+        }
+      } catch (aiErr) {
+        console.warn('AI overview continuation failed:', aiErr);
+      }
+    }
+
+    // If AI setting is on but no AI overview was returned, try fetching it separately
+    // using the dedicated google_ai_overview engine
+    if (settings.ai && !data.ai_overview && !data.ai_overview_v2) {
+      console.log('No AI overview in main response — fetching from dedicated engine…');
+      try {
+        const aiParams = new URLSearchParams();
+        aiParams.set('engine', 'google_ai_overview');
+        aiParams.set('q', q);
+        aiParams.set('api_key', key);
+        aiParams.set('no_cache', 'true');
+        if (currentLocation) aiParams.set('gl', currentLocation);
+        if (currentLang) aiParams.set('hl', currentLang);
+        const aiUrl = `${SERPAPI_BASE}?${aiParams.toString()}`;
+        const aiData = await fetchViaWorker(aiUrl);
+        console.log('Dedicated AI overview response:', aiData);
+        if (aiData.ai_overview) {
+          data.ai_overview = aiData.ai_overview;
+        } else if (aiData.ai_overview_v2) {
+          data.ai_overview = aiData.ai_overview_v2;
+        }
+      } catch (aiErr) {
+        console.warn('Dedicated AI overview fetch failed:', aiErr);
+      }
+    }
+
+    // Last resort: if we still have no AI overview, synthesize one from answer_box/knowledge_graph
+    // so the AI Overview section always appears when the setting is on
+    if (settings.ai && !data.ai_overview && !data.ai_overview_v2) {
+      const synthetic = synthesizeAIOverview(data);
+      if (synthetic) {
+        console.log('Synthesized AI overview from answer_box/knowledge_graph');
+        data.ai_overview = synthetic;
+      }
+    }
+
+    currentData = data;
+    hasSearched = true;
+    addHistory(q);
+
+    // Cache the initial search data for the 'all' tab
+    if (!tabCache[q]) tabCache[q] = {};
+    tabCache[q].all = data;
+
+    // Update tab count badges (but keep all tabs visible)
+    updateTabCounts(data);
+
+    renderTab('all');
+
+    if (!data.organic_results?.length && !data.images_results?.length && !data.news_results?.length && !data.knowledge_graph && !data.answer_box) {
+      results.innerHTML = `<div class="error"><div class="error-title">No results found</div><div class="error-hint">Try different keywords or check your location/language filters.</div></div>`;
+    }
+
+  } catch (err) {
+    console.error('Search error:', err);
+    let hint = '';
+    const m = err.message.toLowerCase();
+    if (m.includes('invalid') || m.includes('api key') || m.includes('unauthorized')) {
+      hint = 'Your SerpApi key looks invalid or expired. Open Settings to update it.';
+    } else if (m.includes('rate') || m.includes('limit') || m.includes('quota')) {
+      hint = 'You have hit your SerpApi plan limit. Wait a bit or upgrade your plan.';
+    } else if (m.includes('network') || m.includes('failed to fetch')) {
+      hint = 'Network/CORS issue. The Cloudflare worker proxy may be down.';
+    } else if (m.includes('parameter') || m.includes('missing')) {
+      hint = 'A request parameter is invalid. Try a simpler search.';
+    }
+    results.innerHTML = `<div class="error"><div class="error-title">Search failed</div><div>${escapeHtml(err.message)}</div>${hint ? `<div class="error-hint">${escapeHtml(hint)}</div>` : ''}<div class="error-hint" style="margin-top:12px;"><a onclick="openSettings()" style="color:inherit;text-decoration:underline;cursor:pointer;">Open Settings</a></div></div>`;
+  }
+}
+
+// ============================================================
+//  DOWNLOAD RESULTS (JSON / CSV)
+// ============================================================
+function downloadResults(format) {
+  if (!currentData) { showToast('Search first'); return; }
+  const blob = format === 'json'
+    ? new Blob([JSON.stringify(currentData, null, 2)], { type: 'application/json' })
+    : new Blob([resultsToCsv(currentData)], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `search-${currentQuery.replace(/[^a-z0-9]+/gi, '_').slice(0, 30)}-${currentPage}.${format}`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Downloaded ' + format.toUpperCase());
+}
+function resultsToCsv(d) {
+  const rows = [['Type', 'Title', 'URL', 'Source', 'Snippet']];
+  (d.organic_results || []).forEach(r => rows.push(['organic', r.title, r.link, r.displayed_link, (r.snippet || '').replace(/[\r\n]+/g, ' ')]));
+  (d.ads || []).forEach(a => rows.push(['ad', a.title, a.link, a.displayed_link, (a.description || '').replace(/[\r\n]+/g, ' ')]));
+  (d.news_results || d.top_stories || []).forEach(n => rows.push(['news', n.title, n.link, n.source?.name || n.source, (n.snippet || '').replace(/[\r\n]+/g, ' ')]));
+  (d.shopping_results || []).forEach(s => rows.push(['shopping', s.title, s.link, s.source, s.price]));
+  (d.images_results || []).forEach(i => rows.push(['image', i.title, i.original, i.source, i.title]));
+  return rows.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
+// ============================================================
+//  LIGHTBOX (image preview)
+// ============================================================
+function openLightbox(src, title, pageUrl) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxTitle').textContent = title || '';
+  document.getElementById('lightboxSource').textContent = pageUrl ? 'From ' + domainFromUrl(pageUrl) : '';
+  const visitLink = document.getElementById('lightboxVisit');
+  visitLink.href = pageUrl || '#';
+  const dl = document.getElementById('lightboxDownload');
+  dl.href = src;
+  document.getElementById('lightbox').classList.add('show');
+}
+function openLightboxFromResult(url, title) {
+  // Try to grab an og:image; simplest: open the URL in new tab
+  window.open(url, '_blank');
+}
+function closeLightbox(e) {
+  if (e && e.target.id !== 'lightbox' && !e.target.classList.contains('lightbox-close') && !e.target.classList.contains('lightbox')) return;
+  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lightboxImg').src = '';
+}
+
+// ============================================================
+//  COPY TO CLIPBOARD
+// ============================================================
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard')).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast('Copied'); } catch { showToast('Copy failed'); }
+    document.body.removeChild(ta);
+  });
+}
+
+// ============================================================
+//  INIT (wrapped in DOMContentLoaded for safety in blob/sandbox envs)
+// ============================================================
+function initApp() {
+  try {
+    applyDark();
+    updateKeyStatus();
+    updateSafeBtn();
+    // Restore saved location/lang/time selectors
+    const locSel = document.getElementById('locationSelect');
+    const langSel = document.getElementById('langSelect');
+    const timeSel = document.getElementById('timeSelect');
+    if (locSel && currentLocation) locSel.value = currentLocation;
+    if (langSel && currentLang) langSel.value = currentLang;
+    if (timeSel && currentTime) timeSel.value = currentTime;
+
+    // Focus search on load (slight delay to let layout settle)
+    if (homeSearchInput) setTimeout(() => homeSearchInput.focus(), 100);
+  } catch (e) {
+    console.error('Init error:', e);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  // / focuses search
+  if (e.key === '/' && document.activeElement !== searchInput && document.activeElement !== homeSearchInput && !e.target.matches('input,textarea,select')) {
+    e.preventDefault();
+    if (hasSearched ? searchInput : homeSearchInput) (hasSearched ? searchInput : homeSearchInput).focus();
+  }
+  // Esc closes modals
+  if (e.key === 'Escape') {
+    if (settingsModal && settingsModal.classList.contains('show')) closeSettings();
+    const lb = document.getElementById('lightbox');
+    if (lb && lb.classList.contains('show')) closeLightbox();
+  }
+});
+</script>
+</body>
+</html>
