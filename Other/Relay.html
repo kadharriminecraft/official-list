@@ -1081,10 +1081,10 @@ function isImageUrl(u){
    HTTPS site, including AWS-hosted static sites, when the /api/proxy route
    is deployed alongside the static file). The probe is silent — if the
    route isn't available, public proxies take over with no nag message. */
-var SERVER_URL_ORIGIN = 'https://preview-chat-4e2635ed-a79d-4c58-8c05-6c6b15ec7cb3.space-z.ai';
+var SERVER_URL_ORIGIN = '__RELAY_SERVER_ORIGIN__';
 function normalizedServerBase(s){
   s = String(s || '').trim();
-  if (!/^https?:\/\//i.test(s) || s === 'https://preview-chat-4e2635ed-a79d-4c58-8c05-6c6b15ec7cb3.space-z.ai') return '';
+  if (!/^https?:\/\//i.test(s) || s === '__RELAY_SERVER_ORIGIN__') return '';
   try{ var u = new URL(s); return u.origin; }catch(e){ return ''; }
 }
 function serverProxyBase(){
@@ -1111,7 +1111,7 @@ var serverAvailable = false;
 var SUPER_PROXY = { id:'super', name:'Super Worker', asset:true, style:'rawpath', prefix:'' };
 var superAvailable = false;
 var superVersion = 0;         /* parsed from /__relay/health: relay-super-ok/1.5 */
-var SUPER_MIN_VERSION = 1.5;  /* file relay (/__relay/put) + escape capture need it */
+var SUPER_MIN_VERSION = 1.6;  /* file relay + escape capture + 52xx retries (monochrome.tf API mirrors) need it */
 function refreshSuperProxyPrefix(){
   var s = String(settings.superUrl || '').trim();
   if (s && !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !/^\//.test(s)) s = 'https://' + s;
@@ -1144,7 +1144,7 @@ function probeSuperWorker(){
            outdated one silently disables them. Tell the user ONCE per boot. */
         if (superVersion && superVersion < SUPER_MIN_VERSION && !window.__rlSuperWarned){
           window.__rlSuperWarned = true;
-          toast('Super worker is v' + superVersion + ' — re-deploy v' + SUPER_MIN_VERSION + ' (Settings → Copy worker code) for download fixes', 'alert');
+          toast('Super worker is v' + superVersion + ' — re-deploy v' + SUPER_MIN_VERSION + ' (Settings → Copy worker code) for download + app-site fixes', 'alert');
         }
         try{ updateSuperStatusLine && updateSuperStatusLine(); }catch(eSS){}
       }
@@ -1694,8 +1694,72 @@ function RUNTIME(cfg){
   var W = window, D = document, M = Math;
   var navId = cfg.navId, BASE = cfg.base, IMG = cfg.imgMode;
   var PX = cfg.proxy, KNOWN = cfg.knownPrefixes || [];
+  var SPANAV = !!cfg.spaNav; /* worker v1.6+ serves location-patched JS */
   var IMGFB = cfg.imgFallback || ''; /* image-specialized fallback (wsrv.nl) */
   var IMGFB2 = cfg.imgFallback2 || ''; /* second image fallback (weserv.nl) */
+  /* ---- site seeds ----
+     Some SPAs read window.location.hostname at module init to pick their
+     backend (monochrome.tf chooses auth.monochrome.tf vs auth.samidy.com
+     exactly that way) — in the sandbox the hostname is empty, so they dial
+     the WRONG server. The pipeline passes per-site window properties here;
+     they are planted before any site script runs. */
+  if (cfg.seeds){
+    try{
+      for (var sk in cfg.seeds){
+        try{ Object.defineProperty(W, sk, { value: cfg.seeds[sk], writable: true, configurable: true }); }catch(eS1){ try{ W[sk] = cfg.seeds[sk]; }catch(eS2){} }
+      }
+    }catch(eS){}
+  }
+  /* ---- fake location (the SPA router unlock) ----
+     window.location is [Unforgeable]: pathname cannot be redefined, and in
+     this sandbox it is stuck at "srcdoc" with origin "null". Every
+     pathname-routed SPA (monochrome.tf's router, SvelteKit apps, countless
+     others) reads window.location.pathname after history.pushState and
+     renders the WRONG route — so internal navigation dies while the shell
+     renders. The super worker now patches served JS: every
+     window.location.<member> token becomes (window.__rlLoc?...). THIS
+     function supplies the fake — a persistent object whose pathname/search
+     track the real page BASE plus every shimmed pushState/replaceState, so
+     the site's own router reads a TRUE location and routes correctly. */
+  var RL = { pathname: '/', search: '', lastPush: 0 };
+  try{
+    var RLBASE = new URL(BASE);
+    RL.pathname = RLBASE.pathname || '/';
+    RL.search = RLBASE.search || '';
+    RL.origin = RLBASE.origin;
+    RL.hostname = RLBASE.hostname;
+    RL.protocol = RLBASE.protocol;
+    RL.port = RLBASE.port;
+  }catch(eRLB){}
+  function rlSetPath(u){
+    try{
+      var pu = new URL(String(u), BASE);
+      RL.pathname = pu.pathname || '/';
+      RL.search = pu.search || '';
+      RL.lastPush = Date.now();
+    }catch(eP){}
+  }
+  try{
+    W.__rlLocInst = {
+      get pathname(){ return RL.pathname; },
+      set pathname(v){},
+      get search(){ return RL.search; },
+      set search(v){},
+      get origin(){ return RL.origin || BASE; },
+      get hostname(){ return RL.hostname || ''; },
+      get protocol(){ return RL.protocol || 'https:'; },
+      get port(){ return RL.port || ''; },
+      get hash(){ try{ return W.location.hash || ''; }catch(eH){ return ''; } },
+      set hash(v){ try{ W.location.hash = String(v).charAt(0) === '#' ? String(v) : '#' + String(v); }catch(eH2){} },
+      get href(){ return (RL.origin || BASE) + RL.pathname + RL.search + (this.hash || ''); },
+      set href(v){ try{ post({ t: 'nav', url: abs(String(v)) }); }catch(eNav){} },
+      assign: function(u){ try{ post({ t: 'nav', url: abs(String(u)) }); }catch(eA){} },
+      replace: function(u){ try{ post({ t: 'nav', url: abs(String(u)) }); }catch(eR2){} },
+      reload: function(){ try{ post({ t: 'nav', url: (RL.origin || BASE) + RL.pathname + RL.search }); }catch(eRe){} },
+      toString: function(){ return this.href; }
+    };
+    W.__rlLoc = function(){ return W.__rlLocInst; };
+  }catch(eLoc){}
   function imgfb(u){ return IMGFB ? IMGFB + encodeURIComponent(u) : ''; }
   function imgfb2(u){
     if (!IMGFB2) return '';
@@ -2009,10 +2073,26 @@ function RUNTIME(cfg){
       post({ t: 'ext', url: href });
       return;
     }
-    ev.preventDefault(); ev.stopPropagation();
+    ev.preventDefault();
     var u = abs(href);
     var newTab = (a.target === '_blank' || a.target === '_top' || a.target === '_parent') || ev.metaKey || ev.ctrlKey;
-    post({ t: 'nav', url: u, newTab: !!newTab });
+    if (newTab){ ev.stopPropagation(); post({ t: 'nav', url: u, newTab: true }); return; }
+    /* same-site anchors: the page may run its OWN SPA router on this click
+       (preventDefault only killed the raw navigation — its listener still
+       fires because we did NOT stopPropagation for this branch). Give it
+       160ms: if history.pushState was shimmed inside that window, the site
+       navigated itself and we stay out of the way. Plain sites with no
+       router fall through to a normal Relay navigation. */
+    var rlOrigin = (RL.origin || '');
+    if (SPANAV && rlOrigin && (u.indexOf(rlOrigin + '/') === 0 || u === rlOrigin)){
+      var rlClickT = Date.now();
+      setTimeout(function(){
+        if (RL.lastPush < rlClickT) post({ t: 'nav', url: u, newTab: false });
+      }, 160);
+      return;
+    }
+    ev.stopPropagation();
+    post({ t: 'nav', url: u, newTab: false });
   }, true);
 
   /* ---- form interception ---- */
@@ -2294,6 +2374,7 @@ function RUNTIME(cfg){
         var au = urlOkForAddr(url) ? abs(String(url)) : (lastAddr || BASE);
         hStates.push({ st: st, url: au });
         hIdx = hStates.length - 1; addrNotify(hStates[hIdx].url);
+        rlSetPath(url);
       }
     };
     H.replaceState = function(st, title, url){
@@ -2303,13 +2384,14 @@ function RUNTIME(cfg){
         if (hIdx >= 0){ hStates[hIdx] = { st: st, url: au2 }; }
         else { hStates = [{ st: st, url: au2 }]; hIdx = 0; }
         addrNotify(hStates[hIdx].url);
+        rlSetPath(url);
       }
     };
-    H.back = function(){ if (hIdx > 0){ hIdx--; var e = hStates[hIdx]; lastState = e.st; addrNotify(e.url); firePop(e.st); } };
-    H.forward = function(){ if (hIdx < hStates.length - 1){ hIdx++; var e2 = hStates[hIdx]; lastState = e2.st; addrNotify(e2.url); firePop(e2.st); } };
+    H.back = function(){ if (hIdx > 0){ hIdx--; var e = hStates[hIdx]; lastState = e.st; addrNotify(e.url); rlSetPath(e.url); firePop(e.st); } };
+    H.forward = function(){ if (hIdx < hStates.length - 1){ hIdx++; var e2 = hStates[hIdx]; lastState = e2.st; addrNotify(e2.url); rlSetPath(e2.url); firePop(e2.st); } };
     H.go = function(n){
       var t = hIdx + (n || 0);
-      if (t >= 0 && t < hStates.length && t !== hIdx){ hIdx = t; lastState = hStates[hIdx].st; addrNotify(hStates[hIdx].url); firePop(hStates[hIdx].st); }
+      if (t >= 0 && t < hStates.length && t !== hIdx){ hIdx = t; lastState = hStates[hIdx].st; addrNotify(hStates[hIdx].url); rlSetPath(hStates[hIdx].url); firePop(hStates[hIdx].st); }
     };
     Object.defineProperty(H, 'length', { get: function(){ return hStates.length; }, configurable: true });
     /* many sites (SPA routers, Steam's shared js) read history.state — expose
@@ -2341,6 +2423,430 @@ function RUNTIME(cfg){
   }
   try{ W.sessionStorage.getItem(''); }catch(e){
     try{ Object.defineProperty(W, 'sessionStorage', { value: memStore(), configurable: true }); }catch(e2){}
+  }
+  /* ---- IndexedDB (in-memory) ----
+     Opaque origins get "access denied in this context" on indexedDB.open()
+     — one synchronous SecurityError kills app init for any site that awaits
+     its database during boot (music players, PWAs, offline caches). That is
+     exactly how monochrome.tf died: MonochromeDB v11 could never open, so
+     no menu opened and search never ran. Same contract as the storage shims:
+     only installed when the real API is unusable; fully in-memory (per page
+     instance), asynchronous like real IDB, never throws into site code. */
+  function rlIDBFactory(){
+    function domEx(name, msg){
+      try{ return new DOMException(msg || name, name); }
+      catch(e){ var err = new Error(msg || name); err.name = name; return err; }
+    }
+    var RANK = { number: 1, string: 2, date: 3, array: 4 };
+    function cmpKeys(a, b){
+      if (a === b) return 0;
+      var ta = keyType(a), tb = keyType(b);
+      if (ta !== tb) return (RANK[ta] || 9) < (RANK[tb] || 9) ? -1 : 1;
+      if (ta === 'number' || ta === 'date') { var va = ta === 'date' ? a.getTime() : a, vb = tb === 'date' ? b.getTime() : b; return va < vb ? -1 : (va > vb ? 1 : 0); }
+      if (ta === 'string') return a < b ? -1 : (a > b ? 1 : 0);
+      if (ta === 'array') {
+        var n = Math.min(a.length, b.length);
+        for (var i = 0; i < n; i++) { var c = cmpKeys(a[i], b[i]); if (c !== 0) return c; }
+        return a.length - b.length;
+      }
+      return 0;
+    }
+    function keyType(k){ return (k instanceof Date) ? 'date' : Array.isArray(k) ? 'array' : (typeof k); }
+    function kser(k){
+      if (k instanceof Date) return 'd' + k.getTime();
+      if (Array.isArray(k)) return 'a' + JSON.stringify(k);
+      return keyType(k).charAt(0) + String(k);
+    }
+    function validKey(k){
+      if (k === undefined || k === null) return false;
+      var t = typeof k;
+      if (t === 'number') return isFinite(k);
+      if (t === 'string') return true;
+      if (k instanceof Date) return !isNaN(k.getTime());
+      if (Array.isArray(k)) { for (var i = 0; i < k.length; i++) { if (!validKey(k[i])) return false; } return true; }
+      return false;
+    }
+    function extractKey(keyPath, val, autoInc){
+      if (keyPath == null || keyPath === '') return undefined;
+      var paths = Array.isArray(keyPath) ? keyPath : [keyPath];
+      var out = [];
+      for (var i = 0; i < paths.length; i++) {
+        var seg = String(paths[i]).split('.');
+        var cur = val;
+        for (var j = 0; j < seg.length; j++) {
+          if (cur == null) { cur = undefined; break; }
+          cur = cur[seg[j]];
+        }
+        if (cur === undefined) { return autoInc ? '__auto__' : undefined; }
+        out.push(cur);
+      }
+      return out.length === 1 ? out[0] : out;
+    }
+    function injectKey(keyPath, value, k){
+      try{
+        var seg = String(keyPath).split('.');
+        var cur = value;
+        for (var i = 0; i < seg.length - 1; i++) { if (cur[seg[i]] == null) cur[seg[i]] = {}; cur = cur[seg[i]]; }
+        cur[seg[seg.length - 1]] = k;
+      }catch(e){}
+    }
+    function rangeBounds(rng){
+      if (rng === undefined || rng === null || typeof rng !== 'object' || !('lower' in rng)) return null;
+      return rng;
+    }
+    function inRange(k, rng){
+      if (rng === undefined || rng === null) return true;
+      if (typeof rng !== 'object' || !('lower' in rng)) return true;
+      if (rng.lower !== undefined) {
+        var c = cmpKeys(k, rng.lower);
+        if (rng.lowerOpen ? c <= 0 : c < 0) return false;
+      }
+      if (rng.upper !== undefined) {
+        var c2 = cmpKeys(k, rng.upper);
+        if (rng.upperOpen ? c2 >= 0 : c2 > 0) return false;
+      }
+      return true;
+    }
+    function scan(st, rng, idx){
+      var rows = [];
+      var bounds = rangeBounds(rng);
+      /* a plain KEY (string/number/date) is an exact-match query */
+      if (bounds === null && rng !== undefined && rng !== null && typeof rng !== 'object') {
+        bounds = { lower: rng, upper: rng, lowerOpen: false, upperOpen: false };
+      } else if (bounds === null && rng instanceof Date) {
+        bounds = { lower: rng, upper: rng, lowerOpen: false, upperOpen: false };
+      }
+      for (var ks in st.data) {
+        if (!Object.prototype.hasOwnProperty.call(st.data, ks)) continue;
+        var rec = st.data[ks];
+        var k = idx ? extractKey(idx.keyPath, rec.v, false) : rec.k;
+        if (k === undefined || k === '__auto__') continue;
+        if (idx && idx.multiEntry && Array.isArray(k)) {
+          var seen = {};
+          for (var mi = 0; mi < k.length; mi++) {
+            var mk = k[mi];
+            if (seen[kser(mk)]) continue; seen[kser(mk)] = 1;
+            if (inRange(mk, bounds)) { rows.push({ k: rec.k, ik: mk, v: rec.v }); }
+          }
+        } else if (inRange(k, bounds)) { rows.push({ k: rec.k, ik: k, v: rec.v }); }
+      }
+      rows.sort(function (a, b) { return cmpKeys(a.ik, b.ik) || cmpKeys(a.k, b.k); });
+      if (idx && idx.unique) {
+        var dedup = [], last = null;
+        for (var i = 0; i < rows.length; i++) { if (last === null || cmpKeys(rows[i].ik, last) !== 0) { dedup.push(rows[i]); last = rows[i].ik; } }
+        rows = dedup;
+      }
+      return rows;
+    }
+    var DBS = {}; /* name -> { version, stores } — survives open()s in this page */
+    function mkStrList(names){
+      var l = { length: names.length, contains: function (n) { return names.indexOf(n) >= 0; }, item: function (i) { return names[i] || null; } };
+      for (var i = 0; i < names.length; i++) l[i] = names[i];
+      return l;
+    }
+    function fire(obj, type, ev){
+      try{
+        var e = ev || {};
+        e.type = type; e.target = obj; e.currentTarget = obj;
+        if (typeof obj['on' + type] === 'function') obj['on' + type](e);
+        var ls = obj._ls && obj._ls[type];
+        if (ls) for (var i = 0; i < ls.length; i++) { try { ls[i](e); } catch (eL) {} }
+      }catch(eF){}
+    }
+    function mkReq(src, tx){
+      return {
+        source: src || null, transaction: tx || null, readyState: 'pending',
+        result: undefined, error: null, onsuccess: null, onerror: null, onupgradeneeded: null, onblocked: null, _ls: null,
+        addEventListener: function (t, fn) { if (!this._ls) this._ls = {}; (this._ls[t] = this._ls[t] || []).push(fn); },
+        removeEventListener: function (t, fn) { var a = this._ls && this._ls[t]; if (a) { var i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); } }
+      };
+    }
+    function succeed(req, res){ req.result = res; req.readyState = 'done'; fire(req, 'success', { target: req }); }
+    function failReq(req, err){ req.error = err; req.readyState = 'done'; fire(req, 'error', { target: req }); }
+    function makeTx(dbRec, storeNames, mode){
+      var names = storeNames.slice();
+      var tx = {
+        mode: mode, db: null, error: null,
+        oncomplete: null, onabort: null, onerror: null, _ls: null, _done: false, _ops: 0, _timer: null, _upgrading: false,
+        objectStoreNames: mkStrList(names),
+        addEventListener: function (t, fn) { if (!this._ls) this._ls = {}; (this._ls[t] = this._ls[t] || []).push(fn); },
+        removeEventListener: function () {},
+        objectStore: function (name) {
+          var st = dbRec.stores[name];
+          if (!st || names.indexOf(name) < 0) throw domEx('NotFoundError', 'The specified object store was not found: ' + name);
+          return makeStore(st, tx);
+        },
+        abort: function () {
+          if (tx._done) return;
+          tx._done = true;
+          if (tx._timer) clearTimeout(tx._timer);
+          fire(tx, 'abort');
+        },
+        _queue: function (fn) {
+          tx._ops++;
+          if (tx._timer) { clearTimeout(tx._timer); tx._timer = null; }
+          setTimeout(function () {
+            try { fn(); }
+            finally {
+              tx._ops--;
+              if (!tx._done && tx._ops <= 0 && !tx._upgrading) {
+                tx._timer = setTimeout(function () {
+                  if (!tx._done && tx._ops <= 0 && !tx._upgrading) { tx._done = true; fire(tx, 'complete'); }
+                }, 0);
+              }
+            }
+          }, 0);
+        }
+      };
+      tx._queue(function () {});
+      return tx;
+    }
+    function openCursorOn(store, tx, st, rng, direction, keysOnly){
+      var req = mkReq(store, tx);
+      tx._queue(function () {
+        var rows = scan(st, rng);
+        var dir = String(direction || 'next');
+        if (/^prev/.test(dir)) rows = rows.reverse();
+        var pos = 0, unique = /unique$/.test(dir), lastIK = null;
+        function next(){
+          while (pos < rows.length) {
+            var row = rows[pos++];
+            if (unique && lastIK !== null && cmpKeys(row.ik, lastIK) === 0) continue;
+            lastIK = row.ik;
+            var cursor = {
+              source: store, direction: dir, key: keysOnly ? undefined : row.ik, primaryKey: row.k,
+              value: keysOnly ? undefined : row.v,
+              continue: function () { setTimeout(next, 0); },
+              continuePrimaryKey: function () { setTimeout(next, 0); },
+              advance: function (n) { pos += (n - 1); setTimeout(next, 0); },
+              update: function (v) {
+                if (keysOnly) throw domEx('ReadOnlyError', 'Key cursor cannot update');
+                var r2 = mkReq(store, tx);
+                var rec = st.data[kser(row.k)];
+                if (rec) { injectKey(st.keyPath, v, row.k); st.data[kser(row.k)] = { k: row.k, v: v }; }
+                tx._queue(function () { succeed(r2, row.k); });
+                return r2;
+              },
+              delete: function () {
+                var r2 = mkReq(store, tx);
+                delete st.data[kser(row.k)];
+                tx._queue(function () { succeed(r2, undefined); });
+                return r2;
+              }
+            };
+            succeed(req, cursor);
+            return;
+          }
+          succeed(req, undefined);
+        }
+        next();
+      });
+      return req;
+    }
+    function makeIndex(st, idx, tx){
+      return {
+        name: idx.name, keyPath: idx.keyPath, unique: !!idx.unique, multiEntry: !!idx.multiEntry, objectStore: null,
+        get: function (key) {
+          var req = mkReq(this, tx);
+          tx._queue(function () { var r = scan(st, key, idx)[0]; succeed(req, r ? r.v : undefined); });
+          return req;
+        },
+        getKey: function (key) {
+          var req = mkReq(this, tx);
+          tx._queue(function () { var r = scan(st, key, idx)[0]; succeed(req, r ? r.k : undefined); });
+          return req;
+        },
+        getAll: function (rng, count) {
+          var req = mkReq(this, tx);
+          tx._queue(function () { var r = scan(st, rng, idx).map(function (x) { return x.v; }); if (count != null) r = r.slice(0, count); succeed(req, r); });
+          return req;
+        },
+        getAllKeys: function (rng, count) {
+          var req = mkReq(this, tx);
+          tx._queue(function () { var r = scan(st, rng, idx).map(function (x) { return x.k; }); if (count != null) r = r.slice(0, count); succeed(req, r); });
+          return req;
+        },
+        count: function (rng) {
+          var req = mkReq(this, tx);
+          tx._queue(function () { succeed(req, scan(st, rng, idx).length); });
+          return req;
+        },
+        openCursor: function (rng, direction) { return openCursorOn(this, tx, st, rng, direction, false); },
+        openKeyCursor: function (rng, direction) { return openCursorOn(this, tx, st, rng, direction, true); }
+      };
+    }
+    function makeStore(st, tx){
+      var store = {
+        name: st.name, keyPath: (st.keyPath == null || st.keyPath === '') ? null : st.keyPath,
+        autoIncrement: !!st.autoIncrement, indexNames: null, transaction: tx,
+        put: function (value, key) { return queuePut(false, value, key); },
+        add: function (value, key) { return queuePut(true, value, key); },
+        get: function (key) {
+          var req = mkReq(store, tx);
+          tx._queue(function () { var rec = st.data[kser(key)]; succeed(req, rec ? rec.v : undefined); });
+          return req;
+        },
+        getKey: function (key) {
+          var req = mkReq(store, tx);
+          tx._queue(function () { var rec = st.data[kser(key)]; succeed(req, rec ? rec.k : undefined); });
+          return req;
+        },
+        delete: function (key) {
+          var req = mkReq(store, tx);
+          tx._queue(function () { delete st.data[kser(key)]; succeed(req, undefined); });
+          return req;
+        },
+        clear: function () {
+          var req = mkReq(store, tx);
+          tx._queue(function () { st.data = {}; succeed(req, undefined); });
+          return req;
+        },
+        count: function (rng) {
+          var req = mkReq(store, tx);
+          tx._queue(function () { succeed(req, scan(st, rng).length); });
+          return req;
+        },
+        getAll: function (rng, count) {
+          var req = mkReq(store, tx);
+          tx._queue(function () { var r = scan(st, rng).map(function (x) { return x.v; }); if (count != null) r = r.slice(0, count); succeed(req, r); });
+          return req;
+        },
+        getAllKeys: function (rng, count) {
+          var req = mkReq(store, tx);
+          tx._queue(function () { var r = scan(st, rng).map(function (x) { return x.k; }); if (count != null) r = r.slice(0, count); succeed(req, r); });
+          return req;
+        },
+        openCursor: function (rng, direction) { return openCursorOn(store, tx, st, rng, direction, false); },
+        openKeyCursor: function (rng, direction) { return openCursorOn(store, tx, st, rng, direction, true); },
+        createIndex: function (name, keyPath, opts) {
+          opts = opts || {};
+          var idx = { name: name, keyPath: keyPath, unique: !!opts.unique, multiEntry: !!opts.multiEntry };
+          st.indexes[name] = idx;
+          return makeIndex(st, idx, tx);
+        },
+        index: function (name) {
+          var idx = st.indexes[name];
+          if (!idx) throw domEx('NotFoundError', 'The specified index was not found: ' + name);
+          return makeIndex(st, idx, tx);
+        },
+        deleteIndex: function (name) { delete st.indexes[name]; }
+      };
+      function queuePut(add, value, key){
+        var req = mkReq(store, tx);
+        tx._queue(function () {
+          try{
+            var k;
+            if (st.keyPath != null && st.keyPath !== '') {
+              k = extractKey(st.keyPath, value, st.autoIncrement);
+              if (k === '__auto__') {
+                k = st.nextAuto++;
+                injectKey(st.keyPath, value, k);
+              } else if (k === undefined) { failReq(req, domEx('DataError', 'The key path did not yield a key')); return; }
+            } else {
+              k = (key === undefined) ? st.nextAuto++ : key;
+            }
+            if (!validKey(k)) { failReq(req, domEx('DataError', 'The key is not a valid key')); return; }
+            var ks = kser(k);
+            if (add && Object.prototype.hasOwnProperty.call(st.data, ks)) { failReq(req, domEx('ConstraintError', 'A record with this key already exists')); return; }
+            st.data[ks] = { k: k, v: value };
+            succeed(req, k);
+          }catch(e){ failReq(req, domEx('DataError', String(e && e.message || e))); }
+        });
+        return req;
+      }
+      store.indexNames = mkStrList(Object.keys(st.indexes));
+      return store;
+    }
+    function makeDB(name, rec){
+      var closed = false;
+      var db = {
+        name: name, version: rec.version, onversionchange: null, onclose: null, onabort: null, onerror: null, _ls: null,
+        objectStoreNames: mkStrList(Object.keys(rec.stores)),
+        addEventListener: function (t, fn) { if (!this._ls) this._ls = {}; (this._ls[t] = this._ls[t] || []).push(fn); },
+        removeEventListener: function () {},
+        transaction: function (storeNames, mode) {
+          if (closed) throw domEx('InvalidStateError', 'The database is closed');
+          var names = Array.isArray(storeNames) ? storeNames.slice() : [String(storeNames)];
+          for (var i = 0; i < names.length; i++) {
+            if (!rec.stores[names[i]]) throw domEx('NotFoundError', 'The specified object store was not found: ' + names[i]);
+          }
+          var tx = makeTx(rec, names, mode === 'readwrite' ? 'readwrite' : 'readonly');
+          tx.db = db;
+          return tx;
+        },
+        createObjectStore: function (name, opts) {
+          if (rec.stores[name]) throw domEx('ConstraintError', 'Object store already exists: ' + name);
+          opts = opts || {};
+          rec.stores[name] = {
+            name: name, keyPath: (opts.keyPath === undefined ? null : opts.keyPath),
+            autoIncrement: !!opts.autoIncrement, nextAuto: 1, data: {}, indexes: {}
+          };
+          db.objectStoreNames = mkStrList(Object.keys(rec.stores));
+          return makeStore(rec.stores[name], null);
+        },
+        deleteObjectStore: function (name) {
+          delete rec.stores[name];
+          db.objectStoreNames = mkStrList(Object.keys(rec.stores));
+        },
+        close: function () { closed = true; }
+      };
+      return db;
+    }
+    return {
+      open: function (name, version) {
+        name = String(name);
+        var req = mkReq(null, null);
+        setTimeout(function () {
+          try{
+            var rec = DBS[name];
+            var upgrading = false, oldVersion = 0;
+            if (!rec) { oldVersion = 0; rec = DBS[name] = { version: (version != null ? version : 1), stores: {} }; upgrading = true; }
+            else if (version != null && version > rec.version) { oldVersion = rec.version; rec.version = version; upgrading = true; }
+            else if (version != null && version < rec.version) { failReq(req, domEx('VersionError', 'The requested version is lower than the existing version')); return; }
+            var db = makeDB(name, rec);
+            if (upgrading) {
+              var utx = makeTx(rec, [], 'versionchange');
+              utx._upgrading = true; utx.db = db; req.transaction = utx;
+              req.result = db; /* real IDB exposes the db during upgradeneeded */
+              fire(req, 'upgradeneeded', { target: req, oldVersion: oldVersion, newVersion: rec.version, transaction: utx });
+              utx._upgrading = false;
+              setTimeout(function () { if (!utx._done) { utx._done = true; fire(utx, 'complete'); } }, 0);
+            }
+            succeed(req, db);
+          }catch(e){ failReq(req, domEx('UnknownError', String(e && e.message || e))); }
+        }, 0);
+        return req;
+      },
+      deleteDatabase: function (name) {
+        var req = mkReq(null, null);
+        setTimeout(function () { delete DBS[String(name)]; succeed(req, undefined); }, 0);
+        return req;
+      },
+      databases: function () {
+        return Promise.resolve(Object.keys(DBS).map(function (n) { return { name: n, version: DBS[n].version }; }));
+      },
+      cmp: function (a, b) { return cmpKeys(a, b); }
+    };
+  }
+  /* IDBKeyRange is not origin-gated and normally still exists in the sandbox —
+     only rebuild it if the class is genuinely missing (its objects are plain
+     data: lower/upper/lowerOpen/upperOpen, which the factory above reads). */
+  try{
+    if (typeof W.IDBKeyRange !== 'function'){
+      function RLKeyRange(lower, upper, lowerOpen, upperOpen){
+        this.lower = lower; this.upper = upper; this.lowerOpen = !!lowerOpen; this.upperOpen = !!upperOpen;
+      }
+      RLKeyRange.only = function (v) { return new RLKeyRange(v, v, false, false); };
+      RLKeyRange.lowerBound = function (v, open) { return new RLKeyRange(v, undefined, !!open, false); };
+      RLKeyRange.upperBound = function (v, open) { return new RLKeyRange(undefined, v, false, !!open); };
+      RLKeyRange.bound = function (l, u, lo, uo) { return new RLKeyRange(l, u, !!lo, !!uo); };
+      W.IDBKeyRange = RLKeyRange;
+    }
+  }catch(eKR){}
+  try{
+    W.indexedDB.open('__rl_probe', 1);
+  }catch(eIDBProbe){
+    try{ Object.defineProperty(W, 'indexedDB', { value: rlIDBFactory(), configurable: true }); }catch(eIDB){}
   }
   var cookieJar = {};
   try{
@@ -2590,7 +3096,11 @@ function RUNTIME(cfg){
     if (tag === 'IMG') handleImg(root);
     else if (tag === 'SCRIPT'){
       var s = root.getAttribute('src');
-      if (s && !isKnown(s)) root.setAttribute('src', px(abs(s)));
+      if (s && !isKnown(s)){
+        var auS = abs(s);
+        /* turnstile/challenge scripts hard-fail through any proxy — direct */
+        if (!/^https:\/\/challenges\.cloudflare\.com\//i.test(auS)) root.setAttribute('src', px(auS));
+      }
       return;
     }
     else if (tag === 'LINK'){
@@ -2722,6 +3232,8 @@ function RUNTIME(cfg){
         if (!s || isKnown(s)) return node;
         var au = abs(s);
         if (!/^https?:/i.test(au)) return node;
+        /* turnstile/challenge scripts hard-fail through any proxy — direct */
+        if (/^https:\/\/challenges\.cloudflare\.com\//i.test(au)) return node;
         node.setAttribute('src', px(au));
       }catch(e){}
       return node;
@@ -3133,7 +3645,12 @@ function RUNTIME(cfg){
 </script>
 <script>
 /* ============ 6. Document pipeline ============ */
-var TRACKER_RE = /(googletagmanager|google-analytics|analytics\.google|doubleclick|googlesyndication|googleadservices|facebook\.net|connect\.facebook|scorecardresearch|quantserve|hotjar|clarity\.ms|mixpanel|cdn\.segment|branch\.io|bat\.bing|adservice|adsystem|adnxs|criteo|taboola|outbrain|amazon-adsystem|moatads|chartbeat|newrelic|fullstory|amplitude\.com|intercom|driftt|wistia\.com\/script|optimizely|crazyegg|mouseflow|luckyorange|inspectlet|sessioncam)/i;
+var TRACKER_RE = /(googletagmanager|google-analytics|analytics\.google|doubleclick|googlesyndication|googleadservices|facebook\.net|connect\.facebook|scorecardresearch|quantserve|hotjar|clarity\.ms|mixpanel|cdn\.segment|branch\.io|bat\.bing|adservice|adsystem|adnxs|criteo|taboola|outbrain|amazon-adsystem|moatads|chartbeat|newrelic|fullstory|amplitude\.com|intercom|driftt|wistia\.com\/script|optimizely|crazyegg|mouseflow|luckyorange|inspectlet|sessioncam|cloudflareinsights)/i;
+/* Scripts that must NEVER be proxied: Cloudflare's Turnstile challenge
+   403s when fetched through a worker (it validates its own context), and a
+   plain <script src> needs no CORS — serving it direct is the only form
+   that can possibly work, so the challenge can decide for itself. */
+var SCRIPT_DIRECT_RE = /^https:\/\/challenges\.cloudflare\.com\//i;
 
 var SITE_RULES = [
   { host: /(^|\.)x\.com$|(^|\.)twitter\.com$/i, engine: 'jina', js: false },
@@ -3161,7 +3678,13 @@ var SITE_RULES = [
      r.jina.ai rotated into auth/401 mode — "CurseForge won't open at all".
      A live wall on non-project pages still falls back to the snapshot
      cascade, so nothing regresses. */
-  { host: /^news\.ycombinator\.com$/i, engine: 'live' }
+  { host: /^news\.ycombinator\.com$/i, engine: 'live' },
+  /* Monochrome (monochrome.tf): a Vite SPA that reads window.location.hostname
+     at module init to pick its PocketBase auth backend — empty in the sandbox,
+     which would send it to the wrong server. Seed the deployment's own hook
+     (window.__AUTH_URL__, checked before the hostname logic) so it behaves
+     exactly like it does on the real site. */
+  { host: /(^|\.)monochrome\.tf$/i, seeds: { __AUTH_URL__: 'https://auth.monochrome.tf' } }
 ];
 function siteRuleFor(url){
   var host = '';
@@ -3636,6 +4159,12 @@ function rewriteDocument(doc, base, opts){
     var src = sc.getAttribute('src');
     if (src){
       var au = absolutize(src, base);
+      /* turnstile & co: proxying them hard-fails (403) — keep the direct URL */
+      if (SCRIPT_DIRECT_RE.test(au)){
+        sc.setAttribute('src', au);
+        stripAttrs(sc);
+        return;
+      }
       var first = assetUrl(au);
       sc.setAttribute('src', first);
       /* scripts load as plain <script src> (no CORS needed) but the chosen
@@ -3724,11 +4253,24 @@ function runtimeCfgFor(base, navId, jsOn){
   var spec = pickAssetProxy(base);
   var proxySpec = null;
   if (spec) proxySpec = { prefix: spec.prefix, style: spec.style };
+  var rule = null;
+  try{ rule = siteRuleFor(base); }catch(eR){}
+  var seeds = null;
+  if (rule && rule.seeds){
+    var s0 = (settings.siteRules && settings.siteRules[new URL(base).hostname] && settings.siteRules[new URL(base).hostname].seeds) || null;
+    seeds = Object.assign({}, rule.seeds, s0 || {});
+  }
   return {
     navId: navId,
     base: base,
     proxy: proxySpec,
     knownPrefixes: knownProxyPrefixes(),
+    seeds: seeds,
+    /* SPA in-page navigation is only deferred-to-the-site when the worker
+     serves JS with the location patch (v1.6+): on older workers the site's
+     router reads the raw sandbox pathname, renders nothing, and a deferred
+     click would dead-end. Version-gated so old deploys keep full-reload nav. */
+    spaNav: !!(superVersion && superVersion >= 1.6 && SUPER_PROXY.prefix),
     imgMode: settings.images,
     /* two image-specialized fallbacks: wsrv first, weserv second — covers
        steamstatic, i.ytimg, i.redd.it, and any other CDN that defeats every
@@ -3897,6 +4439,14 @@ function handleRuntimeMessage(d){
     case 'fetch': {
       runtimeBusyFetches++;
       var hdrs = d.headers || {};
+      /* state the real page URL for the worker: backends that gate on Referer
+         (monochrome's Deezer stream proxy 403s without monochrome.tf) get the
+         correct value — the sandboxed frame itself cannot set one. */
+      try{
+        if (entry && isHttp(entry.url) && !hdrs['X-Relay-Referer'] && !hdrs['x-relay-referer']){
+          hdrs['X-Relay-Referer'] = entry.url;
+        }
+      }catch(eRef0){}
       var fetchOpts = { kind: 'api', method: d.method || 'GET', headers: hdrs, timeout: 20000 };
       var doIt = null;
       if ((d.method || 'GET') === 'POST'){
@@ -7531,7 +8081,7 @@ function closeFind(){
    build time by assemble-relay.mjs so Settings can copy the code even when
    this file runs standalone from file:// with no server and no worker .js
    next to it. The placeholder is swapped for a JSON-escaped string. */
-var SUPER_WORKER_SRC = "/* =====================================================================\n   RELAY SUPER WORKER — a dedicated Cloudflare Worker for the Relay\n   proxy browser. Deploy on YOUR Cloudflare account (free tier is fine):\n\n     1. dash.cloudflare.com → Workers & Pages → Create worker\n     2. Name it (e.g. relay-super) → Edit code → paste this whole file\n     3. Deploy → copy the URL (https://relay-super.YOU.workers.dev)\n     4. Relay → Settings → Network → Super Worker → paste the URL → Save\n\n   Why this unlocks \"the absolute most\" (vs generic CORS proxies):\n     - Follows redirects server-side and reports the FINAL URL\n       (X-Relay-Final-Url) so Relay's address bar is always correct\n     - Streams binary bodies untouched (images, video, downloads)\n     - FORCED DOWNLOADS: append &rl-dl=1&rl-fn=name to any proxied URL and\n       the worker replies with Content-Disposition: attachment — the\n       phone's real download manager takes over, so saved files actually\n       appear in Downloads (blob: tricks often vanish on mobile)\n     - FILE RELAY for client-side files: POST bytes to /__relay/put\n       (X-Relay-Fn + X-Relay-Ct headers), get back {id}, then open\n       /__relay/file/<id> — the worker serves YOUR bytes back as a real\n       attachment download. Sites that build files in JavaScript (audio\n       converters, exports) become reliably savable on Android/iOS.\n     - Accepts POST/PUT/DELETE with body passthrough (forms, logins)\n     - Custom upstream headers via X-Relay-Headers (a JSON object: {\"x-youtube-client-name\":\"3\"})\n       for API spoofing, plus X-Relay-UA for the fetch User-Agent\n     - Keeps a per-site cookie jar so LOGINS survive across requests\n       (cookies are stored in the worker, scoped to the target host — they\n       never leak to the browser or to other sites)\n     - Forwards Range requests (media seeking works)\n     - Strips CSP / X-Frame-Options / HSTS so nothing blocks rendering\n     - Caches static assets on Cloudflare's edge (images load instantly\n       the second time); X-Relay-NoCache: 1 skips the cache on demand\n     - No shared rate limits — it is YOUR worker on YOUR quota\n     - /__relay/health endpoint so Relay can auto-verify the connection\n\n   URL shapes accepted (all equivalent):\n     https://YOUR.WORKER/?url=https://example.com/      (encoded or raw)\n     https://YOUR.WORKER/?https://example.com/          (Zibri style)\n     https://YOUR.WORKER/https://example.com/           (path style)\n   ===================================================================== */\n\nconst VERSION = '1.5';\nconst UA_DESKTOP = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';\nconst UA_MOBILE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';\nconst HOP_LIMIT = 10;\nconst FETCH_TIMEOUT_MS = 30000;\n\n/* Headers we never forward back to the browser (they break rendering or\n   are meaningless through a proxy) */\nconst STRIP_RESPONSE = new Set([\n  'content-security-policy', 'content-security-policy-report-only',\n  'x-frame-options', 'strict-transport-security', 'report-to', 'nel',\n  'set-cookie', 'set-cookie2', 'alt-svc', 'cross-origin-opener-policy',\n  'cross-origin-embedder-policy', 'cross-origin-resource-policy',\n  'content-encoding', 'content-length', 'transfer-encoding',\n  'permissions-policy', 'feature-policy', 'x-content-type-options',\n  'cf-ray', 'cf-cache-status', 'server', 'reporting-endpoints'\n]);\n/* Request headers worth forwarding upstream */\nconst FORWARD_REQUEST = new Set([\n  'accept', 'accept-language', 'range', 'if-none-match', 'if-modified-since',\n  'content-type', 'authorization', 'x-requested-with', 'referer'\n]);\n\naddEventListener('fetch', (event) => {\n  event.respondWith(handle(event.request));\n});\n\n/* ---- per-host cookie jar (best-effort, per isolate lifetime) ----\n   Login/session cookies set by the target site are captured here and\n   replayed on later requests to the same host. They are NEVER sent to the\n   browser (that would put them on the worker's own domain — wrong scope). */\nconst JAR = new Map(); /* hostname -> Map(name -> { v, exp }) */\nconst JAR_MAX_HOSTS = 60, JAR_MAX_PER_HOST = 40;\n\n/* ---- file-relay store (client bytes → real downloads) ---- */\nconst FILES = new Map(); /* id -> { buf, ct, fn, exp } */\nconst MAX_FILES = 12, MAX_FILE_BYTES = 64 * 1024 * 1024, FILE_TTL_MS = 10 * 60 * 1000;\nfunction evictFiles() {\n  const now = Date.now();\n  for (const [k, v] of FILES) { if (v.exp < now) FILES.delete(k); }\n}\nfunction cors204(req) {\n  return new Response(null, {\n    status: 204,\n    headers: {\n      'access-control-allow-origin': (req.headers.get('origin') || '*'),\n      'access-control-allow-methods': 'POST, GET, OPTIONS',\n      'access-control-allow-headers': 'Content-Type, X-Relay-Fn, X-Relay-Ct',\n      'access-control-max-age': '86400'\n    }\n  });\n}\n/* dl-mode failure as a 200 attachment — never a rendered page */\nfunction dlError(status, note) {\n  return new Response('Relay download failed\\n\\n' + String(note || 'unknown error') + '\\n\\nThe file may be gone, or its host is blocking the proxy. Try the Share\\nbutton (top of the page) or open the link directly.\\n', {\n    status: status,\n    headers: {\n      'content-type': 'text/plain; charset=utf-8',\n      'content-disposition': 'attachment; filename=\"relay-download-failed.txt\"',\n      'cache-control': 'no-store',\n      'access-control-allow-origin': '*'\n    }\n  });\n}\n\nfunction readJar(host) {\n  const m = JAR.get(host);\n  if (!m) return [];\n  const now = Date.now(), out = [];\n  for (const [k, c] of m) {\n    if (c.exp && c.exp < now) { m.delete(k); continue; }\n    out.push(c.v);\n  }\n  return out;\n}\nfunction writeJar(host, setCookies) {\n  if (!setCookies || !setCookies.length) return 0;\n  let m = JAR.get(host);\n  if (!m) {\n    if (JAR.size >= JAR_MAX_HOSTS) return 0;\n    m = new Map(); JAR.set(host, m);\n  }\n  let added = 0;\n  for (const raw of setCookies) {\n    const parts = String(raw).split(';');\n    const pair = parts[0];\n    const eq = pair.indexOf('=');\n    if (eq < 1) continue;\n    const name = pair.slice(0, eq).trim();\n    if (!name || !/^[\\w!#$%&'*+\\-.^`|~]+$/.test(name)) continue;\n    if (m.size >= JAR_MAX_PER_HOST && !m.has(name)) continue;\n    let exp = 0;\n    for (const p of parts.slice(1)) {\n      const pm = /^\\s*(max-age|expires)\\s*=\\s*(.*?)\\s*$/i.exec(p);\n      if (pm) {\n        if (/^max-age$/i.test(pm[1])) { const s = parseInt(pm[2], 10); exp = isNaN(s) ? 0 : Date.now() + s * 1000; }\n        else { const d = Date.parse(pm[2]); exp = isNaN(d) ? 0 : d; }\n      }\n    }\n    if (exp && exp < Date.now()) { m.delete(name); continue; } /* expired cookie: drop */\n    m.set(name, { v: pair.trim(), exp: exp });\n    added++;\n  }\n  return added;\n}\n/* Set-Cookie split: headers.getSetCookie() when the runtime provides it,\n   otherwise split the combined header on commas that start a new cookie\n   (commas inside Expires dates don't match the lookahead). */\nfunction getSetCookies(headers) {\n  try {\n    if (typeof headers.getSetCookie === 'function') {\n      const arr = headers.getSetCookie();\n      if (arr && arr.length) return arr;\n    }\n  } catch (e) {}\n  const combined = headers.get('set-cookie');\n  if (!combined) return [];\n  return combined.split(/,(?=\\s*[^\\s=;,]+\\s*=)/).map(s => s.trim()).filter(Boolean);\n}\nfunction mergeCookies(clientCookie, jarList) {\n  const seen = new Set();\n  const out = [];\n  const add = (str) => {\n    if (!str) return;\n    for (const part of String(str).split(';')) {\n      const p = part.trim();\n      if (!p) continue;\n      const eq = p.indexOf('=');\n      const name = eq > 0 ? p.slice(0, eq).trim() : p;\n      if (seen.has(name)) continue;\n      seen.add(name); out.push(p);\n    }\n  };\n  add(clientCookie);\n  jarList.forEach(add);\n  return out.join('; ');\n}\n\nasync function handle(req) {\n  const u = new URL(req.url);\n\n  /* ---- health / detection endpoint ---- */\n  if (u.pathname === '/__relay/health' || u.pathname === '/healthz') {\n    return new Response('relay-super-ok/' + VERSION, {\n      status: 200,\n      headers: {\n        'content-type': 'text/plain; charset=utf-8',\n        'cache-control': 'no-store',\n        'access-control-allow-origin': '*',\n        'x-relay-version': VERSION\n      }\n    });\n  }\n\n  /* ---- file relay: client-side bytes → real download ----\n     JS-generated files (blob:/data: from converters, export buttons) can't\n     be handed to the mobile download manager reliably from a page — but the\n     worker can serve them back as a genuine Content-Disposition attachment.\n     POST /__relay/put (body = bytes, X-Relay-Fn/X-Relay-Ct headers) → {id}\n     GET  /__relay/file/<id>[?rl-fn=name] → the bytes as a download.\n     Stored per-isolate in memory: max 12 files, 64MB total, 10-minute TTL. */\n  if (u.pathname === '/__relay/put') {\n    if (req.method !== 'POST' && req.method !== 'OPTIONS') return json(405, { error: 'POST only' });\n    if (req.method === 'OPTIONS') return cors204(req);\n    const ctl = req.headers.get('content-length');\n    if (ctl && parseInt(ctl, 10) > MAX_FILE_BYTES) return json(413, { error: 'file too large (max 64MB)' });\n    let buf;\n    try { buf = await req.arrayBuffer(); }\n    catch (eBuf) { return json(400, { error: 'unreadable body' }); }\n    if (buf.byteLength === 0) return json(400, { error: 'empty body' });\n    if (buf.byteLength > MAX_FILE_BYTES) return json(413, { error: 'file too large (max 64MB)' });\n    try { evictFiles(); } catch (eEv) {}\n    if (FILES.size >= MAX_FILES) {\n      const oldest = FILES.keys().next().value;\n      FILES.delete(oldest);\n    }\n    const id = 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);\n    FILES.set(id, {\n      buf: buf,\n      ct: (req.headers.get('x-relay-ct') || 'application/octet-stream').split(';')[0].slice(0, 100),\n      fn: String(req.headers.get('x-relay-fn') || 'download').slice(0, 120),\n      exp: Date.now() + FILE_TTL_MS\n    });\n    return json(200, { id: id, url: '/__relay/file/' + id, expires_in: FILE_TTL_MS });\n  }\n  const fm = /^\\/__relay\\/file\\/([A-Za-z0-9]+)$/.exec(u.pathname);\n  if (fm) {\n    const rec = FILES.get(fm[1]);\n    if (!rec || rec.exp < Date.now()) {\n      if (rec) FILES.delete(fm[1]);\n      return json(404, { error: 'file expired or unknown — download it again from the page' });\n    }\n    const fn = (u.searchParams.get('rl-fn') || rec.fn || 'download').replace(/[\\r\\n\"\\\\/]/g, '_');\n    const safe = fn.replace(/[^\\x20-\\x7e]/g, '_').slice(0, 120) || 'download';\n    const enc = encodeURIComponent(fn).replace(/['()]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });\n    const out = new Headers({\n      'content-type': rec.ct || 'application/octet-stream',\n      'content-disposition': \"attachment; filename=\\\"\" + safe + \"\\\"; filename*=UTF-8''\" + enc,\n      'cache-control': 'no-store',\n      'access-control-allow-origin': '*',\n      'x-relay-version': VERSION\n    });\n    return new Response(rec.buf, { status: 200, headers: out });\n  }\n\n  /* ---- forced-download mode ----\n     &rl-dl=1 turns ANY proxied URL into a file download: the response gets\n     Content-Disposition: attachment, so the browser hands it to its real\n     download manager (Android: the file lands in Downloads and shows in the\n     notification shade). &rl-fn= supplies the filename. These params are\n     stripped from the search BEFORE the target URL is assembled, so they\n     work in every URL shape (path-style, ?url=, ?<target>). */\n  let dlMode = false, dlName = '';\n  try {\n    if (u.searchParams.get('rl-dl') === '1') {\n      dlMode = true;\n      dlName = u.searchParams.get('rl-fn') || '';\n      u.searchParams.delete('rl-dl');\n      u.searchParams.delete('rl-fn');\n    }\n  } catch (eDl) {}\n  const noCache = (req.headers.get('x-relay-nocache') === '1');\n\n  /* ---- resolve the target URL ---- */\n  let target = null;\n  const qp = u.searchParams.get('url') || u.searchParams.get('u') || u.searchParams.get('q');\n  if (qp && /^https?:\\/\\//i.test(qp)) target = qp;\n  if (!target && u.search.length > 1) {\n    const raw = u.search.slice(1);\n    if (/^https?%3A%2F%2F/i.test(raw)) {\n      try { target = decodeURIComponent(raw); } catch (e) { target = null; }\n    } else if (/^https?:\\/\\//i.test(raw)) {\n      target = raw;\n    }\n  }\n  if (!target && /^\\/https?:\\/\\//i.test(u.pathname)) {\n    target = u.pathname.slice(1) + u.search;\n  }\n  /* workerd collapses \"//\" in the path, so /https://x also arrives as\n     /https:/x — normalize any slash count after the scheme */\n  if (!target) {\n    const pm = /^\\/(https?:)\\/+(.+)$/i.exec(u.pathname);\n    if (pm) target = pm[1] + '//' + pm[2] + u.search;\n  }\n  if (!target) {\n    return json(400, {\n      error: 'missing target',\n      usage: 'Append the URL: ?url=https://example.com/  ·  ?https://example.com/  ·  /https://example.com/',\n      health: '/__relay/health'\n    });\n  }\n\n  /* ---- SSRF guard: refuse private/loopback targets ---- */\n  let tu;\n  try { tu = new URL(target); } catch (e) { return json(400, { error: 'invalid target url' }); }\n  if (!/^https?:$/.test(tu.protocol)) return json(400, { error: 'only http/https targets are supported' });\n  const host = tu.hostname.toLowerCase();\n  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal') ||\n      /^\\d+\\.\\d+\\.\\d+\\.\\d+$/.test(host) && /^(10\\.|127\\.|192\\.168\\.|169\\.254\\.|0\\.|172\\.(1[6-9]|2\\d|3[01])\\.)/.test(host) ||\n      host === '::1' || host === '[::1]' || host === 'metadata.google.internal') {\n    return json(403, { error: 'private addresses are blocked' });\n  }\n\n  /* ---- build the upstream request ---- */\n  const headers = new Headers();\n  for (const name of FORWARD_REQUEST) {\n    const v = req.headers.get(name);\n    if (v) headers.set(name, v);\n  }\n  /* extra upstream headers as JSON — lets the client fully impersonate an\n     app API call (innertube clients etc.) without the browser ever sending\n     a non-simple header. Refuse the handful that would break the proxy. */\n  try {\n    const extraRaw = req.headers.get('x-relay-headers');\n    if (extraRaw) {\n      const extra = JSON.parse(extraRaw);\n      let n = 0;\n      for (const k in extra) {\n        const lk = String(k).toLowerCase();\n        if (lk === 'cookie' || lk === 'host' || lk === 'content-length' ||\n            lk === 'connection' || lk === 'transfer-encoding' || lk === 'x-relay-headers') continue;\n        const val = String(extra[k]);\n        if (!val || (n++ > 12)) continue;\n        headers.set(k, val);\n      }\n    }\n  } catch (eHdr) {}\n  /* explicit UA control — Relay sends this for desktop-site mode */\n  const uaOverride = req.headers.get('x-relay-ua');\n  headers.set('User-Agent', uaOverride || UA_MOBILE);\n  const accept = headers.get('accept');\n  if (!accept) headers.set('accept', '*/*');\n  /* ---- bot-score hygiene ----\n     (1) Referer: only same-host referers survive. A referer pointing at\n         some other origin (the hosting app, a proxy dashboard) is a glaring\n         bot tell — anti-bot systems like Walmart's PerimeterX score it.\n     (2) Fetch hints: Relay marks document loads vs XHRs with X-Relay-Hint;\n         translate into the Sec-Fetch-* set a real browser would send, so\n         upstreams see a consistent navigation fingerprint. */\n  const ref = headers.get('referer');\n  if (ref){\n    let drop = true;\n    try { drop = new URL(ref).hostname.toLowerCase() !== host; } catch (eRef) {}\n    if (drop) headers.delete('referer');\n  }\n  const hint = (req.headers.get('x-relay-hint') || '').toLowerCase();\n  if (hint === 'doc'){\n    headers.set('sec-fetch-dest', 'document');\n    headers.set('sec-fetch-mode', 'navigate');\n    headers.set('sec-fetch-site', 'none');\n    headers.set('sec-fetch-user', '?1');\n    headers.set('upgrade-insecure-requests', '1');\n  } else if (hint === 'xhr'){\n    headers.set('sec-fetch-dest', 'empty');\n    headers.set('sec-fetch-mode', 'cors');\n    headers.set('sec-fetch-site', 'same-origin');\n  }\n  try{ headers.delete('x-relay-hint'); }catch(eH){}\n  if (!headers.get('accept-language')) headers.set('accept-language', 'en-US,en;q=0.9');\n  /* session cookies: replay the per-host jar + anything the client sent,\n     merged by name (client wins, jar fills the gaps — logins stick) */\n  const clientCookie = req.headers.get('cookie');\n  const jarList = readJar(host);\n  const cookieHeader = mergeCookies(clientCookie, jarList);\n  if (cookieHeader) headers.set('Cookie', cookieHeader);\n\n  const method = req.method;\n  const init = {\n    method: (method === 'OPTIONS') ? 'GET' : method,\n    headers: headers,\n    redirect: 'manual',\n    credentials: 'omit'\n  };\n  if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {\n    init.body = req.body;\n    init.duplex = 'half';\n  }\n\n  /* ---- fetch with manual redirect following ---- */\n  /* transient upstream failures (CDN burst 403/429, 5xx blips, workerd\n     connection resets) killed whole pages when ONE chunk hit one — browsers\n     report webpack ChunkLoadError and React bails. Retry the hostile\n     statuses a couple of times with a small delay (GET/HEAD only — a\n     streamed POST body cannot be replayed). */\n  const RETRY_STATUS = new Set([403, 429, 500, 502, 503, 504]);\n  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));\n  async function robustFetch(urlStr) {\n    let res = null;\n    for (let attempt = 0; attempt < 3; attempt++) {\n      try {\n        res = await fetch(urlStr, Object.assign({}, init, { signal: ctrl.signal }));\n      } catch (eNet) {\n        if (attempt < 2 && (method === 'GET' || method === 'HEAD')) { await sleep(300 + attempt * 400); continue; }\n        throw eNet;\n      }\n      if (attempt < 2 && (method === 'GET' || method === 'HEAD') && RETRY_STATUS.has(res.status)) {\n        if (res.body) { try { res.body.cancel(); } catch (eC) {} }\n        await sleep(400 + attempt * 600);\n        continue;\n      }\n      return res;\n    }\n    return res;\n  }\n  let res = null, finalUrl = target, hops = 0;\n  const ctrl = new AbortController();\n  const timer = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, FETCH_TIMEOUT_MS);\n  try {\n    let next = target;\n    while (hops <= HOP_LIMIT) {\n      res = await robustFetch(next);\n      /* harvest cookies at EVERY hop into that hop's host jar */\n      try { writeJar(new URL(next).hostname, getSetCookies(res.headers)); } catch (eJ) {}\n      const status = res.status;\n      if (status >= 300 && status < 400) {\n        const loc = res.headers.get('location');\n        if (loc) {\n          try { finalUrl = new URL(loc, next).href; } catch (e) { break; }\n          /* redirect re-issues should be GET for 301/302/303 */\n          if (status === 301 || status === 302 || status === 303) { init.method = 'GET'; delete init.body; }\n          next = finalUrl;\n          hops++;\n          continue;\n        }\n      }\n      finalUrl = next;\n      break;\n    }\n    if (hops > HOP_LIMIT) return json(508, { error: 'too many redirects', hops: hops });\n  } catch (err) {\n    clearTimeout(timer);\n    /* dl-mode safety: Chrome RENDERS 4xx/5xx bodies as pages even when\n       Content-Disposition is set — a failed download must never navigate the\n       app away. Serve the failure as a 200 attachment (a tiny .txt) instead. */\n    if (dlMode) return dlError(200, 'fetch failed: ' + String(err && err.message || err));\n    return json(502, { error: 'upstream fetch failed', detail: String(err && err.message || err) });\n  }\n  clearTimeout(timer);\n  /* upstream answered with an error while in dl-mode — same rule: never let\n     the browser turn it into a navigation */\n  if (dlMode && res.status >= 400) return dlError(200, 'upstream ' + res.status + ' for this file — the link may be dead or the host blocks the proxy');\n\n  /* ---- cache static assets on the edge (downloads and no-cache opt-outs\n         are excluded) ---- */\n  let hit = false;\n  if (method === 'GET' && res.status === 200 && !dlMode && !noCache) {\n    const ct = (res.headers.get('content-type') || '').toLowerCase();\n    if (/^(image\\/|font\\/|audio\\/|video\\/)/.test(ct) || /\\/(javascript|css)$/.test(ct)) {\n      try {\n        const cache = caches.default;\n        const cached = await cache.match(req);\n        if (cached) { clearTimeout(timer); hit = true; res = cached; finalUrl = cached.headers.get('x-relay-final-url') || finalUrl; }\n        else { eventPut(cache, req, res, finalUrl); }\n      } catch (e) { /* cache API unavailable — fine */ }\n    }\n  }\n\n  /* ---- rebuild response headers ---- */\n  const out = new Headers();\n  res.headers.forEach((value, name) => {\n    if (!STRIP_RESPONSE.has(name.toLowerCase())) out.set(name, value);\n  });\n  const origin = req.headers.get('origin') || '*';\n  out.set('Access-Control-Allow-Origin', origin);\n  out.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');\n  out.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Range, X-Relay-UA, X-Relay-Hint, X-Relay-Headers, X-Relay-NoCache, Accept, Accept-Language, Cookie');\n  out.set('Access-Control-Expose-Headers', 'X-Relay-Final-Url, X-Relay-Status, X-Relay-Hops, X-Relay-Cache, X-Relay-Version, X-Relay-Jar');\n  out.set('X-Relay-Final-Url', finalUrl);\n  out.set('X-Relay-Status', String(res.status));\n  out.set('X-Relay-Hops', String(hops));\n  out.set('X-Relay-Cache', hit ? 'HIT' : 'MISS');\n  out.set('X-Relay-Version', VERSION);\n  out.set('X-Relay-Jar', String(readJar(tu.hostname).length));\n  if (dlMode) {\n    /* a quoted ASCII fallback + an RFC 5987 UTF-8 name covers every browser */\n    const safe = String(dlName || fileNameFromUrl(finalUrl) || 'download')\n      .replace(/[\\r\\n\"\\\\]/g, '').replace(/[^\\x20-\\x7e]/g, '_').slice(0, 120) || 'download';\n    const enc = encodeURIComponent(String(dlName || safe)).replace(/['()]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });\n    out.set('Content-Disposition', \"attachment; filename=\\\"\" + safe + \"\\\"; filename*=UTF-8''\" + enc);\n    out.set('Cache-Control', 'no-store');\n  } else if (!out.has('cache-control')) {\n    out.set('cache-control', 'public, max-age=600');\n  }\n\n  /* OPTIONS preflight */\n  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: out });\n\n  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out });\n}\n\n/* fire-and-forget cache write (stream-safe: clone, put in background) */\nfunction eventPut(cache, req, res, finalUrl) {\n  try {\n    const copy = new Response(res.clone ? res.clone() : res.body, {\n      status: res.status, statusText: res.statusText, headers: res.headers\n    });\n    copy.headers.set('x-relay-final-url', finalUrl);\n    cache.put(stripRange(req), copy).catch(() => {});\n  } catch (e) { /* ignore */ }\n}\n/* cache key ignores Range so a full copy can serve range requests */\nfunction stripRange(req) {\n  const u = new URL(req.url);\n  const clean = new Request(u.href, { method: 'GET' });\n  return clean;\n}\n\nfunction json(status, obj) {\n  return new Response(JSON.stringify(obj, null, 2), {\n    status: status,\n    headers: {\n      'content-type': 'application/json; charset=utf-8',\n      'access-control-allow-origin': '*',\n      'cache-control': 'no-store'\n    }\n  });\n}\n/* best filename guess from the final URL path (used when rl-fn is absent) */\nfunction fileNameFromUrl(uStr) {\n  try {\n    const p = new URL(uStr).pathname.split('/').filter(Boolean);\n    return decodeURIComponent(p[p.length - 1] || '').slice(0, 120);\n  } catch (e) { return ''; }\n}\n";
+var SUPER_WORKER_SRC = "/* =====================================================================\n   RELAY SUPER WORKER — a dedicated Cloudflare Worker for the Relay\n   proxy browser. Deploy on YOUR Cloudflare account (free tier is fine):\n\n     1. dash.cloudflare.com → Workers & Pages → Create worker\n     2. Name it (e.g. relay-super) → Edit code → paste this whole file\n     3. Deploy → copy the URL (https://relay-super.YOU.workers.dev)\n     4. Relay → Settings → Network → Super Worker → paste the URL → Save\n\n   Why this unlocks \"the absolute most\" (vs generic CORS proxies):\n     - Follows redirects server-side and reports the FINAL URL\n       (X-Relay-Final-Url) so Relay's address bar is always correct\n     - Streams binary bodies untouched (images, video, downloads)\n     - FORCED DOWNLOADS: append &rl-dl=1&rl-fn=name to any proxied URL and\n       the worker replies with Content-Disposition: attachment — the\n       phone's real download manager takes over, so saved files actually\n       appear in Downloads (blob: tricks often vanish on mobile)\n     - FILE RELAY for client-side files: POST bytes to /__relay/put\n       (X-Relay-Fn + X-Relay-Ct headers), get back {id}, then open\n       /__relay/file/<id> — the worker serves YOUR bytes back as a real\n       attachment download. Sites that build files in JavaScript (audio\n       converters, exports) become reliably savable on Android/iOS.\n     - Accepts POST/PUT/DELETE with body passthrough (forms, logins)\n     - Custom upstream headers via X-Relay-Headers (a JSON object: {\"x-youtube-client-name\":\"3\"})\n       for API spoofing, plus X-Relay-UA for the fetch User-Agent\n     - Keeps a per-site cookie jar so LOGINS survive across requests\n       (cookies are stored in the worker, scoped to the target host — they\n       never leak to the browser or to other sites)\n     - Forwards Range requests (media seeking works)\n     - Strips CSP / X-Frame-Options / HSTS so nothing blocks rendering\n     - Caches static assets on Cloudflare's edge (images load instantly\n       the second time); X-Relay-NoCache: 1 skips the cache on demand\n     - No shared rate limits — it is YOUR worker on YOUR quota\n     - /__relay/health endpoint so Relay can auto-verify the connection\n\n   URL shapes accepted (all equivalent):\n     https://YOUR.WORKER/?url=https://example.com/      (encoded or raw)\n     https://YOUR.WORKER/?https://example.com/          (Zibri style)\n     https://YOUR.WORKER/https://example.com/           (path style)\n   ===================================================================== */\n\nconst VERSION = '1.6';\nconst UA_DESKTOP = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';\nconst UA_MOBILE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';\nconst HOP_LIMIT = 10;\nconst FETCH_TIMEOUT_MS = 30000;\n\n/* Headers we never forward back to the browser (they break rendering or\n   are meaningless through a proxy) */\nconst STRIP_RESPONSE = new Set([\n  'content-security-policy', 'content-security-policy-report-only',\n  'x-frame-options', 'strict-transport-security', 'report-to', 'nel',\n  'set-cookie', 'set-cookie2', 'alt-svc', 'cross-origin-opener-policy',\n  'cross-origin-embedder-policy', 'cross-origin-resource-policy',\n  'content-encoding', 'content-length', 'transfer-encoding',\n  'permissions-policy', 'feature-policy', 'x-content-type-options',\n  'cf-ray', 'cf-cache-status', 'server', 'reporting-endpoints'\n]);\n/* Request headers worth forwarding upstream */\nconst FORWARD_REQUEST = new Set([\n  'accept', 'accept-language', 'range', 'if-none-match', 'if-modified-since',\n  'content-type', 'authorization', 'x-requested-with', 'referer', 'x-relay-referer'\n]);\n\naddEventListener('fetch', (event) => {\n  event.respondWith(handle(event.request));\n});\n\n/* ---- per-host cookie jar (best-effort, per isolate lifetime) ----\n   Login/session cookies set by the target site are captured here and\n   replayed on later requests to the same host. They are NEVER sent to the\n   browser (that would put them on the worker's own domain — wrong scope). */\nconst JAR = new Map(); /* hostname -> Map(name -> { v, exp }) */\nconst JAR_MAX_HOSTS = 60, JAR_MAX_PER_HOST = 40;\n\n/* ---- file-relay store (client bytes → real downloads) ---- */\nconst FILES = new Map(); /* id -> { buf, ct, fn, exp } */\nconst MAX_FILES = 12, MAX_FILE_BYTES = 64 * 1024 * 1024, FILE_TTL_MS = 10 * 60 * 1000;\nfunction evictFiles() {\n  const now = Date.now();\n  for (const [k, v] of FILES) { if (v.exp < now) FILES.delete(k); }\n}\nfunction cors204(req) {\n  return new Response(null, {\n    status: 204,\n    headers: {\n      'access-control-allow-origin': (req.headers.get('origin') || '*'),\n      'access-control-allow-methods': 'POST, GET, OPTIONS',\n      'access-control-allow-headers': 'Content-Type, X-Relay-Fn, X-Relay-Ct',\n      'access-control-max-age': '86400'\n    }\n  });\n}\n/* dl-mode failure as a 200 attachment — never a rendered page */\nfunction dlError(status, note) {\n  return new Response('Relay download failed\\n\\n' + String(note || 'unknown error') + '\\n\\nThe file may be gone, or its host is blocking the proxy. Try the Share\\nbutton (top of the page) or open the link directly.\\n', {\n    status: status,\n    headers: {\n      'content-type': 'text/plain; charset=utf-8',\n      'content-disposition': 'attachment; filename=\"relay-download-failed.txt\"',\n      'cache-control': 'no-store',\n      'access-control-allow-origin': '*'\n    }\n  });\n}\n\nfunction readJar(host) {\n  const m = JAR.get(host);\n  if (!m) return [];\n  const now = Date.now(), out = [];\n  for (const [k, c] of m) {\n    if (c.exp && c.exp < now) { m.delete(k); continue; }\n    out.push(c.v);\n  }\n  return out;\n}\nfunction writeJar(host, setCookies) {\n  if (!setCookies || !setCookies.length) return 0;\n  let m = JAR.get(host);\n  if (!m) {\n    if (JAR.size >= JAR_MAX_HOSTS) return 0;\n    m = new Map(); JAR.set(host, m);\n  }\n  let added = 0;\n  for (const raw of setCookies) {\n    const parts = String(raw).split(';');\n    const pair = parts[0];\n    const eq = pair.indexOf('=');\n    if (eq < 1) continue;\n    const name = pair.slice(0, eq).trim();\n    if (!name || !/^[\\w!#$%&'*+\\-.^`|~]+$/.test(name)) continue;\n    if (m.size >= JAR_MAX_PER_HOST && !m.has(name)) continue;\n    let exp = 0;\n    for (const p of parts.slice(1)) {\n      const pm = /^\\s*(max-age|expires)\\s*=\\s*(.*?)\\s*$/i.exec(p);\n      if (pm) {\n        if (/^max-age$/i.test(pm[1])) { const s = parseInt(pm[2], 10); exp = isNaN(s) ? 0 : Date.now() + s * 1000; }\n        else { const d = Date.parse(pm[2]); exp = isNaN(d) ? 0 : d; }\n      }\n    }\n    if (exp && exp < Date.now()) { m.delete(name); continue; } /* expired cookie: drop */\n    m.set(name, { v: pair.trim(), exp: exp });\n    added++;\n  }\n  return added;\n}\n/* Set-Cookie split: headers.getSetCookie() when the runtime provides it,\n   otherwise split the combined header on commas that start a new cookie\n   (commas inside Expires dates don't match the lookahead). */\nfunction getSetCookies(headers) {\n  try {\n    if (typeof headers.getSetCookie === 'function') {\n      const arr = headers.getSetCookie();\n      if (arr && arr.length) return arr;\n    }\n  } catch (e) {}\n  const combined = headers.get('set-cookie');\n  if (!combined) return [];\n  return combined.split(/,(?=\\s*[^\\s=;,]+\\s*=)/).map(s => s.trim()).filter(Boolean);\n}\nfunction mergeCookies(clientCookie, jarList) {\n  const seen = new Set();\n  const out = [];\n  const add = (str) => {\n    if (!str) return;\n    for (const part of String(str).split(';')) {\n      const p = part.trim();\n      if (!p) continue;\n      const eq = p.indexOf('=');\n      const name = eq > 0 ? p.slice(0, eq).trim() : p;\n      if (seen.has(name)) continue;\n      seen.add(name); out.push(p);\n    }\n  };\n  add(clientCookie);\n  jarList.forEach(add);\n  return out.join('; ');\n}\n\nasync function handle(req) {\n  const u = new URL(req.url);\n\n  /* ---- health / detection endpoint ---- */\n  if (u.pathname === '/__relay/health' || u.pathname === '/healthz') {\n    return new Response('relay-super-ok/' + VERSION, {\n      status: 200,\n      headers: {\n        'content-type': 'text/plain; charset=utf-8',\n        'cache-control': 'no-store',\n        'access-control-allow-origin': '*',\n        'x-relay-version': VERSION\n      }\n    });\n  }\n\n  /* ---- file relay: client-side bytes → real download ----\n     JS-generated files (blob:/data: from converters, export buttons) can't\n     be handed to the mobile download manager reliably from a page — but the\n     worker can serve them back as a genuine Content-Disposition attachment.\n     POST /__relay/put (body = bytes, X-Relay-Fn/X-Relay-Ct headers) → {id}\n     GET  /__relay/file/<id>[?rl-fn=name] → the bytes as a download.\n     Stored per-isolate in memory: max 12 files, 64MB total, 10-minute TTL. */\n  if (u.pathname === '/__relay/put') {\n    if (req.method !== 'POST' && req.method !== 'OPTIONS') return json(405, { error: 'POST only' });\n    if (req.method === 'OPTIONS') return cors204(req);\n    const ctl = req.headers.get('content-length');\n    if (ctl && parseInt(ctl, 10) > MAX_FILE_BYTES) return json(413, { error: 'file too large (max 64MB)' });\n    let buf;\n    try { buf = await req.arrayBuffer(); }\n    catch (eBuf) { return json(400, { error: 'unreadable body' }); }\n    if (buf.byteLength === 0) return json(400, { error: 'empty body' });\n    if (buf.byteLength > MAX_FILE_BYTES) return json(413, { error: 'file too large (max 64MB)' });\n    try { evictFiles(); } catch (eEv) {}\n    if (FILES.size >= MAX_FILES) {\n      const oldest = FILES.keys().next().value;\n      FILES.delete(oldest);\n    }\n    const id = 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);\n    FILES.set(id, {\n      buf: buf,\n      ct: (req.headers.get('x-relay-ct') || 'application/octet-stream').split(';')[0].slice(0, 100),\n      fn: String(req.headers.get('x-relay-fn') || 'download').slice(0, 120),\n      exp: Date.now() + FILE_TTL_MS\n    });\n    return json(200, { id: id, url: '/__relay/file/' + id, expires_in: FILE_TTL_MS });\n  }\n  const fm = /^\\/__relay\\/file\\/([A-Za-z0-9]+)$/.exec(u.pathname);\n  if (fm) {\n    const rec = FILES.get(fm[1]);\n    if (!rec || rec.exp < Date.now()) {\n      if (rec) FILES.delete(fm[1]);\n      return json(404, { error: 'file expired or unknown — download it again from the page' });\n    }\n    const fn = (u.searchParams.get('rl-fn') || rec.fn || 'download').replace(/[\\r\\n\"\\\\/]/g, '_');\n    const safe = fn.replace(/[^\\x20-\\x7e]/g, '_').slice(0, 120) || 'download';\n    const enc = encodeURIComponent(fn).replace(/['()]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });\n    const out = new Headers({\n      'content-type': rec.ct || 'application/octet-stream',\n      'content-disposition': \"attachment; filename=\\\"\" + safe + \"\\\"; filename*=UTF-8''\" + enc,\n      'cache-control': 'no-store',\n      'access-control-allow-origin': '*',\n      'x-relay-version': VERSION\n    });\n    return new Response(rec.buf, { status: 200, headers: out });\n  }\n\n  /* ---- forced-download mode ----\n     &rl-dl=1 turns ANY proxied URL into a file download: the response gets\n     Content-Disposition: attachment, so the browser hands it to its real\n     download manager (Android: the file lands in Downloads and shows in the\n     notification shade). &rl-fn= supplies the filename. These params are\n     stripped from the search BEFORE the target URL is assembled, so they\n     work in every URL shape (path-style, ?url=, ?<target>). */\n  let dlMode = false, dlName = '';\n  try {\n    if (u.searchParams.get('rl-dl') === '1') {\n      dlMode = true;\n      dlName = u.searchParams.get('rl-fn') || '';\n      u.searchParams.delete('rl-dl');\n      u.searchParams.delete('rl-fn');\n    }\n  } catch (eDl) {}\n  const noCache = (req.headers.get('x-relay-nocache') === '1');\n\n  /* ---- resolve the target URL ---- */\n  let target = null;\n  const qp = u.searchParams.get('url') || u.searchParams.get('u') || u.searchParams.get('q');\n  if (qp && /^https?:\\/\\//i.test(qp)) target = qp;\n  if (!target && u.search.length > 1) {\n    const raw = u.search.slice(1);\n    if (/^https?%3A%2F%2F/i.test(raw)) {\n      try { target = decodeURIComponent(raw); } catch (e) { target = null; }\n    } else if (/^https?:\\/\\//i.test(raw)) {\n      target = raw;\n    }\n  }\n  if (!target && /^\\/https?:\\/\\//i.test(u.pathname)) {\n    target = u.pathname.slice(1) + u.search;\n  }\n  /* workerd collapses \"//\" in the path, so /https://x also arrives as\n     /https:/x — normalize any slash count after the scheme */\n  if (!target) {\n    const pm = /^\\/(https?:)\\/+(.+)$/i.exec(u.pathname);\n    if (pm) target = pm[1] + '//' + pm[2] + u.search;\n  }\n  if (!target) {\n    return json(400, {\n      error: 'missing target',\n      usage: 'Append the URL: ?url=https://example.com/  ·  ?https://example.com/  ·  /https://example.com/',\n      health: '/__relay/health'\n    });\n  }\n\n  /* ---- SSRF guard: refuse private/loopback targets ---- */\n  let tu;\n  try { tu = new URL(target); } catch (e) { return json(400, { error: 'invalid target url' }); }\n  if (!/^https?:$/.test(tu.protocol)) return json(400, { error: 'only http/https targets are supported' });\n  const host = tu.hostname.toLowerCase();\n  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal') ||\n      /^\\d+\\.\\d+\\.\\d+\\.\\d+$/.test(host) && /^(10\\.|127\\.|192\\.168\\.|169\\.254\\.|0\\.|172\\.(1[6-9]|2\\d|3[01])\\.)/.test(host) ||\n      host === '::1' || host === '[::1]' || host === 'metadata.google.internal') {\n    return json(403, { error: 'private addresses are blocked' });\n  }\n\n  /* ---- build the upstream request ---- */\n  const headers = new Headers();\n  for (const name of FORWARD_REQUEST) {\n    const v = req.headers.get(name);\n    if (v) headers.set(name, v);\n  }\n  /* extra upstream headers as JSON — lets the client fully impersonate an\n     app API call (innertube clients etc.) without the browser ever sending\n     a non-simple header. Refuse the handful that would break the proxy. */\n  try {\n    const extraRaw = req.headers.get('x-relay-headers');\n    if (extraRaw) {\n      const extra = JSON.parse(extraRaw);\n      let n = 0;\n      for (const k in extra) {\n        const lk = String(k).toLowerCase();\n        if (lk === 'cookie' || lk === 'host' || lk === 'content-length' ||\n            lk === 'connection' || lk === 'transfer-encoding' || lk === 'x-relay-headers') continue;\n        const val = String(extra[k]);\n        if (!val || (n++ > 12)) continue;\n        headers.set(k, val);\n      }\n    }\n  } catch (eHdr) {}\n  /* explicit UA control — Relay sends this for desktop-site mode */\n  const uaOverride = req.headers.get('x-relay-ua');\n  headers.set('User-Agent', uaOverride || UA_MOBILE);\n  const accept = headers.get('accept');\n  if (!accept) headers.set('accept', '*/*');\n  /* ---- bot-score hygiene ----\n     (1) Referer: only same-host referers survive. A referer pointing at\n         some other origin (the hosting app, a proxy dashboard) is a glaring\n         bot tell — anti-bot systems like Walmart's PerimeterX score it.\n     (2) Fetch hints: Relay marks document loads vs XHRs with X-Relay-Hint;\n         translate into the Sec-Fetch-* set a real browser would send, so\n         upstreams see a consistent navigation fingerprint. */\n  const ref = headers.get('referer');\n  if (ref){\n    let drop = true;\n    try { drop = new URL(ref).hostname.toLowerCase() !== host; } catch (eRef) {}\n    if (drop) headers.delete('referer');\n  }\n  /* X-Relay-Referer: Relay's fetch relay states the REAL page URL the request\n     is being made from (the sandboxed frame can't set Referer itself).\n     Some backends REQUIRE a same-site referer: monochrome.tf's Deezer\n     fallback proxy 403s any request without \"https://monochrome.tf/…\" —\n     with the referer dropped the entire music-playback path died. Only a\n     valid http(s) URL is honored; it overrides the browser referer. */\n  try {\n    const rr = req.headers.get('x-relay-referer');\n    if (rr && /^https?:\\/\\//i.test(rr) && !/^https?:\\/\\/[.\\d]+(:\\d+)?/.test(rr)) {\n      headers.set('Referer', rr);\n      headers.delete('x-relay-referer');\n    }\n  } catch (eRR) {}\n  const hint = (req.headers.get('x-relay-hint') || '').toLowerCase();\n  if (hint === 'doc'){\n    headers.set('sec-fetch-dest', 'document');\n    headers.set('sec-fetch-mode', 'navigate');\n    headers.set('sec-fetch-site', 'none');\n    headers.set('sec-fetch-user', '?1');\n    headers.set('upgrade-insecure-requests', '1');\n  } else if (hint === 'xhr'){\n    headers.set('sec-fetch-dest', 'empty');\n    headers.set('sec-fetch-mode', 'cors');\n    headers.set('sec-fetch-site', 'same-origin');\n  }\n  try{ headers.delete('x-relay-hint'); }catch(eH){}\n  if (!headers.get('accept-language')) headers.set('accept-language', 'en-US,en;q=0.9');\n  /* session cookies: replay the per-host jar + anything the client sent,\n     merged by name (client wins, jar fills the gaps — logins stick) */\n  const clientCookie = req.headers.get('cookie');\n  const jarList = readJar(host);\n  const cookieHeader = mergeCookies(clientCookie, jarList);\n  if (cookieHeader) headers.set('Cookie', cookieHeader);\n\n  const method = req.method;\n  const init = {\n    method: (method === 'OPTIONS') ? 'GET' : method,\n    headers: headers,\n    redirect: 'manual',\n    credentials: 'omit'\n  };\n  if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {\n    init.body = req.body;\n    init.duplex = 'half';\n  }\n\n  /* ---- fetch with manual redirect following ---- */\n  /* transient upstream failures (CDN burst 403/429, 5xx blips, workerd\n     connection resets) killed whole pages when ONE chunk hit one — browsers\n     report webpack ChunkLoadError and React bails. Retry the hostile\n     statuses a couple of times with a small delay (GET/HEAD only — a\n     streamed POST body cannot be replayed). */\n  /* 520-524 are Cloudflare origin-connect failures — workers.dev targets\n     throw transient 521s under load (monochrome.tf's API mirrors hit this\n     through the proxy); one retry turns a dead search into a result set. */\n  const RETRY_STATUS = new Set([403, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);\n  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));\n  async function robustFetch(urlStr) {\n    let res = null;\n    for (let attempt = 0; attempt < 3; attempt++) {\n      try {\n        res = await fetch(urlStr, Object.assign({}, init, { signal: ctrl.signal }));\n      } catch (eNet) {\n        if (attempt < 2 && (method === 'GET' || method === 'HEAD')) { await sleep(300 + attempt * 400); continue; }\n        throw eNet;\n      }\n      if (attempt < 2 && (method === 'GET' || method === 'HEAD') && RETRY_STATUS.has(res.status)) {\n        if (res.body) { try { res.body.cancel(); } catch (eC) {} }\n        await sleep(400 + attempt * 600);\n        continue;\n      }\n      return res;\n    }\n    return res;\n  }\n  let res = null, finalUrl = target, hops = 0;\n  const ctrl = new AbortController();\n  const timer = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, FETCH_TIMEOUT_MS);\n  try {\n    let next = target;\n    while (hops <= HOP_LIMIT) {\n      res = await robustFetch(next);\n      /* harvest cookies at EVERY hop into that hop's host jar */\n      try { writeJar(new URL(next).hostname, getSetCookies(res.headers)); } catch (eJ) {}\n      const status = res.status;\n      if (status >= 300 && status < 400) {\n        const loc = res.headers.get('location');\n        if (loc) {\n          try { finalUrl = new URL(loc, next).href; } catch (e) { break; }\n          /* redirect re-issues should be GET for 301/302/303 */\n          if (status === 301 || status === 302 || status === 303) { init.method = 'GET'; delete init.body; }\n          next = finalUrl;\n          hops++;\n          continue;\n        }\n      }\n      finalUrl = next;\n      break;\n    }\n    if (hops > HOP_LIMIT) return json(508, { error: 'too many redirects', hops: hops });\n  } catch (err) {\n    clearTimeout(timer);\n    /* dl-mode safety: Chrome RENDERS 4xx/5xx bodies as pages even when\n       Content-Disposition is set — a failed download must never navigate the\n       app away. Serve the failure as a 200 attachment (a tiny .txt) instead. */\n    if (dlMode) return dlError(200, 'fetch failed: ' + String(err && err.message || err));\n    return json(502, { error: 'upstream fetch failed', detail: String(err && err.message || err) });\n  }\n  clearTimeout(timer);\n  /* upstream answered with an error while in dl-mode — same rule: never let\n     the browser turn it into a navigation */\n  if (dlMode && res.status >= 400) return dlError(200, 'upstream ' + res.status + ' for this file — the link may be dead or the host blocks the proxy');\n\n  /* ---- SPA router unlock: patch window.location tokens in served JS ----\n     Relay renders pages in a sandboxed frame whose location is frozen at\n     about:srcdoc (window.location is [Unforgeable] — pathname cannot be\n     redefined, real history.pushState even THROWS there). Every\n     pathname-routed SPA reads window.location.pathname after its router\n     pushes state and then renders the wrong route, so in-page navigation\n     dies while the shell renders fine. Rewrite the token\n     (window|document).location.<member> to route through\n     window.__rlLoc() — a fake location Relay's runtime installs that\n     tracks the real page URL + every shimmed pushState. Without the\n     runtime present the expression falls back to the real window.location\n     unchanged, so this is a strict no-op for everyone else. */\n  if (method === 'GET' && res.status === 200 && !dlMode) {\n    const ct = (res.headers.get('content-type') || '').toLowerCase();\n    const isJs = /javascript|ecmascript/.test(ct) || /\\.mjs$/i.test(new URL(finalUrl).pathname);\n    if (isJs && !res.headers.get('x-relay-js-patch')) {\n      try {\n        /* NOTE: reading text() disturbs res.body — the response is ALWAYS\n           rebuilt below (patched or not), never the drained original. */\n        const txt = await res.text();\n        if (txt && txt.length < 6 * 1024 * 1024) {\n          let patched = txt;\n          if (txt.indexOf('window.location') >= 0 || txt.indexOf('document.location') >= 0) {\n            patched = txt.replace(\n              /* (?<![.\\w$]) — the match must not be a MEMBER ACCESS: sentry-style\n                 aliases like `Yg.document.location.href` would otherwise become\n                 `Yg.(window.__rlLoc?...)` — a syntax error that kills the whole\n                 bundle. Aliased reads stay raw (they only feed telemetry). */\n              /(?<![.\\w$])((?:window|document)\\.location)(\\.(?:pathname|href|origin|hostname|hash|search|port|protocol|assign|replace|reload|toString)\\b)/g,\n              '(window.__rlLoc?window.__rlLoc():$1)$2'\n            );\n          }\n          /* always rebuild: text() drained the original body */\n          {\n            const hdrs = new Headers();\n            res.headers.forEach((v, k) => { hdrs.set(k, v); });\n            hdrs.delete('content-length');\n            if (patched !== txt) hdrs.set('x-relay-js-patch', '1');\n            res = new Response(patched, { status: res.status, statusText: res.statusText, headers: hdrs });\n          }\n        } else {\n          /* empty / oversized body — rebuild from the drained text as-is */\n          const hdrs0 = new Headers();\n          res.headers.forEach((v, k) => { hdrs0.set(k, v); });\n          hdrs0.delete('content-length');\n          res = new Response(txt || '', { status: res.status, statusText: res.statusText, headers: hdrs0 });\n        }\n      } catch (eJs) { /* body unreadable — serve as-is */ }\n    }\n  }\n\n  /* ---- cache static assets on the edge (downloads and no-cache opt-outs\n         are excluded) ---- */\n  let hit = false;\n  if (method === 'GET' && res.status === 200 && !dlMode && !noCache) {\n    const ct = (res.headers.get('content-type') || '').toLowerCase();\n    if (/^(image\\/|font\\/|audio\\/|video\\/)/.test(ct) || /\\/(javascript|css)$/.test(ct)) {\n      try {\n        const cache = caches.default;\n        const cached = await cache.match(req);\n        if (cached) { clearTimeout(timer); hit = true; res = cached; finalUrl = cached.headers.get('x-relay-final-url') || finalUrl; }\n        else { eventPut(cache, req, res, finalUrl); }\n      } catch (e) { /* cache API unavailable — fine */ }\n    }\n  }\n\n  /* ---- rebuild response headers ---- */\n  const out = new Headers();\n  res.headers.forEach((value, name) => {\n    if (!STRIP_RESPONSE.has(name.toLowerCase())) out.set(name, value);\n  });\n  const origin = req.headers.get('origin') || '*';\n  out.set('Access-Control-Allow-Origin', origin);\n  out.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');\n  out.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Range, X-Relay-UA, X-Relay-Hint, X-Relay-Headers, X-Relay-NoCache, X-Relay-Referer, Accept, Accept-Language, Cookie');\n  out.set('Access-Control-Expose-Headers', 'X-Relay-Final-Url, X-Relay-Status, X-Relay-Hops, X-Relay-Cache, X-Relay-Version, X-Relay-Jar');\n  out.set('X-Relay-Final-Url', finalUrl);\n  out.set('X-Relay-Status', String(res.status));\n  out.set('X-Relay-Hops', String(hops));\n  out.set('X-Relay-Cache', hit ? 'HIT' : 'MISS');\n  out.set('X-Relay-Version', VERSION);\n  out.set('X-Relay-Jar', String(readJar(tu.hostname).length));\n  if (dlMode) {\n    /* a quoted ASCII fallback + an RFC 5987 UTF-8 name covers every browser */\n    const safe = String(dlName || fileNameFromUrl(finalUrl) || 'download')\n      .replace(/[\\r\\n\"\\\\]/g, '').replace(/[^\\x20-\\x7e]/g, '_').slice(0, 120) || 'download';\n    const enc = encodeURIComponent(String(dlName || safe)).replace(/['()]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });\n    out.set('Content-Disposition', \"attachment; filename=\\\"\" + safe + \"\\\"; filename*=UTF-8''\" + enc);\n    out.set('Cache-Control', 'no-store');\n  } else if (!out.has('cache-control')) {\n    out.set('cache-control', 'public, max-age=600');\n  }\n\n  /* OPTIONS preflight */\n  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: out });\n\n  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out });\n}\n\n/* fire-and-forget cache write (stream-safe: clone, put in background) */\nfunction eventPut(cache, req, res, finalUrl) {\n  try {\n    const copy = new Response(res.clone ? res.clone() : res.body, {\n      status: res.status, statusText: res.statusText, headers: res.headers\n    });\n    copy.headers.set('x-relay-final-url', finalUrl);\n    cache.put(stripRange(req), copy).catch(() => {});\n  } catch (e) { /* ignore */ }\n}\n/* cache key ignores Range so a full copy can serve range requests */\nfunction stripRange(req) {\n  const u = new URL(req.url);\n  const clean = new Request(u.href, { method: 'GET' });\n  return clean;\n}\n\nfunction json(status, obj) {\n  return new Response(JSON.stringify(obj, null, 2), {\n    status: status,\n    headers: {\n      'content-type': 'application/json; charset=utf-8',\n      'access-control-allow-origin': '*',\n      'cache-control': 'no-store'\n    }\n  });\n}\n/* best filename guess from the final URL path (used when rl-fn is absent) */\nfunction fileNameFromUrl(uStr) {\n  try {\n    const p = new URL(uStr).pathname.split('/').filter(Boolean);\n    return decodeURIComponent(p[p.length - 1] || '').slice(0, 120);\n  } catch (e) { return ''; }\n}\n";
 /* ============ 17. Menu sheet ============ */
 function openSheet(html){
   $('#sheetBody').innerHTML = html;
