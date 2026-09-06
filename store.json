@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-06T21:33:07.698Z",
+  "updated_at": "2026-09-06T21:38:30.781Z",
   "categories": [
     {
       "id": "developers",
@@ -80,6 +80,18 @@
   ],
   "apps": [
     {
+      "name": "Relay",
+      "rawName": "Relay.html",
+      "path": "Other/Relay.html",
+      "author": "Bluevader🔷️",
+      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
+      "icon": "🌐",
+      "color": "#101014",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
       "name": "Steam",
       "rawName": "SteamProx.html",
       "path": "Other/SteamProx.html",
@@ -98,21 +110,6 @@
       "path": "Fun/Single Player/Minesweeper.html",
       "author": "Throk",
       "featured": true,
-      "pinned": true
-    },
-    {
-      "name": "Song Search",
-      "rawName": "SongSearch.html",
-      "path": "Audio/SongSearch.html",
-      "author": "Bluevader🔷️",
-      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
-      "icon": "🎵",
-      "color": "#101014",
-      "tags": [
-        "audio-lyrics"
-      ],
-      "featured": true,
-      "isNew": true,
       "pinned": true
     },
     {
@@ -193,14 +190,16 @@
       "author": "Throk"
     },
     {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Anonymous",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
+      "name": "Song Search",
+      "rawName": "SongSearch.html",
+      "path": "Audio/SongSearch.html",
+      "author": "Bluevader🔷️",
+      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
+      "icon": "🎵",
+      "color": "#101014",
+      "tags": [
+        "audio-lyrics"
+      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -770,25 +769,11 @@
       "author": "Throk"
     },
     {
-      "name": "Chat",
-      "rawName": "Chat.html",
-      "path": "Other/Chat.html",
-      "author": "Throk",
-      "icon": "💬"
-    },
-    {
       "name": "Feed Tok",
       "rawName": "FeedTok.html",
       "path": "Other/FeedTok.html",
       "author": "Throk",
       "icon": "📲"
-    },
-    {
-      "name": "Web Browser",
-      "rawName": "Web Browser.html",
-      "path": "Other/Web Browser.html",
-      "author": "Throk",
-      "icon": "fa:fa-globe"
     },
     {
       "name": "Archive.Org Downloader",
@@ -797,14 +782,16 @@
       "author": "Throk"
     },
     {
-      "name": "Git Hub",
-      "rawName": "GitHub.html",
-      "path": "Developers/Tools/Github/GitHub.html",
-      "author": "Throk",
-      "tags": [
-        "jesus"
-      ],
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Anonymous",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
       "featured": true,
+      "isNew": true,
       "pinned": true
     },
     {
@@ -873,11 +860,6 @@
       "path": "Developers/Text Editing/a-Day-in-the-NOM.html"
     },
     {
-      "name": "Worship Tracker V2",
-      "rawName": "WorshipTracker-V2.html",
-      "path": "WorshipTracker-V2.html"
-    },
-    {
       "name": "Clipboard",
       "rawName": "Clipboard.html",
       "path": "Tools/Clipboard.html",
@@ -890,10 +872,7 @@
       "path": "Tools/Gif.html",
       "author": "Bluevader🔷",
       "description": "It searches for gifs. Now that missionaries don't have gifs this is a replacement. Click and hold to copy a gif and paste it in a chat to send",
-      "icon": "😂",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
+      "icon": "😂"
     },
     {
       "name": "Throk's Text Editor v16",
@@ -904,12 +883,13 @@
       "icon": "fa:fa-code"
     },
     {
-      "name": "Scry Table",
-      "rawName": "ScryTable.html",
-      "path": "Fun/Tabletop/Magic/ScryTable.html",
-      "author": "Buell",
-      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
-      "icon": "🔮",
+      "name": "Git Hub",
+      "rawName": "GitHub.html",
+      "path": "Developers/Tools/Github/GitHub.html",
+      "author": "Throk",
+      "tags": [
+        "jesus"
+      ],
       "featured": true,
       "pinned": true
     },
@@ -943,8 +923,7 @@
       "iconColor": "#0a0a0f",
       "tags": [
         "developers"
-      ],
-      "isNew": true
+      ]
     },
     {
       "name": "Basic Network Tester",
@@ -1018,12 +997,12 @@
       "isNew": true
     },
     {
-      "name": "Radio V4",
-      "rawName": "Radio v4.html",
-      "path": "Audio/Radio v4.html",
-      "author": "Throk",
-      "icon": "fa:fa-radio",
-      "iconColor": "#4f46e5",
+      "name": "Scry Table",
+      "rawName": "ScryTable.html",
+      "path": "Fun/Tabletop/Magic/ScryTable.html",
+      "author": "Buell",
+      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
+      "icon": "🔮",
       "featured": true,
       "pinned": true
     },
@@ -1034,6 +1013,16 @@
       "author": "Throk",
       "icon": "fa:fa-chess-knight",
       "isNew": true
+    },
+    {
+      "name": "Radio V4",
+      "rawName": "Radio v4.html",
+      "path": "Audio/Radio v4.html",
+      "author": "Throk",
+      "icon": "fa:fa-radio",
+      "iconColor": "#4f46e5",
+      "featured": true,
+      "pinned": true
     }
   ]
 }
