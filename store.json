@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-08T15:38:09.068Z",
+  "updated_at": "2026-09-08T15:39:51.075Z",
   "categories": [
     {
       "id": "developers",
@@ -1042,9 +1042,10 @@
       "rawName": "songsearch+.html",
       "path": "Audio/songsearch+.html",
       "author": "Bluevader🔷️",
-      "description": "This is song search but includes downloading music. It does require a cloudflare worker",
+      "description": "This is song search but includes downloading music. It does require a cloudflare worker\n\nRepo with code\nkadharriminecraft/Songsearch",
       "icon": "🎵",
-      "color": "#101014"
+      "color": "#101014",
+      "isNew": true
     }
   ]
 }
