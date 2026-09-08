@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-08T15:58:14.582Z",
+  "updated_at": "2026-09-08T15:58:42.044Z",
   "categories": [
     {
       "id": "developers",
@@ -92,6 +92,18 @@
       "pinned": true
     },
     {
+      "name": "Epoch",
+      "path": "Fun/Epoch",
+      "author": "Anonymous",
+      "description": "Hours slip through the cracks here",
+      "icon": "fa:fa-hourglass",
+      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
+      "iconColor": "#e8a83e",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
       "name": "Steam",
       "rawName": "SteamProx.html",
       "path": "Other/SteamProx.html",
@@ -102,14 +114,6 @@
       "iconColor": "#ffffff",
       "featured": true,
       "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "Minesweeper",
-      "rawName": "Minesweeper.html",
-      "path": "Fun/Single Player/Minesweeper.html",
-      "author": "Throk",
-      "featured": true,
       "pinned": true
     },
     {
@@ -190,18 +194,11 @@
       "author": "Throk"
     },
     {
-      "name": "Song Search",
-      "rawName": "SongSearch.html",
-      "path": "Audio/SongSearch.html",
-      "author": "Bluevader🔷️",
-      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
-      "icon": "🎵",
-      "color": "#101014",
-      "tags": [
-        "audio-lyrics"
-      ],
+      "name": "Minesweeper",
+      "rawName": "Minesweeper.html",
+      "path": "Fun/Single Player/Minesweeper.html",
+      "author": "Throk",
       "featured": true,
-      "isNew": true,
       "pinned": true
     },
     {
@@ -782,14 +779,16 @@
       "author": "Throk"
     },
     {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Anonymous",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
+      "name": "Song Search",
+      "rawName": "SongSearch.html",
+      "path": "Audio/SongSearch.html",
+      "author": "Bluevader🔷️",
+      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
+      "icon": "🎵",
+      "color": "#101014",
+      "tags": [
+        "audio-lyrics"
+      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -883,14 +882,14 @@
       "icon": "fa:fa-code"
     },
     {
-      "name": "Youtube",
-      "rawName": "Youtube.html",
-      "path": "Other/Youtube.html",
-      "author": "Bluevader🔷️",
-      "description": "🚨OPEN METHOD HAS TO BE IFRAME TO WORK🚨",
-      "icon": "fa:fa-play",
-      "color": "#101014",
-      "iconColor": "#e11d48",
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Anonymous",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -999,14 +998,16 @@
       "isNew": true
     },
     {
-      "name": "Git Hub",
-      "rawName": "GitHub.html",
-      "path": "Developers/Tools/Github/GitHub.html",
-      "author": "Throk",
-      "tags": [
-        "jesus"
-      ],
+      "name": "Youtube",
+      "rawName": "Youtube.html",
+      "path": "Other/Youtube.html",
+      "author": "Bluevader🔷️",
+      "description": "🚨OPEN METHOD HAS TO BE IFRAME TO WORK🚨",
+      "icon": "fa:fa-play",
+      "color": "#101014",
+      "iconColor": "#e11d48",
       "featured": true,
+      "isNew": true,
       "pinned": true
     },
     {
@@ -1018,22 +1019,23 @@
       "isNew": true
     },
     {
+      "name": "Git Hub",
+      "rawName": "GitHub.html",
+      "path": "Developers/Tools/Github/GitHub.html",
+      "author": "Throk",
+      "tags": [
+        "jesus"
+      ],
+      "featured": true,
+      "pinned": true
+    },
+    {
       "name": "Scry Table",
       "rawName": "ScryTable.html",
       "path": "Fun/Tabletop/Magic/ScryTable.html",
       "author": "Buell",
       "description": "This is an advanced Magic the Gathering app for building and playing with decks",
       "icon": "🔮",
-      "featured": true,
-      "pinned": true
-    },
-    {
-      "name": "Radio V4",
-      "rawName": "Radio v4.html",
-      "path": "Audio/Radio v4.html",
-      "author": "Throk",
-      "icon": "fa:fa-radio",
-      "iconColor": "#4f46e5",
       "featured": true,
       "pinned": true
     },
@@ -1048,15 +1050,13 @@
       "isNew": true
     },
     {
-      "name": "Epoch",
-      "path": "Fun/Epoch",
-      "author": "Anonymous",
-      "description": "Hours slip through the cracks here",
-      "icon": "fa:fa-hourglass",
-      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
-      "iconColor": "#e8a83e",
+      "name": "Radio V4",
+      "rawName": "Radio v4.html",
+      "path": "Audio/Radio v4.html",
+      "author": "Throk",
+      "icon": "fa:fa-radio",
+      "iconColor": "#4f46e5",
       "featured": true,
-      "isNew": true,
       "pinned": true
     }
   ]
