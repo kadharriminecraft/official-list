@@ -758,8 +758,13 @@ input[type="text"]::placeholder{color:var(--text-3)}
 .apl-copy-btn:active{transform:scale(.97)}
 .apl-copy-btn svg{flex-sh:0}
 
-/* download progress pill — the Save button's state while a track downloads */
+/* download progress pill — the Save button's state while a track downloads.
+   The size readout ("42% · 1.3 MB") sits in a FIXED-width, tabular-numeral
+   slot: KB→MB crossings and 9%→10% digit growth change the TEXT but never
+   the slot, so the pill (and the progress bar filling it) holds one steady
+   width for the whole download instead of jittering every chunk */
 .apl-btn.apl-dling .apl-dltx,.apl-btn.apl-dling .apl-spin-s{position:relative}
+.apl-btn.apl-dling .apl-dltx{font-variant-numeric:tabular-nums;min-width:108px;text-align:center;white-space:nowrap}
 .apl-btn.apl-dling .apl-bar{position:absolute;top:0;left:0;bottom:0;width:0;background:rgba(15,181,174,.22);transition:width .18s;pointer-events:none}
 .apl-btn.apl-dling .apl-bar.indet{width:45%;animation:aplBarIndet 1.1s ease-in-out infinite alternate}
 @keyframes aplBarIndet{from{margin-left:0}to{margin-left:55%}}
@@ -771,6 +776,10 @@ input[type="text"]::placeholder{color:var(--text-3)}
 #v-album .view-header{flex-wrap:wrap}
 .album-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
 .album-actions .album-share-btn{margin-left:0}
+/* the Share Album button is icon-only — just the upload/share symbol, sized
+   to match the height of the Download Album pill beside it */
+#v-album .album-share-btn{width:38px;height:38px;padding:0;justify-content:center;flex:0 0 auto}
+#v-album .album-share-btn svg{width:17px;height:17px}
 /* the Download Album button — the album page's DEFAULT look (same quiet gray
    as Share Album); inside the APLMate sheet the big Download Album button is
    the prominent solid one */
@@ -786,8 +795,11 @@ input[type="text"]::placeholder{color:var(--text-3)}
 #album-aplmate-btn:active{transform:scale(.96)}
 #album-aplmate-btn.busy{opacity:.55;pointer-events:none}
 /* while a whole-album batch runs, the button is its progress indicator —
-   dark + bordered so the N/M · MB text stays readable */
+   dark + bordered so the N/M · MB text stays readable; the label gets the
+   same fixed-width tabular-numeral slot so the live counters never re-flow
+   the header row */
 #album-aplmate-btn.dlall{background:#1c1c1c;color:var(--text);border-color:var(--text-3)}
+#album-aplmate-btn.dlall span{font-variant-numeric:tabular-nums;min-width:15ch;text-align:center;white-space:nowrap}
 
 /* Download all — the whole list in ONE zip: the PROMINENT primary action
    of the sheet (solid teal), while the per-track pills stay quiet ghosts */
@@ -803,6 +815,15 @@ input[type="text"]::placeholder{color:var(--text-3)}
 .apl-dlall-stop{flex:0 0 auto;height:46px;padding:0 15px;border-radius:18px;border:1.5px solid #333;background:transparent;color:var(--text-3);font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
 .apl-dlall-stop:hover{color:var(--text);border-color:#4a4a4a}
 .apl-dlall-stop:active{transform:scale(.95)}
+/* Retry — the amber "try again" pills: one per failed row, plus the
+   block-level Retry-failed button beside the Saved pill (a partial album
+   is recoverable in one press) */
+.apl-btn.apl-retry{background:rgba(255,159,67,.10);color:#FF9F43;border-color:rgba(255,159,67,.5)}
+.apl-btn.apl-retry:hover{border-color:#FF9F43;color:#FFB36B}
+.apl-dlall-retry{flex:0 0 auto;display:flex;align-items:center;gap:6px;height:46px;padding:0 15px;border-radius:18px;border:1.5px solid rgba(255,159,67,.55);background:rgba(255,159,67,.10);color:#FF9F43;font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+.apl-dlall-retry:hover{border-color:#FF9F43;color:#FFB36B}
+.apl-dlall-retry:active{transform:scale(.95)}
+.apl-dlall-retry svg{flex:0 0 auto}
 /* status pills (downloading / done / in-zip) stay quiet, no fill */
 .apl-btn.apl-dling{position:relative;background:#232323;color:var(--text-2);border-color:#2a2a2a;font-weight:600;cursor:default;overflow:hidden}
 .apl-btn.apl-dling:hover{border-color:#2a2a2a;color:var(--text-2)}
@@ -855,6 +876,48 @@ input[type="text"]::placeholder{color:var(--text-3)}
 .dl-empty{padding:38px 12px;text-align:center;color:var(--text-3);font-size:.85rem;display:flex;flex-direction:column;gap:8px;align-items:center}
 .dl-empty .dl-sub{font-size:.72rem;line-height:1.6;max-width:300px}
 .dl-done-btn{margin:6px 16px 16px}
+
+/* ── Floating back button — always able to go back ────────────────────
+   Every sub-view's own Back button lives in its view header, which scrolls
+   away. This floating bubble takes over the moment that happens: it sits
+   pinned below the app header (top-left, where every view's Back already
+   is) and does exactly what the scrolled-away button would do. */
+#fb-back{
+  position:fixed;top:calc(var(--header-h) + 12px);left:14px;z-index:150;
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(28,28,28,.88);color:var(--text);
+  border:1px solid rgba(255,255,255,.14);outline:none;cursor:pointer;
+  box-shadow:0 8px 26px rgba(0,0,0,.5),0 1px 4px rgba(0,0,0,.35);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  opacity:0;transform:scale(.8);pointer-events:none;visibility:hidden;
+  transition:opacity .18s ease,transform .18s cubic-bezier(.34,1.56,.64,1),visibility 0s .18s;
+}
+#fb-back.show{opacity:1;transform:scale(1);pointer-events:auto;visibility:visible;transition:opacity .18s ease,transform .18s cubic-bezier(.34,1.56,.64,1)}
+#fb-back svg{width:19px;height:19px;margin-right:-2px}
+#fb-back:active{transform:scale(.9)}
+
+/* ── Settings: FULL-screen page + floating Save & Close ──────────────
+   The sheet opens edge-to-edge (no 92dvh bottom-sheet crop), and Save &
+   Close rides pinned above the bottom — a centered floating capsule that
+   never touches the sides or the floor (the Apple floating-bubble look). */
+.settings-overlay{align-items:stretch}
+.settings-sheet{
+  max-width:none;width:100%;height:100dvh;max-height:none;
+  border-radius:0;border:none;
+}
+.settings-scroll{padding:0 20px calc(108px + env(safe-area-inset-bottom,0px))}
+.settings-save-float{
+  position:fixed;left:0;right:0;
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  display:flex;justify-content:center;z-index:6;pointer-events:none;
+}
+.settings-save-float .settings-save-btn{
+  pointer-events:auto;width:auto;min-width:230px;max-width:calc(100% - 48px);
+  padding:15px 40px;border-radius:999px;margin-top:0;
+  box-shadow:0 12px 34px rgba(0,0,0,.55),0 2px 10px rgba(0,0,0,.4);
+}
+.settings-save-float .settings-save-btn:active{transform:scale(.96)}
 </style>
 </head>
 <body>
@@ -933,8 +996,8 @@ input[type="text"]::placeholder{color:var(--text-3)}
   <div class="view-header">
     <button class="back-btn" id="album-back"><svg><use href="#ic-back"/></svg> Back</button>
     <div class="album-actions" id="album-actions">
-      <button class="album-share-btn" id="album-share-btn" style="display:none">
-        <svg><use href="#ic-share"/></svg> Share Album
+      <button class="album-share-btn" id="album-share-btn" style="display:none" aria-label="Share album" title="Share album">
+        <svg><use href="#ic-share"/></svg>
       </button>
       <button class="album-aplmate-btn" id="album-aplmate-btn" type="button" style="display:none" aria-label="Download the whole album">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
@@ -1057,6 +1120,10 @@ input[type="text"]::placeholder{color:var(--text-3)}
     <button class="settings-save-btn dl-done-btn" id="dl-done-btn" type="button">Done</button>
   </div>
 </div>
+
+<!-- Floating back bubble — shows whenever the current view's own Back button
+     has scrolled out of sight, so you can always go back -->
+<button id="fb-back" type="button" aria-label="Back"><svg><use href="#ic-back"/></svg></button>
 
 <audio id="audio"></audio>
 
@@ -1257,6 +1324,8 @@ input[type="text"]::placeholder{color:var(--text-3)}
         </div>
       </div>
 
+    </div>
+    <div class="settings-save-float" id="settings-save-float">
       <button class="settings-save-btn" id="settings-save">Save &amp; Close</button>
     </div>
   </div>
@@ -3003,6 +3072,7 @@ function aplIcon(n, s){
     apple: '<path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.03 1.52-.06 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.1zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z"/>',
     music: '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>',
     check: '<path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"/>',
+    refresh: '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
     trash: '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14M10 11v6M14 11v6"/>'
   };
   return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" aria-hidden="true" style="flex:0 0 auto">' + (P[n] || P.music) + '</svg>';
@@ -3249,10 +3319,11 @@ function aplDownloadTrack(i){
   };
   aplRowHtml(i, t);
   showToast('Downloading · ' + aplTrackLabel(t));
-  /* the save-as spot is picked IN THIS TAP (browsers only allow the picker
-     while the tap is warm) and the cover art is warmed in parallel — so the
-     finished, tagged file is written the instant the download lands */
-  t._saveHandleP = aplPickSaveHandle(aplFileName(t));
+  /* no picker here: the save-as fires at COMPLETION, when the finished blob
+     is in hand (see the save engine below) */
+  /* the batch-like context the hardened retry needs (re-mints the link
+     through the serialized resolve chain if the download keeps failing) */
+  t._dlBatch = { url: APL.url, cacheId: APL._cacheId || aplCacheId(APL.url, false), album: APL.album || {}, tracks: APL.tracks, stopped: false };
   try{ if (t._dlMeta.cover) aplFetchCover(t._dlMeta.cover); }catch(eC){}
   aplDownloadFile(t.mp3, aplFileName(t), i);
 }
@@ -3260,19 +3331,24 @@ function aplDownloadFile(url, name, trackIdx){
   var fname = name || 'download.mp3';
   var trk = (typeof trackIdx === 'number' && APL.tracks[trackIdx]) || null;
   var meta = (trk && trk._dlMeta) || null;
-  var pickP = (trk && trk._saveHandleP) || null;
-  aplFetchTrackBlob(url, fname, trackIdx, null).then(function(blob){
+  /* single tracks get the same hardened treatment as batch tracks: the
+     3-tier ladder retried with a backoff, and a fresh link minted before
+     the last attempt */
+  var rb = (trk && trk._dlBatch) || null;
+  var refresh = rb ? function(){
+    return aplResolveTrackLink(rb, trackIdx, 1).then(function(){ return (trk && trk.mp3) || null; });
+  } : null;
+  aplFetchTrackRobust(url, fname, trackIdx, null, refresh).then(function(blob){
     /* advanced downloader: tag the mp3 (title/artist/album + embedded cover)
        before it lands, so it shows up illustrated in any music app */
     return aplTaggedBlob(blob, meta).then(function(out){
-      aplSaveBlob(out, fname, pickP);
+      aplSaveBlob(out, fname);
       showToast('Downloaded · ' + fname + ' · ' + aplFmtBytes(out.size) + ' · kept in Downloads');
       try{ dlRememberTrack(url, fname, out, meta); }catch(e){}
       return out;
     });
   }).catch(function(e){
-    aplDropHandle(pickP);      /* nothing landed: release the picked spot */
-    showToast('Download failed — ' + ((e && e.message) || 'network'));
+    showToast('Download failed after 3 tries — ' + ((e && e.message) || 'network'));
   });
 }
 /* fetch ONE track -> Blob through the proven ladder (worker rl-dl -> plain
@@ -3287,7 +3363,7 @@ function aplFetchTrackBlob(url, name, trackIdx, onTick){
   var idx = trk ? trackIdx : -1;
   var live = function(){ return idx >= 0 && APL.tracks[idx] === trk; };
   var settled = false;
-  var done = function(){ if (settled) return; settled = true; if (trk){ trk.dling = false; if (live()) aplRowHtml(idx, trk); } };
+  var done = function(){ if (settled) return; settled = true; if (trk){ if (!trk._robust) trk.dling = false; if (live()) aplRowHtml(idx, trk); } };
   var onProg = function(rx, tot){
     if (!trk || !trk.dling) return;
     if (tot) trk.dltot = tot;
@@ -3311,6 +3387,19 @@ function aplFetchTrackBlob(url, name, trackIdx, onTick){
   });
   return p.then(function(blob){
     if (!blob || blob.size === 0) throw new Error('empty file');
+    /* an HTML/JSON error page riding a 200 would corrupt the ZIP as a fake
+       mp3 — sniff it out (markup content-type, tiny body, leading '<'/'{') */
+    var ct = String((blob && blob.type) || '').toLowerCase();
+    if (/html|xml|json/.test(ct)) throw new Error('not an audio file');
+    if (blob.size < 1200) throw new Error('file too small');
+    if (blob.slice && blob.text){
+      return blob.slice(0, 16).text().then(function(head){
+        if (/^\s*[<{]/.test(head)) throw new Error('not an audio file');
+        return blob;
+      });
+    }
+    return blob;
+  }).then(function(blob){
     done();
     return blob;
   }, function(e){
@@ -3318,12 +3407,52 @@ function aplFetchTrackBlob(url, name, trackIdx, onTick){
     throw e;
   });
 }
+/* the HARDENED ladder: the 3-tier fetch retried up to 3 times with a backoff,
+   and before the last attempt the mp3 link itself is RE-MINTED (refresh -> a
+   direct resolve for just that song) — dead links are the #1 failure cause,
+   and a fresh link is the only cure for those. While this runs the track's
+   downloading pill stays up (t._robust keeps aplFetchTrackBlob's settle from
+   flipping the row back to Save between attempts). */
+function aplSleep(ms){
+  return new Promise(function(res){ setTimeout(res, ms); });
+}
+function aplFetchTrackRobust(url, name, trackIdx, onTick, refresh){
+  var trk = (typeof trackIdx === 'number' && APL.tracks[trackIdx]) || null;
+  var live = function(){ return !!(trk && APL.tracks[trackIdx] === trk); };
+  var clearBusy = function(){ if (trk){ trk._robust = false; trk.dling = false; if (live()) aplRowHtml(trackIdx, trk); } };
+  var cur = url, n = 0;
+  function pass(){
+    if (trk){ trk._robust = true; trk.dling = true; }
+    return aplFetchTrackBlob(cur, name, trackIdx, onTick).catch(function(e){
+      n++;
+      if (n >= 3){ clearBusy(); throw e; }
+      var wait = (n === 1) ? 900 : 2400;               /* backoff + jitter */
+      var freshen = (n === 2 && refresh) ? refresh() : Promise.resolve(null);
+      return freshen.catch(function(){ return null; }).then(function(u){
+        if (u) cur = u;                                  /* the re-minted link */
+        return aplSleep(wait + Math.floor(Math.random() * 400));
+      }).then(pass);
+    });
+  }
+  return pass().then(function(blob){ clearBusy(); return blob; });
+}
 /* fetch -> blob with LIVE byte progress: streams the response body and calls
    onProg(received, total) on every chunk; total=0 = unknown (indeterminate). */
 function aplFetchBlobProgress(url, opts){
   opts = opts || {};
   var onProg = opts.onProg || null;
-  return fetch(url, { credentials:'omit' }).then(function(r){
+  /* stall watchdog: a connection that moves NO bytes for 30 s is aborted, so
+     a hung fetch can never wedge the batch — the abort just feeds the
+     ladder's next tier (and the retry engine's next attempt) */
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var lastTick = Date.now();
+  var watchdog = ctrl ? setInterval(function(){
+    if (Date.now() - lastTick > 30000){ try{ ctrl.abort(); }catch(e){} }
+  }, 4000) : 0;
+  var beat = function(){ lastTick = Date.now(); };
+  var prog = onProg ? function(rx, tot){ beat(); onProg(rx, tot); } : beat;
+  var stop = function(){ if (watchdog) clearInterval(watchdog); };
+  return fetch(url, { credentials:'omit', signal: ctrl ? ctrl.signal : undefined }).then(function(r){
     var bad = false;
     if (opts.markers){
       try{ bad = !!(r.headers && (r.headers.get('x-relay-dl-error') || r.headers.get('x-relay-file-miss'))); }catch(e){}
@@ -3333,7 +3462,7 @@ function aplFetchBlobProgress(url, opts){
     try{ tot = parseInt(r.headers.get('content-length') || '0', 10) || 0; }catch(e){}
     if (!r.body || !r.body.getReader){
       var bl = r.blob();
-      if (onProg) bl = bl.then(function(b){ onProg(b.size, b.size || tot); return b; });
+      if (onProg) bl = bl.then(function(b){ prog(b.size, b.size || tot); return b; });
       return bl;
     }
     var reader = r.body.getReader();
@@ -3348,84 +3477,66 @@ function aplFetchBlobProgress(url, opts){
         var v = res.value;
         chunks.push(v);
         got += (v && (v.byteLength || v.length)) || 0;
-        if (onProg) onProg(got, tot);
+        prog(got, tot);
         return pump();
       });
     }
     return pump();
-  });
+  }).then(function(v){ stop(); return v; }, function(e){ stop(); throw e; });
 }
 /* ── the native save-as ─────────────────────────────────────────────────
-   Browsers only allow the save-as picker while the user's tap is still
-   warm (~5 s). A download that finishes later has lost that window, so the
-   spot is picked UP FRONT — in the very tap that starts the download — and
-   the finished file is written to it the moment it lands. The picker-less
-   path (anchor + Share/Save toasts) stays for phones and cancelled picks. */
-function aplPickSaveHandle(name){
-  try{ if (settings.dl_folder_mode) return null; }catch(e){}   /* folder mode: no picker at all */
-  if (!window.showSaveFilePicker) return null;                  /* phones / unsupported */
-  var warm = true;
-  try{ warm = !navigator.userActivation || navigator.userActivation.isActive; }catch(eUA){}
-  if (!warm) return null;                                       /* no fresh tap: the completion path handles it */
+   The picker ONLY ever fires at COMPLETION — the moment a single song's
+   finished blob is in hand, or the moment an album's last track has landed
+   and the ZIP is built — never in the tap that starts a download (that
+   early picker is what produced surprise dialogs and empty files).
+   Browsers still require a warm user activation to open a picker, so a
+   download that outlives that window can't prompt directly: the file lands
+   through the plain path immediately (no popup asks to share or save), and
+   the Downloaded buttons — the album button, the per-song pill, the
+   Downloads manager — re-open the save-as in their own tap. Folder mode
+   keeps its prompt-less path. */
+function aplPickAndWrite(blob, name){
+  /* picker -> write -> close. Resolves 'saved' or 'cancelled' (the user
+     closed the picker); rejects on real failures (no picker, cold
+     activation, write error) so the caller can fall through. */
+  var p;
   try{
-    return window.showSaveFilePicker({ suggestedName: name })
-      .then(function(h){ return h; })
-      .catch(function(e){ return (e && e.name === 'AbortError') ? false : null; });
-  }catch(eSy){ return null; }
+    if (!window.showSaveFilePicker) return Promise.reject(new Error('no picker'));
+    p = window.showSaveFilePicker({ suggestedName: name });
+  }catch(eSy){ return Promise.reject(eSy); }
+  return p.then(function(h){
+    return h.createWritable().then(function(w){
+      return w.write(blob).then(function(){ return w.close(); });
+    });
+  }).then(function(){ return 'saved'; }, function(e){
+    if (e && e.name === 'AbortError') return 'cancelled';
+    throw e;
+  });
 }
-/* release a picked-but-unused spot so no empty file lingers on disk */
-function aplDropHandle(pickP){
-  if (!pickP || !pickP.then) return;
-  pickP.then(function(h){
-    try{ if (h && h.remove) h.remove(); }catch(e){}
-  }, function(){});
-}
-function aplSaveBlob(blob, name, pickP){
+function aplSaveBlob(blob, name){
   /* default-folder mode (Settings → Downloads → toggle): silent saves into
      the picked folder — no save-as picker, no prompts (see downloads_module) */
-  if (typeof aplDirSave === 'function' && aplDirSave(blob, name)){
-    aplDropHandle(pickP);            /* folder mode took over: drop the unused spot */
-    return;
-  }
-  var saveVia = function(h){
-    if (h && h.createWritable){
-      /* write to the spot picked in the tap — no prompt, no gesture needed;
-         the file lands the instant the download finishes */
-      h.createWritable().then(function(w){
-        return w.write(blob).then(function(){ return w.close(); });
-      }).then(function(){
-        showToast('Saved \u00b7 ' + name);
-      }).catch(function(e){
-        if (e && e.name === 'AbortError') return;
-        aplSavePlain(blob, name);    /* write failed: the plain download path */
-      });
-      return;
-    }
-    if (h === false) return;        /* the user declined this file at the tap — it stays in Downloads */
-    aplSavePlain(blob, name);
-  };
-  if (pickP && pickP.then){ pickP.then(saveVia, function(){ aplSavePlain(blob, name); }); return; }
-  saveVia(null);
+  if (typeof aplDirSave === 'function' && aplDirSave(blob, name)) return;
+  aplSavePlain(blob, name);
 }
 function aplSavePlain(blob, name){
   var file = null;
   try{ file = new File([blob], name, { type: blob.type || 'audio/mpeg' }); }
   catch(eF){ file = blob; try{ file.name = name; }catch(eN){} }
-  /* Chrome desktop: the real Save-as picker (works while the tap is still
-     warm — e.g. the Downloads sheet's Save button, which fires in-gesture) */
+  /* Chrome desktop: the real Save-as picker, opened the instant the finished
+     download is ready to land (still inside the activation window for quick
+     downloads, so it pops right at completion — exactly the moment it
+     belongs to) */
   if (window.showSaveFilePicker){
-    var picked = null;
-    try{ picked = window.showSaveFilePicker({ suggestedName: name }); }
-    catch(eSyn){ picked = Promise.reject(eSyn); }
-    picked.then(function(h){
-      return h.createWritable().then(function(w){
-        return w.write(blob).then(function(){ return w.close(); });
-      });
-    }).catch(function(e){
-      /* AbortError = the user closed the picker — their call; the file is still
-         kept in Settings → Downloads. SecurityError (a long batch outlived the
-         click's activation) falls through to the normal save path. */
-      if (e && e.name === 'AbortError') return;
+    aplPickAndWrite(blob, name).then(function(r){
+      if (r === 'saved') showToast('Saved \u00b7 ' + name);
+      /* 'cancelled' = the user closed the picker — their call; the file is
+         still kept in Settings → Downloads */
+    }, function(){
+      /* no warm activation left (a long download outlived the click) or the
+         write failed: land the file through the plain path NOW so it is
+         never lost — no popup asking to save; the Downloaded button on the
+         page (and the Downloads manager) re-saves it anytime, in-gesture */
       aplSaveAnchor(file, blob, name);
     });
     return;
@@ -3434,49 +3545,15 @@ function aplSavePlain(blob, name){
   aplSaveAnchor(file, blob, name);
 }
 function aplSaveAnchor(file, blob, name){
+  /* the plain landing path — the browser's own download UI is the only
+     notification. No share/save popups out-of-gesture: the finished save-as
+     already fired automatically at completion (on the download popup), and
+     one tap on any Downloaded button re-opens it in that tap's gesture. */
   var u = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = u; a.download = name; a.rel = 'noopener';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function(){ try{ URL.revokeObjectURL(u); }catch(e){} }, 60000);
-  try{
-    if (navigator.canShare && file && navigator.canShare({ files: [file] })){
-      /* phones that block programmatic downloads: offer the Share sheet */
-      aplToastAction('"' + name + '" is ready — tap Share to save it to your Files', 'Share', function(){
-        var fail = function(){
-          /* share didn't open here: the file still reaches the phone — the
-             plain download path, with a toast so the tap is never a no-op */
-          aplSaveAnchorFile(blob, name);
-          showToast('Sharing isn\u2019t available here — downloaded straight to your device instead');
-        };
-        try{
-          navigator.share({ files: [file], title: name }).catch(function(e){
-            /* dismissing the share sheet is the user's call — stay quiet */
-            if (e && (e.name === 'AbortError' || /abort|cancel|dismiss/i.test(String(e && e.message)))) return;
-            fail();
-          });
-        }catch(eS){ fail(); }
-      });
-    } else if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)){
-      /* no picker, no share: an out-of-gesture anchor can be swallowed on
-         phones — put an in-gesture Save right in the toast, so the file
-         never needs a trip through the Downloads menu to reach the phone */
-      var inGesture = false;
-      try{ inGesture = !!(navigator.userActivation && navigator.userActivation.isActive); }catch(eUA){}
-      if (!inGesture){
-        aplToastAction('"' + name + '" downloaded — tap Save to save it to your phone', 'Save', function(){
-          /* the Share sheet is the one path that reliably reaches the Files
-             app on iOS — try it first, the plain download catches the rest */
-          var f = null;
-          try{ f = new File([blob], name, { type: blob.type || 'audio/mpeg' }); }catch(eF){ f = blob; }
-          if (navigator.canShare && f && navigator.canShare({ files: [f] })){
-            try{ navigator.share({ files: [f], title: name }).catch(function(){}); return; }catch(eS){}
-          }
-          aplSaveAnchorFile(blob, name);
-        });
-      }
-    }
-  }catch(eSh){}
 }
 
 /* ── one-file bundle: a stored (uncompressed) ZIP, built in the browser ───
@@ -3602,6 +3679,9 @@ function aplRowBtn(i, t){
   if (t.zipped) return '<span class="apl-btn apl-zipped">' + aplIcon('check', 15) + '<span>In ZIP</span></span>';
   /* already in the Downloads stash — re-saves run from the local blob, zero aplmate calls */
   if (dlIsDown(t)) return '<button type="button" class="apl-btn apl-done apl-resave" data-aplre="' + i + '" title="Already downloaded — tap to save it again">' + aplIcon('check', 15) + '<span>Downloaded</span></button>';
+  /* failed mid-batch — Retry re-runs JUST this song (fresh link + the
+     hardened ladder) and lands it in the same ZIP */
+  if (t.failed) return '<button type="button" class="apl-btn apl-retry" data-aplretry="' + i + '" title="Failed — tap to try again (it lands in the same ZIP)">' + aplIcon('refresh', 15) + '<span>Retry</span></button>';
   if (t._stale) return '<button type="button" class="apl-btn apl-lazy" data-aplget="' + i + '">' + aplIcon('clock', 15) + '<span>Get</span></button>';
   if (t.mp3) return '<button type="button" class="apl-btn" data-apldl="' + i + '">' + aplIcon('download', 16) + '<span>Save</span></button>';
   return '<button type="button" class="apl-btn apl-lazy" data-aplget="' + i + '">' + aplIcon('clock', 15) + '<span>Get</span></button>';
@@ -3661,10 +3741,143 @@ function aplRenderSheet(){
    Batches are fully INDEPENDENT: each is bound to its own album, so starting
    a download on a second album while one runs never hijacks it — both run,
    both save, and each paints only its own sheet block, its own rows and its
-   own album page button (the "the 20-track album took over" fix). */
+   own album page button (the "the 20-track album took over" fix).
+
+   RELIABILITY: every track goes through a hardened pipeline — the 3-tier
+   download ladder retried up to 3 times with a backoff (a stall watchdog
+   kills hung connections, error pages are sniffed out), and before the
+   last attempt the mp3 link itself is RE-MINTED with a direct resolve for
+   just that song. Anything still failing gets an automatic second-chance
+   pass (fresh link, one at a time) appended to the same ZIP so the album
+   still lands as one complete file, and Retry buttons re-run single songs
+   into the ZIP after the fact. Only COMPLETE albums are marked
+   "Downloaded" — a partial ZIP never poisons the marks, so pressing
+   Download Album again re-DOWNLOADS instead of re-saving a stale file. */
 var APL_BATCH_POOL = 3;          /* concurrent track downloads per batch */
 var aplBatches = [];             /* live batches — several can run at once */
 var aplResolveChain = Promise.resolve();  /* lazy resolves: ONE at a time, app-wide */
+
+/* ── one track's mp3 link, freshly minted — the DIRECT call for just that
+   song (the album read itself stays cached). Serialized app-wide through
+   aplResolveChain (aplmate throttles parallel runs) and retried with a
+   backoff before a track is allowed to fail. ─── */
+function aplResolveTrackLink(b, i, tries){
+  var t = b.tracks[i];
+  if (!t) return Promise.resolve(false);
+  tries = (tries === undefined) ? 2 : tries;
+  var row = function(){ if (APL.tracks[i] === t) aplRowHtml(i, t); };
+  function attempt(){
+    t.getting = true;
+    row();
+    return new Promise(function(res){
+      aplResolveChain = aplResolveChain.then(function(){
+        if (b.stopped){ t.getting = false; row(); res(false); return; }
+        fetch(superBase() + '/__relay/apl?url=' + encodeURIComponent(b.url) + '&track=' + i, { credentials:'omit' })
+          .then(function(r){ return r.json(); })
+          .then(function(j){
+            t.getting = false;
+            if (j && j.ok && j.tracks && j.tracks[i] && j.tracks[i].mp3){
+              t.mp3 = j.tracks[i].mp3;
+              t.ts = Date.now();          /* fresh link — remember it in the resolve cache */
+              t._stale = false;
+              aplCachePutById(b.cacheId, b.album, b.tracks, true);
+              row();
+              res(true);
+            } else { row(); res(false); }
+          })
+          .catch(function(){ t.getting = false; row(); res(false); });
+      });
+    });
+  }
+  return attempt().then(function(ok){
+    if (ok || tries <= 1 || b.stopped) return ok;
+    return aplSleep(1600).then(attempt);
+  });
+}
+/* ── one track, start to finish: (fresh) link -> hardened download -> ID3
+   tag -> into the batch's ZIP. The ONE place a track can succeed or fail —
+   used by the first pass, the second-chance pass and every manual Retry.
+   b._live counts in-flight pipelines so the ZIP never builds while a late
+   retry is still downloading. ─── */
+function aplTrackPipeline(b, i, fresh){
+  var t = b.tracks[i];
+  if (!t || t.zipped) return Promise.resolve(true);
+  if (t.dling || t.getting) return Promise.resolve(false);
+  b._live = (b._live || 0) + 1;
+  var settled = false;
+  var fin = function(v){ if (settled) return v; settled = true; b._live = Math.max(0, (b._live || 1) - 1); return v; };
+  t.failed = false;
+  var row = function(){ if (APL.tracks[i] === t) aplRowHtml(i, t); };
+  var link = (t.mp3 && !t._stale && !fresh)
+    ? Promise.resolve(true)
+    : aplResolveTrackLink(b, i, 2);
+  return link.then(function(ok){
+    if (b.stopped){ row(); return false; }
+    if (!ok || !t.mp3){
+      t.failed = true; row();
+      aplBatchRecalc(b); aplBatchTick(b, true);
+      return false;
+    }
+    t.dling = true; t.dlrx = 0; t.dltot = 0;
+    row();
+    var zname = aplZipTrackName(i, t);
+    /* a dead link is the #1 failure cause — the last retry re-mints it */
+    var refresh = function(){
+      return aplResolveTrackLink(b, i, 1).then(function(got){ return (got && t.mp3) || null; });
+    };
+    return aplFetchTrackRobust(t.mp3, zname, i, function(){ aplBatchRecalc(b); aplBatchTick(b); }, refresh)
+      .then(aplBlobU8)
+      .then(function(u8){
+        /* tag each mp3 (title/artist/album/track-no + the album cover) so
+           the unzipped files are fully illustrated in any music app */
+        var meta = { title: t.name || '', artist: t.artist || (b.album && b.album.artist) || '', album: (b.album && b.album.title) || '', no: i + 1, of: b.tracks.length };
+        return aplTagU8(u8, meta, b.coverP).then(function(tagged){
+          t.zipped = true; t.failed = false; t._zipSize = tagged.length;
+          b.files.push({ name: zname, data: tagged, no: i + 1 });
+          row();
+          aplBatchRecalc(b); aplBatchTick(b, true);
+          return true;
+        });
+      })
+      .catch(function(){
+        t.failed = true; row();
+        aplBatchRecalc(b); aplBatchTick(b, true);
+        return false;
+      });
+  }).then(fin, function(e){ fin(); throw e; });
+}
+/* wait until every pipeline for this batch has settled (manual Retries
+   tapped mid-run included) — the ZIP builds only when nothing can still
+   land in it */
+function aplBatchSettle(b){
+  return aplSleep(150).then(function(){
+    return (b._live > 0) ? aplBatchSettle(b) : undefined;
+  });
+}
+/* the SECOND-CHANCE pass: every track that failed gets a direct call for
+   just that song (a fresh link) and a hardened re-download, one at a time,
+   appended to the same ZIP — a flaky run still lands the whole album as
+   one file, and nothing looks different from the outside */
+function aplBatchSecondChance(b){
+  b.running = false;
+  aplBatchRecalc(b);
+  var fl = [];
+  b.tracks.forEach(function(t, i){ if (t && t.failed && !t.zipped) fl.push(i); });
+  if (!fl.length || b.stopped) return Promise.resolve();
+  b.running = true;
+  b.phase = 'retry';
+  aplDlAllSwap(b);
+  aplAlbumBtnBatch();
+  showToast('Second try \u00b7 ' + fl.length + ' track' + (fl.length !== 1 ? 's' : '') + ' \u2014 fresh links, one at a time');
+  var q = Promise.resolve();
+  fl.forEach(function(i){
+    q = q.then(function(){
+      if (b.stopped) return null;
+      return aplTrackPipeline(b, i, true);
+    });
+  });
+  return q.then(function(){ b.running = false; aplBatchRecalc(b); });
+}
 
 function aplZipTrackName(i, t){
   var n = String(i + 1);
@@ -3678,6 +3891,7 @@ function aplZipName(b){
 }
 function aplBatchText(b){
   if (b.phase === 'zip') return 'Building the ZIP\u2026';
+  if (b.phase === 'retry') return 'Second try \u00b7 ' + b.failed + ' track' + (b.failed !== 1 ? 's' : '') + ' \u00b7 ' + b.done + '/' + b.total + ' \u00b7 ' + aplFmtBytes(b.bytes);
   var s = b.done + '/' + b.total + ' \u00b7 ' + aplFmtBytes(b.bytes);
   if (b.stopped && b.running) s = 'Stopping\u2026 ' + s;
   else if (b.failed) s += ' \u00b7 ' + b.failed + ' failed';
@@ -3725,10 +3939,16 @@ function aplDlAllBtnHtml(){
   }
   if (b.phase === 'zip')
     return '<span class="apl-btn apl-dlall apl-dling" id="apl-dlall-live"><span class="apl-bar indet"></span><span class="apl-spin apl-spin-s"></span><span class="apl-dltx">Building the ZIP…</span></span>';
-  if (b.phase === 'done')
-    return '<span class="apl-btn apl-dlall apl-done">' + aplIcon('check', 15) +
+  if (b.phase === 'done'){
+    var pillHtml = '<span class="apl-btn apl-dlall apl-done">' + aplIcon('check', 15) +
       '<span class="apl-dltx">Saved ' + b.files.length + ' of ' + b.total +
       (b.zipSize ? ' · ' + aplFmtBytes(b.zipSize) : '') + (b.failed ? ' · ' + b.failed + ' failed' : '') + '</span></span>';
+    /* failures left after every automatic retry: one press re-runs just
+       those tracks (fresh links, one at a time) and re-saves the COMPLETE zip */
+    if (b.failed) return '<div class="apl-dlall-row">' + pillHtml +
+      '<button type="button" class="apl-dlall-retry" data-aplretryall="1">' + aplIcon('refresh', 15) + '<span>Retry ' + b.failed + '</span></button></div>';
+    return pillHtml;
+  }
   return '<div class="apl-dlall-row">' +
       '<span class="apl-btn apl-dlall apl-dling" id="apl-dlall-live">' +
         '<span class="apl-bar" style="width:' + aplBatchPct(b) + '%"></span>' +
@@ -3750,7 +3970,7 @@ function aplUpdateDlAll(b, force){
   if (!force && now - (b._lastPaint || 0) < 150) return;
   b._lastPaint = now;
   var el = document.getElementById('apl-dlall-live');
-  if (!el || b.phase !== 'dl') return;
+  if (!el || (b.phase !== 'dl' && b.phase !== 'retry')) return;
   var tx = el.querySelector('.apl-dltx');
   if (tx) tx.textContent = aplBatchText(b);
   var bar = el.querySelector('.apl-bar');
@@ -3786,7 +4006,7 @@ function aplAlbumBtnBatch(){
     if (dlIsDownAlbum(al, url)){
       btn.dataset.batched = '1';
       btn.classList.add('dlall');
-      if (lbl) lbl.textContent = 'Downloaded \u2713';
+      if (lbl) lbl.textContent = 'Downloaded \u2713 \u00b7 Save again';
       return;
     }
     btn.classList.remove('dlall');
@@ -3800,7 +4020,8 @@ function aplAlbumBtnBatch(){
   btn.classList.add('dlall');
   if (!lbl) return;
   if (b.phase === 'zip') lbl.textContent = 'Building ZIP\u2026';
-  else if (b.phase === 'done') lbl.textContent = 'Saved ZIP \u2713 ' + aplFmtBytes(b.zipSize || 0);
+  else if (b.phase === 'retry') lbl.textContent = 'Second try \u00b7 ' + b.failed + '\u2026';
+  else if (b.phase === 'done') lbl.textContent = b.failed ? ('Saved ' + b.done + ' of ' + b.total + ' \u00b7 tap to retry') : 'Saved ZIP \u2713 ' + aplFmtBytes(b.zipSize || 0);
   else lbl.textContent = aplBatchText(b);
 }
 function aplBatchTick(b, force){
@@ -3808,14 +4029,18 @@ function aplBatchTick(b, force){
   aplAlbumBtnBatch();
 }
 /* aggregate counters recomputed from the batch's OWN track objects — they
-   survive the sheet being closed, re-rendered, or swapped for another one */
+   survive the sheet being closed, re-rendered, or swapped for another one.
+   b.failed is OWNED here: the first pass, the second-chance pass and every
+   manual retry just flip track flags and recalc. */
 function aplBatchRecalc(b){
-  var bytes = 0, tot = 0, done = 0;
+  var bytes = 0, tot = 0, done = 0, failed = 0;
   b.tracks.forEach(function(t){
     if (t.zipped){ done++; bytes += (t._zipSize || 0); }
     else if (t.dling){ bytes += (t.dlrx || 0); if (t.dltot) tot += t.dltot; }
+    else if (t.failed){ failed++; }
   });
   b.done = done;
+  b.failed = failed;
   b.bytes = bytes;
   b.bytesTot = Math.max(b.bytesTot, tot);
 }
@@ -3828,15 +4053,17 @@ function aplBatchStop(){
 function aplDownloadAll(){
   var tracks = APL.tracks;
   if (!tracks || !tracks.length){ showToast('Nothing to download'); return; }
-  var b = aplSheetBatch();
-  if (b && (b.running || b.phase === 'zip')) return;   /* this album is already going */
+  var prev = aplSheetBatch();
+  if (prev && (prev.running || prev.phase === 'zip')) return;   /* this album is already going */
+  if (prev) aplBatchRetire(prev);     /* its ZIP already saved — start a clean, fully-robust run */
   tracks.forEach(function(t){ t.zipped = false; t._zipSize = 0; t.failed = false; });
-  b = {
+  var b = {
     running: true, stopped: false, phase: 'dl',
     tracks: tracks, album: APL.album || {}, url: APL.url,
     colId: 0, cacheId: APL._cacheId || aplCacheId(APL.url, false),
     done: 0, failed: 0, bytes: 0, bytesTot: 0, total: tracks.length,
-    files: [], zipSize: 0, zipName: '', coverP: null, doneTimer: 0, _lastPaint: 0
+    files: [], zipSize: 0, zipName: '', coverP: null, doneTimer: 0, _lastPaint: 0,
+    _live: 0, _fin: null
   };
   try{
     if (currentAlbumData && aplAlbumUrlGuess() === APL.url) b.colId = currentAlbumData.collectionId || 0;
@@ -3844,127 +4071,117 @@ function aplDownloadAll(){
   /* the album cover, fetched once — embedded into every mp3's ID3 tag and
      kept with the saved download in the Downloads manager */
   b.coverP = aplFetchCover((b.album && b.album.cover) || (tracks[0] && tracks[0].cover) || '');
-  /* the ZIP's save-as spot is picked in THIS tap, so the finished archive is
-     written the moment the last track lands (browsers only allow the picker
-     while the tap is warm) */
-  b._saveHandleP = aplPickSaveHandle(aplZipName(b));
   aplBatches.push(b);
   aplDlAllSwap();
   aplAlbumBtnBatch();
   showToast('Downloading ' + b.total + ' track' + (b.total !== 1 ? 's' : '') + ' \u2014 everything lands in one ZIP');
 
-  /* paint this batch's rows only while they still belong to the open sheet */
-  var row = function(i, t){ if (APL.tracks[i] === t) aplRowHtml(i, t); };
-
-  /* lazy resolves hit the worker's /apl route ONE at a time (app-wide —
-     aplmate throttles parallel runs); the byte-heavy mp3 downloads
-     below run pool-wide */
+  /* pass 1: the 3-wide pool, every track through the hardened pipeline */
   var cursor = 0;
-  function resolveTrack(i){
-    var t = tracks[i];
-    if (t.mp3 && !t._stale) return Promise.resolve(true);   /* stale links re-resolve, then download */
-    return new Promise(function(res){
-      t.getting = true;
-      row(i, t);
-      aplResolveChain = aplResolveChain.then(function(){
-        if (b.stopped){ t.getting = false; row(i, t); res(false); return; }
-        fetch(superBase() + '/__relay/apl?url=' + encodeURIComponent(b.url) + '&track=' + i, { credentials:'omit' })
-          .then(function(r){ return r.json(); })
-          .then(function(j){
-            t.getting = false;
-            if (j && j.ok && j.tracks && j.tracks[i] && j.tracks[i].mp3){
-              t.mp3 = j.tracks[i].mp3;
-              t.ts = Date.now();        /* fresh link — remember it in the resolve cache */
-              aplCachePutById(b.cacheId, b.album, b.tracks, true);
-              row(i, t);
-              res(true);
-            } else { row(i, t); res(false); }
-          })
-          .catch(function(){ t.getting = false; row(i, t); res(false); });
-      });
-    });
-  }
   function work(){
     if (b.stopped || cursor >= tracks.length) return Promise.resolve();
     var i = cursor++;
     var t = tracks[i];
     if (!t) return work();
-    return resolveTrack(i).then(function(ok){
-      if (b.stopped) return work();
-      if (!ok){
-        b.failed++;
-        t.failed = true;
-        row(i, t);
-        aplBatchRecalc(b);
-        aplBatchTick(b, true);
-        return work();
-      }
-      t.dling = true; t.dlrx = 0; t.dltot = 0;
-      row(i, t);
-      var zname = aplZipTrackName(i, t);
-      return aplFetchTrackBlob(t.mp3, zname, i, function(){ aplBatchRecalc(b); aplBatchTick(b); })
-        .then(aplBlobU8)
-        .then(function(u8){
-          /* tag each mp3 (title/artist/album/track-no + the album cover) so
-             the unzipped files are fully illustrated in any music app */
-          var meta = { title: t.name || '', artist: t.artist || (b.album && b.album.artist) || '', album: (b.album && b.album.title) || '', no: i + 1, of: tracks.length };
-          return aplTagU8(u8, meta, b.coverP).then(function(tagged){
-            t.zipped = true;
-            t._zipSize = tagged.length;
-            b.files.push({ name: zname, data: tagged });
-            row(i, t);
-            aplBatchRecalc(b);
-            aplBatchTick(b, true);
-            return work();
-          });
-        })
-        .catch(function(){
-          b.failed++;
-          t.failed = true;
-          row(i, t);
-          aplBatchRecalc(b);
-          aplBatchTick(b, true);
-          return work();
-        });
-    });
+    return aplTrackPipeline(b, i, false).then(function(){ return work(); });
   }
   var pool = [];
   for (var w = 0; w < Math.min(APL_BATCH_POOL, tracks.length); w++) pool.push(work());
-  Promise.all(pool).then(function(){
-    b.running = false;
-    aplBatchRecalc(b);
-    if (!b.files.length){
-      aplDropHandle(b._saveHandleP);   /* no ZIP will land: release the picked spot */
-      aplBatchRetire(b);
-      showToast(b.stopped ? 'Download all stopped' : 'Download all failed \u2014 nothing came through');
-      return;
-    }
-    b.phase = 'zip';
-    aplDlAllSwap(b);
-    aplAlbumBtnBatch();
-    setTimeout(function(){
-      aplZip(b.files).then(function(zip){
-        b.phase = 'done';
-        b.zipSize = zip.size;
-        b.zipName = aplZipName(b);
-        aplDlAllSwap(b);
-        aplAlbumBtnBatch();
-        aplSaveBlob(zip, b.zipName, b._saveHandleP);
-        try{ dlRememberAlbum(b, zip); }catch(e){}
-        showToast((b.stopped ? 'Stopped early \u00b7 ' : 'Downloaded \u00b7 ') + b.zipName + ' \u00b7 ' + aplFmtBytes(zip.size) +
-          ' \u00b7 ' + b.files.length + ' track' + (b.files.length !== 1 ? 's' : '') + (b.failed ? ' \u00b7 ' + b.failed + ' failed' : '') + ' \u00b7 kept in Downloads');
-        b.doneTimer = setTimeout(function(){ aplBatchRetire(b); }, 15000);
-      }).catch(function(e){
-        b.phase = 'done';
-        aplDlAllSwap(b);
-        aplAlbumBtnBatch();
-        showToast('ZIP build failed \u2014 ' + ((e && e.message) || 'error'));
-        b.doneTimer = setTimeout(function(){ aplBatchRetire(b); }, 15000);
-      });
-    }, 80);
-  });
+  /* pass 1 -> the second-chance pass (fresh links for every failure) ->
+     wait for any manual Retry still running -> ONE complete ZIP */
+  b._fin = Promise.all(pool)
+    .then(function(){ return aplBatchSecondChance(b); })
+    .then(function(){ return aplBatchSettle(b); })
+    .then(function(){ aplFinishZip(b); });
 }
-/* retire a batch: after its 15 s "Saved ✓" indicator, or when it ends empty */
+/* build + save the ZIP — the ONE finish path (first run, second chance and
+   every manual Retry all land here). Entries are ordered by track number,
+   and the album is only marked "Downloaded" when it is COMPLETE: a partial
+   ZIP never poisons the marks, so pressing Download Album again actually
+   RE-DOWNLOADS instead of re-saving a stale file. */
+function aplFinishZip(b){
+  aplBatchRecalc(b);
+  if (b._live > 0){                     /* a late Retry is still landing — wait for it */
+    return aplBatchSettle(b).then(function(){ return aplFinishZip(b); });
+  }
+  if (!b.files.length){
+    aplBatchRetire(b);
+    showToast(b.stopped ? 'Download all stopped' : 'Download all failed \u2014 nothing came through');
+    return;
+  }
+  b.phase = 'zip';
+  b.running = false;
+  aplDlAllSwap(b);
+  aplAlbumBtnBatch();
+  setTimeout(function(){
+    var files = b.files.slice().sort(function(x, y){ return (x.no || 0) - (y.no || 0); });
+    aplZip(files).then(function(zip){
+      b.phase = 'done';
+      b.zipSize = zip.size;
+      b.zipName = aplZipName(b);
+      aplDlAllSwap(b);
+      aplAlbumBtnBatch();
+      aplSaveBlob(zip, b.zipName);   /* the save-as fires HERE — the ZIP is built, every track has landed */
+      if (!b.failed){ try{ dlRememberAlbum(b, zip); }catch(e){} }   /* complete albums only */
+      showToast((b.stopped ? 'Stopped early \u00b7 ' : 'Downloaded \u00b7 ') + b.zipName + ' \u00b7 ' + aplFmtBytes(zip.size) +
+        ' \u00b7 ' + b.files.length + ' of ' + b.total + ' track' + (b.total !== 1 ? 's' : '') +
+        (b.failed ? ' \u00b7 ' + b.failed + ' failed \u2014 tap Retry to fill the ZIP' : ' \u00b7 kept in Downloads'));
+      b.doneTimer = setTimeout(function(){ aplBatchRetire(b); }, b.failed ? 60000 : 15000);
+    }).catch(function(e){
+      b.phase = 'done';
+      aplDlAllSwap(b);
+      aplAlbumBtnBatch();
+      showToast('ZIP build failed \u2014 ' + ((e && e.message) || 'error'));
+      b.doneTimer = setTimeout(function(){ aplBatchRetire(b); }, 15000);
+    });
+  }, 80);
+}
+/* re-open the finish path for a DONE batch: the failed tracks re-run one at
+   a time (fresh link + hardened ladder), then the COMPLETE zip rebuilds and
+   re-saves — its save-as fires when the rebuilt ZIP is ready, and the
+   work is appended to the batch's own chain so two retries can never race */
+function aplBatchRestart(b, idx, msg){
+  if (b.doneTimer){ clearTimeout(b.doneTimer); b.doneTimer = 0; }
+  b.running = true; b.stopped = false; b.phase = 'dl'; b.zipSize = 0;
+  showToast(msg);
+  b._fin = (b._fin || Promise.resolve()).then(function(){
+    var q = Promise.resolve();
+    idx.forEach(function(i){
+      q = q.then(function(){
+        if (b.stopped) return null;
+        return aplTrackPipeline(b, i, true);
+      });
+    });
+    return q;
+  }).then(function(){ return aplBatchSettle(b); }).then(function(){ aplFinishZip(b); });
+  aplDlAllSwap(b);
+  aplAlbumBtnBatch();
+}
+/* Retry-failed (the block button): re-runs every failed track, one at a time */
+function aplRetryFailed(){
+  var b = aplSheetBatch();
+  if (!b || b.running || b.phase === 'zip') return;
+  var idx = [];
+  b.tracks.forEach(function(t, i){ if (t && t.failed && !t.zipped) idx.push(i); });
+  if (!idx.length){ aplDlAllSwap(b); return; }
+  aplBatchRestart(b, idx, 'Retrying ' + idx.length + ' track' + (idx.length !== 1 ? 's' : '') + ' \u2014 the complete ZIP re-saves when they land');
+}
+/* per-row Retry: into the same ZIP while a batch owns this sheet, otherwise
+   a plain single-track save */
+function aplRetryTrack(i){
+  var t = APL.tracks[i];
+  if (!t || t.dling || t.getting) return;
+  var b = aplSheetBatch();
+  if (b && (b.phase === 'dl' || b.phase === 'retry')){ aplTrackPipeline(b, i, true); return; }
+  if (b && b.phase === 'done'){
+    aplBatchRestart(b, [i], 'Retrying \u201c' + aplTrackLabel(t) + '\u201d \u2014 the ZIP re-saves with it inside');
+    return;
+  }
+  t.failed = false;      /* no batch here (or the ZIP is mid-build): plain save */
+  aplDownloadTrack(i);
+}
+/* retire a batch: after its "Saved ✓" indicator (15 s, or 60 s when tracks
+   failed so the Retry buttons get a generous window), or when it ends empty */
 function aplBatchRetire(b){
   if (b.doneTimer) clearTimeout(b.doneTimer);
   var wasSheet = (aplSheetBatch() === b);
@@ -4115,6 +4332,31 @@ var aplAlbumBtnBusy = false;
     if (aplAlbumBtnBusy) return;
     var data = currentAlbumData;
     if (!data){ showToast('Open an album first'); return; }
+    /* already downloaded: this press re-saves the finished ZIP straight
+       from the local stash — no sheet, no aplmate calls, the picker fires
+       inside this very tap */
+    try{
+      var al = { title: data.name, artist: data.artistName };
+      var stashId = dlIsDownAlbum(al, data.url || '');
+      if (stashId){
+        aplAlbumBtnBusy = true;
+        btn.classList.add('busy');
+        dlGet(stashId).then(function(it){
+          if (it && it.file && it.file.size){
+            var fn = it.fileName || aplZipName({ album: al });
+            aplSaveBlob(it.file, fn);
+            showToast('Saving "' + fn + '" \u2014 straight from Downloads, no aplmate calls');
+          } else {
+            dlIdxDel(stashId);
+            try{ aplAlbumBtnBatch(); }catch(e){}
+          }
+        }, function(){}).then(function(){
+          aplAlbumBtnBusy = false;
+          btn.classList.remove('busy');
+        });
+        return;
+      }
+    }catch(eStash){}
     aplAlbumBtnBusy = true;
     btn.classList.add('busy');
     try{
@@ -4177,6 +4419,10 @@ function aplCopyText(t){
     if (rz){ ev.stopPropagation(); aplReSaveAlbum(); return; }
     var dl = t.closest && t.closest('[data-apldl]');
     if (dl){ ev.stopPropagation(); aplDownloadTrack(parseInt(dl.getAttribute('data-apldl'), 10)); return; }
+    var rt = t.closest && t.closest('[data-aplretry]');
+    if (rt){ ev.stopPropagation(); aplRetryTrack(parseInt(rt.getAttribute('data-aplretry'), 10)); return; }
+    var ra = t.closest && t.closest('[data-aplretryall]');
+    if (ra){ ev.stopPropagation(); aplRetryFailed(); return; }
     var gt = t.closest && t.closest('[data-aplget]');
     if (gt){ ev.stopPropagation(); aplLazyResolve(parseInt(gt.getAttribute('data-aplget'), 10)); return; }
     var da = t.closest && t.closest('[data-apldlall]');
@@ -4369,25 +4615,31 @@ function albumSongsFromCache(collectionId){
 
 /* the full track-list fetch — deduped (in-flight promise), warms songCache,
    meta + the persistent cache. limit=200: the default silently cut albums at
-   50 tracks, which is exactly why "bigger ones" behaved worst. */
+   50 tracks, which is exactly why "bigger ones" behaved worst.
+   Zero-track collections (retired singles — "Stupid Love - Single" and friends
+   no longer sell their song under that collectionId) get a name-search
+   fallback so the album still opens with its song. */
 function albumFetch(collectionId){
   if (albumFetches[collectionId]) return albumFetches[collectionId];
   var p = fetch(LOOKUP + '?id=' + collectionId + '&entity=song&limit=200')
     .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
     .then(function(d){
-      if (!d || !d.results || !d.results.length) throw new Error('empty');
-      var album = d.results[0];
-      var tracks = d.results.slice(1).filter(function(t){ return t && t.trackId; })
+      var rs = (d && d.results) || [];
+      var album = rs.length ? rs[0] : null;
+      var tracks = rs.slice(1).filter(function(t){ return t && t.trackId; })
         .sort(function(a, b){
           return (a.discNumber || 1) - (b.discNumber || 1) || (a.trackNumber || 0) - (b.trackNumber || 0);
         });
       delete albumFetches[collectionId];
-      albumNoteMeta(album);
-      tracks.forEach(function(t){ songCache[t.trackId] = t; });
-      var entry = { album: albumNoteMeta(album), tracks: tracks.map(albumTrackTrim), ts: Date.now() };
-      albumCache[collectionId] = entry;
-      albumCacheSave();
-      return entry;
+      if (tracks.length) return albumCacheEntry(collectionId, album, tracks);
+      /* zero tracks — a retired single: find its song by name and lend it to
+         the album (the song now lives on a later collection, but it is the
+         same track: artwork, preview, everything) */
+      var m = albumNoteMeta(album) || albumMetaCache[collectionId] || null;
+      if (!m) throw new Error('empty');
+      return albumSearchFallback(m).then(function(picks){
+        return albumCacheEntry(collectionId, (picks.length ? null : album), picks);
+      });
     })
     .catch(function(e){
       delete albumFetches[collectionId];
@@ -4395,6 +4647,61 @@ function albumFetch(collectionId){
     });
   albumFetches[collectionId] = p;
   return p;
+}
+
+/* the cache-entry writer — one path for every outcome (full list, rescued
+   single, honestly-empty) so re-opens are always instant and free */
+function albumCacheEntry(collectionId, albumObj, tracks){
+  var m = albumNoteMeta(albumObj) || albumMetaCache[collectionId] ||
+          { collectionId: collectionId, name: '', artistName: '', art100: '', artistId: 0, trackCount: 0, releaseDate: '', url: '', genre: '' };
+  tracks.forEach(function(t){ songCache[t.trackId] = t; });
+  var entry = { album: m, tracks: tracks.map(albumTrackTrim), ts: Date.now() };
+  if (!tracks.length) entry.empty = true;   /* honest empty state on re-opens */
+  albumCache[collectionId] = entry;
+  albumCacheSave();
+  return entry;
+}
+
+/* retired-single rescue: search the song by the collection's name + artist.
+   Matches the base name (parens/remix suffixes tolerated, primary artist must
+   agree), prefers the plain un-suffixed track, and caps at the single's own
+   track count. Returns [] when nothing matches. */
+function albumSearchFallback(meta){
+  var name = String((meta && (meta.name || meta.collectionName)) || '');
+  var artist = String((meta && meta.artistName) || '');
+  var base = name.replace(/\s*[-\u2013]\s*(Single|EP)$/i, '').trim();
+  if (!base) return Promise.resolve([]);
+  var q = (base + ' ' + artist).trim();
+  return fetch(ITUNES + '?term=' + encodeURIComponent(q) + '&entity=song&limit=25')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var rs = (d && d.results) || [];
+      function norm(s){
+        return String(s || '').toLowerCase().replace(/\([^)]*\)/g, ' ')
+          .replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+      function primary(a){ return norm(a).split(/\s*(?:&|feat\.?|ft\.|x)\s*/)[0].trim(); }
+      function plainName(s){ return !/[(\[]|feat\b|ft\./i.test(String(s || '')); }
+      var want = norm(base);
+      var pa = primary(artist);
+      if (!want) return [];
+      var exact = [], loose = [];
+      rs.forEach(function(r){
+        if (!r || !r.trackId) return;
+        var tp = primary(r.artistName);
+        if (pa && tp && tp !== pa && tp.indexOf(pa) !== 0 && pa.indexOf(tp) !== 0) return;
+        var tn = norm(r.trackName);
+        if (!tn) return;
+        if (tn === want) exact.push(r);
+        else if (tn.indexOf(want) === 0) loose.push(r);
+      });
+      var picks = exact.length ? exact : loose;
+      /* the plain, un-remixed track first — the single's actual A-side */
+      picks.sort(function(a, b){ return (plainName(a.trackName) ? 0 : 1) - (plainName(b.trackName) ? 0 : 1); });
+      var cap = (meta && meta.trackCount > 0 && meta.trackCount <= 3) ? meta.trackCount : 1;
+      return picks.slice(0, cap);
+    })
+    .catch(function(){ return []; });
 }
 
 /* prefetch on the pointer PRESS — the fetch starts while the finger is still
@@ -4463,9 +4770,10 @@ function albumHeaderHtml(meta, trackCount){
   var year = meta.releaseDate ? new Date(meta.releaseDate).getFullYear() : '';
   var artistLink = '<span class="link" data-action="artist" data-id="' + (meta.artistId || 0) +
     '" data-name="' + escAttr(meta.artistName || '') + '">' + esc(meta.artistName || '') + '</span>';
+  var n = trackCount || 0;
   return '<div class="detail-header"><img src="' + esc(bigArt) + '" alt="" onerror="this.src=\'' + FALLBACK_IMG(180) + '\'">' +
     '<h2>' + esc(meta.name || 'Album') + '</h2><h3>' + artistLink + '</h3>' +
-    '<div class="detail-sub">' + (trackCount || '') + ' tracks' + (year ? ' · ' + year : '') + '</div></div>';
+    '<div class="detail-sub">' + n + ' track' + (n !== 1 ? 's' : '') + (year ? ' · ' + year : '') + '</div></div>';
 }
 function albumShowButtons(){
   currentAlbumData = currentAlbumData || {};
@@ -4477,7 +4785,15 @@ function albumPaint(meta, tracks){
   currentAlbumData = { collectionId: meta.collectionId, name: meta.name, artistName: meta.artistName, url: meta.url || '' };
   tracks.forEach(function(t){ songCache[t.trackId] = t; });
   albumHeader.innerHTML = albumHeaderHtml(meta, meta.trackCount || tracks.length);
-  albumRenderSongs(tracks, meta.collectionId, false);
+  if (tracks.length){
+    albumRenderSongs(tracks, meta.collectionId, false);
+  } else {
+    /* the lookup landed but the store sells nothing under this collection —
+      an honest empty state instead of a blank page */
+    albumTracks.innerHTML = '<div class="empty"><div class="empty-icon">🎵</div>' +
+      '<p>No songs available for this album</p>' +
+      '<p style="font-size:.78rem;color:var(--text-3)">The store no longer sells these tracks on their own.</p></div>';
+  }
   albumShowButtons();
 }
 
@@ -4520,6 +4836,89 @@ async function viewAlbum(collectionId, skipPush=false) {
     albumTracks.innerHTML='';
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Floating Back — you can always go back, from anywhere
+   ═══════════════════════════════════════════════════════════════════════════
+   Every sub-view's Back button lives in its view header, so scrolling down
+   scrolls it away — and with it, the way back. This module watches the
+   ACTIVE view's own Back button: the moment it slips under the sticky app
+   header, a small floating bubble fades in below that header (top-left,
+   exactly where the scrolled-away button was) and does precisely what the
+   real button does. At the top of the page — where the real button is right
+   there — the bubble stays out of the way. */
+
+(function(){
+  var fb = document.getElementById('fb-back');
+  if (!fb) return;
+
+  /* the active view's own Back button (null on the home/search view) */
+  function activeBackBtn(){
+    var name = '';
+    try{ name = getActiveViewName(); }catch(e){ return null; }
+    if (name === 'album')     return document.getElementById('album-back');
+    if (name === 'artist')    return document.getElementById('artist-back');
+    if (name === 'lyrics')    return document.getElementById('lyrics-back');
+    if (name === 'favorites') return document.getElementById('likes-back-btn');
+    return null;
+  }
+
+  /* show the bubble only when the real button is gone from view — either
+     scrolled under the sticky app header or off the top of the screen */
+  function sync(){
+    var btn = activeBackBtn();
+    var show = false;
+    if (btn){
+      try{
+        var r = btn.getBoundingClientRect();
+        var headH = 70;   /* --header-h (68) + a hair, the header's bottom edge */
+        show = r.bottom < headH || r.top < 0;
+      }catch(e){ show = false; }
+    }
+    if (fb.classList.contains('show') !== show) fb.classList.toggle('show', show);
+  }
+
+  /* tap = exactly what the scrolled-away button would do */
+  fb.addEventListener('click', function(){
+    var name = '';
+    try{ name = getActiveViewName(); }catch(e){}
+    if (name === 'favorites'){
+      /* the Likes view's own handler: straight home */
+      try{ navStack = []; lyricsSource = 'search'; }catch(e){}
+      showView('search');
+      return;
+    }
+    try{ goBack(); }catch(e){}
+  });
+
+  /* re-check on scroll (rAF-throttled) */
+  var ticking = false;
+  window.addEventListener('scroll', function(){
+    if (ticking) return;
+    ticking = true;
+    (window.requestAnimationFrame || function(fn){ setTimeout(fn, 32); })(function(){
+      ticking = false;
+      sync();
+    });
+  }, { passive: true });
+
+  /* re-check whenever the view changes (showView is a plain function
+     declaration in this scope — reassigning the binding reroutes every
+     caller) */
+  try{
+    var origShowView = showView;
+    showView = function(name){ origShowView(name); try{ sync(); }catch(e){} };
+  }catch(eSW){}
+
+  /* re-check when the window resizes / the mobile URL bar collapses */
+  window.addEventListener('resize', function(){ try{ sync(); }catch(e){} }, { passive: true });
+
+  /* first paint + after the whole app has booted */
+  sync();
+  setTimeout(sync, 60);
+  setTimeout(sync, 600);
+})();
 
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -4720,9 +5119,8 @@ async function dlDirWrite(dir, blob, name){
   return final;
 }
 /* a silent, prompt-less save: the plain blob anchor (the browser's own
-   Downloads folder). On phones an out-of-gesture anchor can be swallowed,
-   so an in-gesture Save toast appears — pointing at THIS function, never
-   back at aplSaveBlob, so folder mode can never loop. */
+   Downloads folder / download UI is the only notification). Points at THIS
+   function, never back at aplSaveBlob, so folder mode can never loop. */
 function aplSaveAnchorFile(blob, name){
   var u = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -4731,18 +5129,9 @@ function aplSaveAnchorFile(blob, name){
   setTimeout(function(){ try{ URL.revokeObjectURL(u); }catch(e){} }, 60000);
 }
 function dlDirectSave(blob, name){
+  /* the plain path — silent; the browser's own download UI is the only
+     notification (the stash in Downloads can always re-save it in-gesture) */
   aplSaveAnchorFile(blob, name);
-  try{
-    if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)){
-      var inGesture = false;
-      try{ inGesture = !!(navigator.userActivation && navigator.userActivation.isActive); }catch(eUA){}
-      if (!inGesture){
-        aplToastAction('"' + name + '" downloaded \u2014 tap Save to save it to your phone', 'Save', function(){
-          aplSaveAnchorFile(blob, name);
-        });
-      }
-    }
-  }catch(e){}
 }
 /* entry point from aplSaveBlob: returns true when folder mode took the save */
 function aplDirSave(blob, name){
@@ -4767,17 +5156,11 @@ function aplDirSave(blob, name){
     dlDirWrite(dir, blob, name).then(function(fn){
       showToast('Saved to \u201c' + dlDirName() + '\u201d \u00b7 ' + fn);
     }, function(e){
-      var pn = String((e && e.name) || '');
-      if (pn === 'NotAllowedError' || pn === 'SecurityError' || /permission/i.test(String(e && e.message))){
-        /* folder access lapsed (reload / restart): one tap re-grants it */
-        aplToastAction('"' + name + '" is ready \u2014 tap Save to drop it in \u201c' + dlDirName() + '\u201d', 'Save', function(){
-          dlDirWrite(dir, blob, name).then(function(fn){
-            showToast('Saved to \u201c' + dlDirName() + '\u201d \u00b7 ' + fn);
-          }, function(){ dlDirectSave(blob, name); });
-        });
-      } else {
-        dlDirectSave(blob, name);
-      }
+      /* folder access lapsed (reload / restart) or the write failed: land the
+         file through the plain path NOW — passive toast, no popup — and the
+         folder stays picked for next time (re-pick it in Settings anytime) */
+      dlDirectSave(blob, name);
+      showToast('Folder couldn\'t be reached \u2014 saved to your Downloads folder \u00b7 ' + name);
     });
   });
   return true;
