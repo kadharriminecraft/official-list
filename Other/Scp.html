@@ -1,0 +1,1848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SCP Browser">
+<meta name="format-detection" content="telephone=no">
+<title>SCP Browser</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='20' fill='none' stroke='%23d64545' stroke-width='3.5'/%3E%3Cg fill='none' stroke='%23d64545' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 13 L24 20 L31 13'/%3E%3Cpath d='M17 13 L24 20 L31 13' transform='rotate(120 24 24)'/%3E%3Cpath d='M17 13 L24 20 L31 13' transform='rotate(240 24 24)'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #0b0d11; --bg2: #10141a; --panel: #151a22; --panel2: #1b212c;
+  --line: #272f3d; --fg: #e8ecf3; --dim: #8b94a6; --dim2: #5d6575;
+  --red: #d64545; --red2: #e05656; --green: #3fb96e;
+  --safeTop: env(safe-area-inset-top, 0px);
+  --safeBot: env(safe-area-inset-bottom, 0px);
+  --barH: 50px;
+  --sheetZ: 60; --setupZ: 80; --toastZ: 90; --suggZ: 55;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+  overscroll-behavior: none; touch-action: manipulation;
+}
+button {
+  font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+button:active { transform: scale(.92); }
+svg { display: block; }
+input {
+  font: inherit; color: inherit; background: none; border: 0; outline: 0;
+  user-select: text; -webkit-user-select: text;
+}
+
+/* ================= top bar ================= */
+#app { display: none; height: 100%; }
+#app.on { display: block; }
+#bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+  height: calc(var(--barH) + var(--safeTop));
+  padding-top: var(--safeTop);
+  background: linear-gradient(180deg, #0d1016, #0b0d11);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 2px; padding-left: 4px; padding-right: 4px;
+}
+.tbtn {
+  width: 42px; height: 44px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center; color: var(--dim);
+}
+.tbtn:disabled { color: #2b323e; }
+.tbtn:disabled:active { transform: none; }
+
+/* url pill */
+#urlpill {
+  flex: 1 1 auto; min-width: 0; height: 36px;
+  background: #151a22; border: 1px solid var(--line); border-radius: 11px;
+  display: flex; align-items: center; gap: 7px; padding: 0 8px 0 10px;
+  position: relative; overflow: hidden;
+}
+#urlpill.editing { border-color: #3a4352; background: #10151d; }
+#secIcon { color: var(--dim2); flex: 0 0 auto; display: flex; }
+#urlShow {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 0;
+  white-space: nowrap; overflow: hidden; font-size: 14.5px; line-height: 36px;
+}
+#urlHost { font-weight: 650; letter-spacing: .1px; }
+#urlPath { color: var(--dim); overflow: hidden; text-overflow: ellipsis; }
+#urlInput {
+  position: absolute; inset: 0; padding: 0 34px 0 32px;
+  font-size: 14.5px; background: transparent; display: none;
+  caret-color: var(--red2);
+}
+#urlpill.editing #urlShow { display: none; }
+#urlpill.editing #urlInput { display: block; }
+#urlClear {
+  position: absolute; right: 4px; width: 30px; height: 30px;
+  display: none; align-items: center; justify-content: center; color: var(--dim2);
+}
+#urlpill.editing #urlClear { display: flex; }
+#spin {
+  position: absolute; right: 8px; width: 17px; height: 17px;
+  border-radius: 50%; border: 2px solid #2c3543; border-top-color: var(--red);
+  animation: rot .8s linear infinite; display: none;
+}
+#urlpill.loading #spin { display: block; }
+#urlpill.loading.editing #spin { display: none; }
+#urlpill.editing #secIcon { visibility: hidden; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+/* progress + reading hairlines */
+#prog {
+  position: fixed; left: 0; right: 0; z-index: 31;
+  top: calc(var(--barH) + var(--safeTop) - 2px);
+  height: 2px; overflow: hidden; opacity: 0; transition: opacity .18s;
+  pointer-events: none; background: transparent;
+}
+#prog.on { opacity: 1; }
+#prog i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #a83232, var(--red2));
+  transition: width .25s ease-out;
+}
+
+/* ================= stage ================= */
+#stage {
+  position: fixed; left: 0; right: 0;
+  top: calc(var(--barH) + var(--safeTop));
+  bottom: 0; background: var(--bg); overflow: hidden;
+}
+#frame {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: 0; background: #fff; display: none;
+}
+#frame.on { display: block; }
+
+/* edge swipe gutters */
+.gut { position: absolute; top: 0; bottom: 0; width: 22px; z-index: 5; }
+#gutL { left: 0; }
+#gutR { right: 0; }
+.gut.off { pointer-events: none; }
+#swipeHint {
+  position: absolute; top: 0; bottom: 0; left: -80px; width: 80px; z-index: 6;
+  background: linear-gradient(90deg, rgba(214,69,69,.28), transparent);
+  display: flex; align-items: center; justify-content: flex-start;
+  padding-left: 6px; color: var(--red2); opacity: 0; pointer-events: none;
+  transition: opacity .15s;
+}
+#swipeHint.on { opacity: 1; }
+
+/* ================= list rows (saved / history sheets) ================= */
+.rowList { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 6px; }
+.histRow {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
+  padding: 10px 13px; display: flex; align-items: center; gap: 11px;
+  text-align: left; width: 100%;
+}
+.histRow .rhIcon { color: var(--dim2); flex: 0 0 auto; display: flex; }
+.histRow .rhTxt { flex: 1 1 auto; min-width: 0; }
+.histRow .rhTitle {
+  font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.histRow .rhSub { font-size: 10.5px; color: var(--dim2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.histRow .rhDel { color: var(--dim2); flex: 0 0 auto; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+.emptyNote { color: var(--dim2); font-size: 12.5px; padding: 10px 4px; text-align: center; }
+
+/* menu section labels */
+.mSec {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 1.6px; color: var(--dim2);
+  margin: 12px 6px 5px;
+}
+
+/* jump row (in the full-page menu) */
+.jumpRow {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 5px 5px 5px 14px; height: 52px;
+}
+.jumpRow .jPre { font-size: 15.5px; font-weight: 700; letter-spacing: .5px; color: var(--dim); flex: 0 0 auto; }
+#jumpNum {
+  flex: 1 1 auto; min-width: 0; font-size: 17px; font-weight: 600;
+  background: none; border: 0; outline: 0; color: var(--fg); caret-color: var(--red2);
+}
+#jumpClear {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  background: var(--panel2); color: var(--dim);
+}
+#jumpClear.on { display: flex; }
+.jumpRow .goBtn { flex: 0 0 auto; min-width: 74px; height: 42px; font-size: 14.5px; }
+.jumpHint { font-size: 11.5px; color: var(--dim2); margin: 8px 4px 2px; }
+.chipRow { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
+.chip {
+  height: 34px; padding: 0 15px; border-radius: 17px;
+  background: var(--panel); border: 1px solid var(--line);
+  font-size: 13.5px; font-weight: 650;
+}
+.chip:active { background: var(--panel2); }
+.sheetCount { color: var(--dim2); font-size: 13px; font-weight: 500; }
+
+/* ================= error page ================= */
+#errpage {
+  position: absolute; inset: 0; background: var(--bg);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  padding: 30px 26px; text-align: center; z-index: 8;
+}
+#errpage.on { display: flex; }
+#errpage .eicon { width: 54px; height: 54px; margin-bottom: 14px; color: var(--red); }
+#errpage h3 { margin: 0 0 8px; font-size: 18px; }
+#errpage p { color: var(--dim); font-size: 13.5px; line-height: 1.65; margin: 0 0 22px; max-width: 340px; }
+#errpage .btnRow { display: flex; gap: 10px; }
+.goBtn {
+  min-width: 130px; height: 42px; border-radius: 11px; font-weight: 650;
+  background: linear-gradient(180deg, #c23c3c, #b23434); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 18px;
+}
+.goBtn.ghost { background: var(--panel); border: 1px solid var(--line); color: var(--fg); }
+
+/* ================= sheets ================= */
+.sheet {
+  position: fixed; inset: 0; z-index: var(--sheetZ);
+  background: rgba(4,6,10,.55); display: none;
+  align-items: flex-end; justify-content: stretch;
+}
+.sheet.on { display: flex; }
+.sheetCard {
+  width: 100%; max-height: 82vh; overflow-y: auto;
+  background: #12161e; border-top: 1px solid var(--line);
+  border-radius: 18px 18px 0 0; padding: 8px 14px calc(18px + var(--safeBot));
+  animation: up .22s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes up { from { transform: translateY(60%); opacity: .4; } to { transform: none; opacity: 1; } }
+.grip { width: 38px; height: 4.5px; border-radius: 3px; background: #2b3340; margin: 4px auto 12px; }
+
+/* full-page sheet (the 3-dots menu): a real page, not a popup card.
+   Own header with title + Done, content starts scrolled at the top
+   every time it opens. */
+.sheet.full { background: var(--bg); align-items: stretch; }
+.sheet.full .sheetCard {
+  max-height: none; height: 100%;
+  border-top: 0; border-radius: 0;
+  padding: 0 16px calc(20px + var(--safeBot));
+  animation: fadein .18s ease-out;
+}
+@keyframes fadein { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.menuHead {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(10px + var(--safeTop)) 0 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  margin: 0 -16px 4px; padding-left: 16px; padding-right: 16px;
+}
+.menuHead .mht {
+  flex: 1 1 auto; min-width: 0;
+  font-size: 16.5px; font-weight: 750;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.menuHead .mhDone {
+  flex: 0 0 auto; height: 34px; padding: 0 15px; border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--line);
+  font-size: 13.5px; font-weight: 650;
+}
+.sheet.full .mSec:first-of-type { margin-top: 14px; }
+.sheetTitle { font-size: 16.5px; font-weight: 700; margin: 2px 4px 12px; }
+.mrow {
+  display: flex; align-items: center; gap: 13px; width: 100%;
+  padding: 12.5px 8px; border-radius: 11px; text-align: left; font-size: 15px;
+}
+.mrow:active { background: var(--panel2); }
+.mrow svg { color: var(--dim); flex: 0 0 auto; }
+.mrow .mSub { font-size: 11px; color: var(--dim2); margin-top: 1px; }
+.mrow .grow { flex: 1 1 auto; min-width: 0; }
+.mrow .mtx { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mrow .mtoggle { flex: 0 0 auto; }
+.mdiv { height: 1px; background: var(--line); margin: 7px 4px; }
+.mrow.danger { color: var(--red2); }
+.mrow.danger svg { color: var(--red2); }
+
+/* toggle switch */
+.sw { width: 46px; height: 27px; border-radius: 15px; background: #262d39; position: relative; transition: background .18s; }
+.sw::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px;
+  border-radius: 50%; background: #79839a; transition: transform .18s, background .18s;
+}
+.sw.on { background: #54262a; }
+.sw.on::after { transform: translateX(19px); background: var(--red2); }
+
+/* text size stepper */
+.step { display: flex; align-items: center; gap: 2px; }
+.step button {
+  width: 34px; height: 34px; border-radius: 9px; background: var(--panel2);
+  display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--fg);
+}
+.step .pct { min-width: 46px; text-align: center; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+/* tabs sheet */
+.tabGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.tabCard {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 13px;
+  padding: 11px 12px; min-height: 86px; text-align: left; position: relative;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.tabCard.cur { border-color: #4a3038; background: #1a151d; }
+.tabCard:active { background: var(--panel2); }
+.tabCard .ttHost { font-size: 10px; color: var(--red2); font-weight: 700; letter-spacing: .4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tabCard .ttTitle { font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tabCard .ttHome { font-size: 11px; color: var(--dim2); }
+.tabCard .ttClose {
+  position: absolute; top: 5px; right: 5px; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center; color: var(--dim2);
+}
+.tabCard.newtab { align-items: center; justify-content: center; color: var(--dim); gap: 6px; }
+
+/* blocked sheet */
+.blockIcon { width: 52px; height: 52px; margin: 2px auto 12px; color: var(--red); display: flex; justify-content: center; }
+
+/* settings sheet fields */
+.field {
+  width: 100%; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 11px; padding: 11px 13px; font-size: 14px;
+}
+.fieldLbl { font-size: 11px; letter-spacing: 1.2px; color: var(--dim2); font-weight: 700; margin: 12px 2px 7px; }
+#setOk { color: var(--green); font-size: 12.5px; min-height: 17px; margin: 7px 2px 0; }
+#setErr { color: var(--red2); font-size: 12.5px; min-height: 17px; margin: 7px 2px 0; }
+.setWInfo { font-size: 13px; line-height: 1.5; margin: 2px 0 4px; color: var(--dim); }
+.setWInfo b { color: var(--green); }
+.setWInfo.stale b { color: var(--red2); }
+
+/* ================= setup overlay ================= */
+#setup {
+  position: fixed; inset: 0; z-index: var(--setupZ); background: var(--bg);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  padding: 30px 26px; text-align: center;
+}
+#setup.on { display: flex; }
+#setup .sLogo svg { width: 74px; height: 74px; margin: 0 auto 16px; }
+#setup h1 { font-size: 22px; font-weight: 800; letter-spacing: 3.5px; margin: 0 0 6px; }
+#setup .sSub { font-size: 10px; letter-spacing: 2.5px; color: var(--dim2); margin-bottom: 26px; }
+#setup .sCard {
+  width: 100%; max-width: 380px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 16px; padding: 18px 16px; text-align: left;
+}
+#setup p { color: var(--dim); font-size: 13px; line-height: 1.65; margin: 0 0 14px; }
+#setupInput {
+  width: 100%; height: 44px; background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 11px; padding: 0 13px; font-size: 14.5px;
+}
+#setupOk { color: var(--green); font-size: 12.5px; min-height: 18px; margin-top: 8px; }
+#setupErr { color: var(--red2); font-size: 12.5px; min-height: 18px; margin-top: 8px; }
+#setup .sBtns { display: flex; gap: 10px; margin-top: 12px; }
+#setup .goBtn { flex: 1 1 0; }
+
+/* ================= toast ================= */
+#toast {
+  position: fixed; left: 50%; bottom: calc(26px + var(--safeBot)); z-index: var(--toastZ);
+  transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+  background: #1d232e; border: 1px solid #2c3542; color: var(--fg);
+  padding: 9px 16px; border-radius: 11px; font-size: 13px; max-width: 86vw;
+  box-shadow: 0 8px 26px rgba(0,0,0,.4); transition: opacity .2s, transform .2s;
+}
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* url suggestions */
+#sugg {
+  position: fixed; left: 8px; right: 8px; z-index: var(--suggZ);
+  top: calc(var(--barH) + var(--safeTop) + 2px);
+  background: #12161e; border: 1px solid var(--line); border-radius: 13px;
+  display: none; overflow: hidden; max-height: 46vh; overflow-y: auto;
+  box-shadow: 0 14px 40px rgba(0,0,0,.5);
+}
+#sugg.on { display: block; }
+.sgRow {
+  display: flex; align-items: center; gap: 11px; padding: 11px 13px; width: 100%;
+  text-align: left; border-bottom: 1px solid #1a2029;
+}
+.sgRow:last-child { border-bottom: 0; }
+.sgRow:active { background: var(--panel2); }
+.sgRow svg { color: var(--dim2); flex: 0 0 auto; }
+.sgTxt { flex: 1 1 auto; min-width: 0; }
+.sgT { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sgS { font-size: 11px; color: var(--dim2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* scroll-top fab */
+#fabTop {
+  position: fixed; right: 14px; bottom: calc(18px + var(--safeBot)); z-index: 40;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #1d232e; border: 1px solid #2c3542; color: var(--dim);
+  display: none; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,.45);
+}
+#fabTop.on { display: flex; }
+
+.footVer {
+  text-align: center; color: var(--dim2); font-size: 10.5px; letter-spacing: 1px;
+  margin: 26px 0 4px;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="bar">
+    <button class="tbtn" id="btnBack" aria-label="Back">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg>
+    </button>
+    <button class="tbtn" id="btnFwd" aria-label="Forward">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg>
+    </button>
+    <div id="urlpill" role="button" aria-label="Address bar">
+      <span id="secIcon">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10 V7 a4 4 0 0 1 8 0 v 3"/></svg>
+      </span>
+      <div id="urlShow"><span id="urlHost"></span><span id="urlPath"></span></div>
+      <input id="urlInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Search or enter address">
+      <div id="spin"></div>
+      <button id="urlClear" aria-label="Clear">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>
+      </button>
+    </div>
+    <button class="tbtn" id="btnHome" aria-label="Home">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11 L12 3.5 L20.5 11"/><path d="M5.5 9.5 V19 a1 1 0 0 0 1 1 h11 a1 1 0 0 0 1-1 V9.5"/></svg>
+    </button>
+    <button class="tbtn" id="btnMenu" aria-label="Menu">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+    </button>
+  </div>
+
+  <div id="prog"><i id="progBar"></i></div>
+
+  <div id="stage">
+    <iframe id="frame" sandbox="allow-scripts allow-pointer-lock"></iframe>
+
+    <div id="errpage">
+      <div class="eicon">
+        <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5 L12 13"/><circle cx="12" cy="16.8" r=".4" fill="currentColor"/></svg>
+      </div>
+      <h3 id="errTitle">Can't open this page</h3>
+      <p id="errDesc"></p>
+      <div class="btnRow">
+        <button class="goBtn" id="btnRetry">Try again</button>
+        <button class="goBtn ghost" id="btnErrCopy">Copy address</button>
+      </div>
+    </div>
+
+    <div class="gut" id="gutL"></div>
+    <div class="gut" id="gutR"></div>
+    <div id="swipeHint">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg>
+    </div>
+  </div>
+
+  <button id="fabTop" aria-label="Scroll to top">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15 L12 8 L19 15"/></svg>
+  </button>
+</div>
+
+<!-- suggestions dropdown -->
+<div id="sugg"></div>
+
+<!-- menu (full page) -->
+<div class="sheet full" id="menuSheet">
+  <div class="sheetCard" id="menuCard">
+    <div class="menuHead">
+      <div class="mht" id="menuTitle">Menu</div>
+      <button class="mhDone" id="btnMenuDone">Done</button>
+    </div>
+
+    <div class="mSec">GO TO AN SCP</div>
+    <div class="jumpRow">
+      <span class="jPre">SCP-</span>
+      <input id="jumpNum" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="173">
+      <button id="jumpClear" aria-label="Clear number"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>
+      <button class="goBtn" id="btnJumpGo">Go</button>
+    </div>
+    <div class="jumpHint">Number, optional suffix (173-J, 2999-EX) or letter (L093)</div>
+
+    <div class="mSec">BROWSE BY SERIES</div>
+    <div class="chipRow" id="menuSeries"></div>
+
+    <div class="mSec">TOOLS</div>
+    <button class="mrow" data-m="random"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.6" cy="8.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.4" cy="15.4" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.4" cy="8.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="8.6" cy="15.4" r="1.5" fill="currentColor" stroke="none"/></svg><span class="grow">Random page</span><span class="mSub" id="randSite"></span></button>
+
+    <div class="mSec">LIBRARY</div>
+    <button class="mrow" data-m="saved"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5 h11 a1 1 0 0 1 1 1 V20.5 L12 16.5 L5.5 20.5 V4.5 a1 1 0 0 1 1-1 Z"/></svg><span class="grow">Saved pages</span><span class="mSub" id="savedCount"></span></button>
+    <button class="mrow" data-m="history"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.7"/><path d="M12 7 V12 L15.5 14"/></svg><span class="grow">History</span><span class="mSub" id="histCount"></span></button>
+
+    <div class="mSec">THIS PAGE</div>
+    <button class="mrow" data-m="bookmark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5 h11 a1 1 0 0 1 1 1 V20.5 L12 16.5 L5.5 20.5 V4.5 a1 1 0 0 1 1-1 Z"/></svg><span class="grow"><span id="bmLabel">Save this page</span><div class="mSub" id="bmSub"></div></span></button>
+    <button class="mrow" data-m="copy"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M5.5 15.5 h-1 a1.5 1.5 0 0 1-1.5-1.5 v-9 a1.5 1.5 0 0 1 1.5-1.5 h9 a1.5 1.5 0 0 1 1.5 1.5 v1"/></svg><span class="grow">Copy page address</span></button>
+    <button class="mrow" data-m="reload"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12 a8 8 0 1 1-2.3-5.6"/><path d="M20 3.5 L20 8 L15.5 8"/></svg><span class="grow">Reload page</span></button>
+
+    <div class="mSec">READING</div>
+    <div class="mrow" style="cursor:default"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 18 L10 9 L14 13 L20 5" stroke-linejoin="round"/><path d="M4 20.5 h16"/></svg><span class="grow">Text size<div class="mSub">Applies to the article text</div></span>
+      <span class="step">
+        <button id="zoomOut" aria-label="Smaller text">A-</button>
+        <span class="pct" id="zoomPct">100%</span>
+        <button id="zoomIn" aria-label="Larger text">A+</button>
+      </span>
+    </div>
+
+    <div class="mSec">BROWSER</div>
+    <button class="mrow" data-m="newtab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M12 8.5 L12 15.5 M8.5 12 L15.5 12"/></svg><span class="grow">New tab</span></button>
+    <button class="mrow" data-m="tabs"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="12.5" height="12.5" rx="2.5"/><path d="M8 20 h9 a3 3 0 0 0 3-3 V8"/></svg><span class="grow">Show tabs</span><span class="mSub" id="tabCount">1</span></button>
+    <button class="mrow" data-m="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11"/><path d="M6.5 10 V19.5 h11 V10"/></svg><span class="grow">Wiki home</span></button>
+    <button class="mrow" data-m="settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15 a1.7 1.7 0 0 0 .34 1.87 l.06.06 a2 2 0 1 1-2.83 2.83 l-.06-.06 a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55 V21 a2 2 0 1 1-4 0 v-.09 a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34 l-.06.06 a2 2 0 1 1-2.83-2.83 l.06-.06 a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1 H3 a2 2 0 1 1 0-4 h.09 a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87 l-.06-.06 a2 2 0 1 1 2.83-2.83 l.06.06 a1.7 1.7 0 0 0 1.87.34 h.08 a1.7 1.7 0 0 0 1-1.55 V3 a2 2 0 1 1 4 0 v.09 a1.7 1.7 0 0 0 1 1.55 h.08 a1.7 1.7 0 0 0 1.87-.34 l.06-.06 a2 2 0 1 1 2.83 2.83 l-.06.06 a1.7 1.7 0 0 0-.34 1.87 v.08 a1.7 1.7 0 0 0 1.55 1 H21 a2 2 0 1 1 0 4 h-.09 a1.7 1.7 0 0 0-1.55 1 Z"/></svg><span class="grow">Settings</span></button>
+  </div>
+</div>
+
+<!-- saved sheet -->
+<div class="sheet" id="savedSheet">
+  <div class="sheetCard">
+    <div class="grip"></div>
+    <div class="sheetTitle">Saved pages <span class="sheetCount" id="savedCount2"></span></div>
+    <button class="mrow" id="btnSavedAdd"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5 V19 M5 12 H19"/></svg><span class="grow" id="savedAddLabel">Save current page</span></button>
+    <div class="rowList" id="savedList"></div>
+  </div>
+</div>
+
+<!-- history sheet -->
+<div class="sheet" id="historySheet">
+  <div class="sheetCard">
+    <div class="grip"></div>
+    <div class="sheetTitle">History <span class="sheetCount" id="histCount2"></span></div>
+    <div class="rowList" id="histList"></div>
+    <button class="mrow danger" id="btnHistClear"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7 h16"/><path d="M9.5 7 V5 a1.5 1.5 0 0 1 1.5-1.5 h2 A1.5 1.5 0 0 1 14.5 5 v2"/><path d="M6.5 7 l.8 12 a1.5 1.5 0 0 0 1.5 1.4 h6.4 a1.5 1.5 0 0 0 1.5-1.4 l.8-12"/></svg><span class="grow">Clear history</span></button>
+  </div>
+</div>
+
+<!-- tabs sheet -->
+<div class="sheet" id="tabsSheet">
+  <div class="sheetCard">
+    <div class="grip"></div>
+    <div class="sheetTitle">Tabs <span id="tabsCount2" style="color:var(--dim2);font-size:13px"></span></div>
+    <div class="tabGrid" id="tabGrid"></div>
+    <button class="goBtn" id="btnNewTab" style="width:100%;margin-top:14px">Open new tab</button>
+  </div>
+</div>
+
+<!-- blocked external sheet -->
+<div class="sheet" id="blockedSheet">
+  <div class="sheetCard">
+    <div class="grip"></div>
+    <div class="blockIcon">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L20 6 V11.5 c0 4.6-3.2 7.6-8 9.3-4.8-1.7-8-4.7-8-9.3 V6 Z"/><path d="M12 8.5 V13"/><circle cx="12" cy="16.4" r=".4" fill="currentColor"/></svg>
+    </div>
+    <div class="sheetTitle" style="text-align:center">Outside the SCP network</div>
+    <p style="color:var(--dim);font-size:13.5px;text-align:center;margin:0 0 16px;line-height:1.6" id="blockedDesc"></p>
+    <button class="mrow" id="btnBlkCopy"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M5.5 15.5 h-1 a1.5 1.5 0 0 1-1.5-1.5 v-9 a1.5 1.5 0 0 1 1.5-1.5 h9 a1.5 1.5 0 0 1 1.5 1.5 v1"/></svg><span class="grow">Copy the address</span></button>
+    <button class="mrow" id="btnBlkOpen"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4 h6 v6"/><path d="M20 4 L11 13"/><path d="M19 14 v5 a1.5 1.5 0 0 1-1.5 1.5 h-12 A1.5 1.5 0 0 1 4 19 V7.5 A1.5 1.5 0 0 1 5.5 6 h5"/></svg><span class="grow">Try in the real browser</span></button>
+    <button class="mrow" id="btnBlkCancel"><span class="grow" style="text-align:center;color:var(--dim)">Cancel</span></button>
+  </div>
+</div>
+
+<!-- settings sheet -->
+<div class="sheet" id="settingsSheet">
+  <div class="sheetCard">
+    <div class="grip"></div>
+    <div class="sheetTitle">Settings</div>
+    <div class="fieldLbl">WORKER ADDRESS</div>
+    <input class="field" id="setWorker" type="text" placeholder="https://your-worker.your-account.workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="setOk"></div>
+    <div id="setErr"></div>
+    <button class="mrow" id="btnSetSave"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 6.5"/></svg><span class="grow">Test &amp; save</span></button>
+    <div class="mdiv"></div>
+    <div class="fieldLbl">WORKER</div>
+    <div id="setWorkerInfo" class="setWInfo"></div>
+    <div class="mdiv"></div>
+    <div class="fieldLbl">DATA</div>
+    <button class="mrow danger" id="btnClearData"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7 h16"/><path d="M9.5 7 V5 a1.5 1.5 0 0 1 1.5-1.5 h2 A1.5 1.5 0 0 1 14.5 5 v2"/><path d="M6.5 7 l.8 12 a1.5 1.5 0 0 0 1.5 1.4 h6.4 a1.5 1.5 0 0 0 1.5-1.4 l.8-12"/></svg><span class="grow">Clear all data (tabs, history, saved)</span></button>
+    <div class="footVer" id="setVer" style="margin-top:18px"></div>
+  </div>
+</div>
+
+<!-- setup overlay -->
+<div id="setup">
+  <div class="sLogo">
+    <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#d64545" stroke-width="2.8"/><g stroke="#d64545" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13 L24 20 L31 13"/><path d="M17 13 L24 20 L31 13" transform="rotate(120 24 24)"/><path d="M17 13 L24 20 L31 13" transform="rotate(240 24 24)"/></g></svg>
+  </div>
+  <h1>SCP BROWSER</h1>
+  <div class="sSub">SECURE &middot; CONTAIN &middot; PROTECT</div>
+  <div class="sCard">
+    <p id="setupIntro">This file is the whole browser. Point it at your <b>Cloudflare Worker</b> once - every page, image and font then flows through it as API data, so the blocked wiki itself is never contacted.</p>
+    <input id="setupInput" type="text" placeholder="https://your-worker.your-account.workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="setupOk"></div>
+    <div id="setupErr"></div>
+    <div class="sBtns">
+      <button class="goBtn" id="btnSetupSave">Connect</button>
+    </div>
+  </div>
+  <div class="footVer" id="setupVer"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>'use strict';
+/* SCP BROWSER - app logic (v3)
+   A real-site SCP browser in one file. All content arrives from the
+   worker's /api/render as JSON and is painted into a sandboxed iframe;
+   images/fonts stream in through /api/asset. The wiki itself is never
+   contacted by this device. */
+
+/* ================= constants ================= */
+var APP_VERSION = '3.6.0';
+var DEFAULT_SITE = 'scp-wiki.wikidot.com';
+
+/* Opaque asset/frame tokens. Every upstream URL this app hands to the
+   worker is XOR-obfuscated + base64url'd so no upstream hostname is
+   readable in a request query string - some organization filters
+   decode query params and category-block hosts like github.io (the
+   SCP-6634 game host) even when the request itself goes to the worker.
+   The key matches worker.mjs / bridge.js (build.mjs asserts it). */
+var TOK_KEY = 'scpwtok-3-6-0-A7fQ9z';
+function encTok(u) {
+  try {
+    var b = new TextEncoder().encode(String(u));
+    var s = '';
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i] ^ TOK_KEY.charCodeAt(i % TOK_KEY.length));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  } catch (e) { return ''; }
+}
+
+/* Text-size baseline: the page renders at 85% of the wiki's native
+   size by default, and that state is presented as "100%" (85 is the
+   new 100). The A-/A+ stepper scales around this baseline. */
+var ZOOM_BASE = 0.85;
+
+var LS = {
+  worker: 'scpw3.worker', tabs: 'scpw3.tabs', tabs2: 'scpw3.tabs2',
+  active: 'scpw3.active', active2: 'scpw3.active2',
+  bm: 'scpw3.bm', hist: 'scpw3.hist', zoom: 'scpw3.zoom',
+  seq: 'scpw3.seq',
+};
+
+var SITES = [
+  { c: 'EN', n: 'SCP Foundation', h: 'scp-wiki.wikidot.com' },
+  { c: 'INT', n: 'SCP-INT (translated)', h: 'scp-int.wikidot.com' },
+  { c: 'WL', n: "Wanderers' Library", h: 'wanderers-library.wikidot.com' },
+  { c: 'CN', n: 'SCP-CN', h: 'scp-wiki-cn.wikidot.com' },
+  { c: 'JP', n: 'SCP-JP', h: 'scp-jp.wikidot.com' },
+  { c: 'RU', n: 'SCP-RU', h: 'scp-ru.wikidot.com' },
+  { c: 'DE', n: 'SCP-DE', h: 'scp-de.wikidot.com' },
+  { c: 'FR', n: 'SCP-FR', h: 'scp-fr.wikidot.com' },
+  { c: 'ES', n: 'SCP-ES', h: 'scp-es.wikidot.com' },
+  { c: 'IT', n: 'SCP-IT', h: 'scp-it.wikidot.com' },
+  { c: 'PL', n: 'SCP-PL', h: 'scp-pl.wikidot.com' },
+  { c: 'PT', n: 'SCP-PT', h: 'scp-pt.wikidot.com' },
+  { c: 'KO', n: 'SCP-KO', h: 'scp-ko.wikidot.com' },
+  { c: 'TH', n: 'SCP-TH', h: 'scp-th.wikidot.com' },
+  { c: 'CS', n: 'SCP-CS', h: 'scp-cs.wikidot.com' },
+  { c: 'UA', n: 'SCP-UA', h: 'scp-ua.wikidot.com' },
+];
+
+var WIKI_EXACT = ['scp-wiki.wikidot.com', 'scpwiki.com', 'www.scpwiki.com',
+  'cdn.scpwiki.com', 'interwiki.scpwiki.com', 'www.wikidot.com', 'wdfiles.com'];
+var WIKI_SUFFIXES = ['.wikidot.com', '.wdfiles.com'];
+
+function isWikiHost(h) {
+  h = String(h || '').toLowerCase().split(':')[0].replace(/\.$/, '');
+  if (!h || h.charAt(0) === '.') return false;
+  if (WIKI_EXACT.indexOf(h) > -1) return true;
+  for (var i = 0; i < WIKI_SUFFIXES.length; i++) {
+    if (h.length > WIKI_SUFFIXES[i].length &&
+        h.slice(-WIKI_SUFFIXES[i].length) === WIKI_SUFFIXES[i]) return true;
+  }
+  if (/^d3g0gp89917ko\d\.cloudfront\.net$/.test(h)) return true;
+  return false;
+}
+
+/* ================= state ================= */
+var S = {
+  worker: '',
+  workerVer: '',
+  tabs: [],
+  active: 0,
+  seq: 1,
+  bookmarks: [],
+  recents: [],
+  zoom: 1,
+  loading: false,
+  editing: false,
+  curUrl: '',
+  pendingHash: '',
+  pendingScroll: 0,
+  navSeq: 0,
+  progTimers: [],
+};
+var ZOOMS = [0.7, 0.85, 1, 1.15, 1.3, 1.5, 1.75];
+var BFCACHE_KEEP = 8;
+var MAX_TABS = 12;
+
+/* ================= dom ================= */
+function $(id) { return document.getElementById(id); }
+var app = $('app'), frame = $('frame'), errpage = $('errpage');
+
+/* Recreate the content frame dynamically. A frame that sits in the
+   static markup while the shell is hidden can end up with a broken
+   browsing context (content collapses to zero height) in some engines;
+   a frame created at runtime is always healthy. */
+(function recreateFrame() {
+  var old = document.getElementById('frame');
+  var f = document.createElement('iframe');
+  f.id = 'frame';
+  /* allow-pointer-lock: embedded game frames (e.g. the SCP-6634 game
+     proxied through /api/frame) inherit these flags and some engines
+     want pointer lock; the wiki content itself never uses it */
+  f.setAttribute('sandbox', 'allow-scripts allow-pointer-lock');
+  if (old && old.parentNode) old.parentNode.replaceChild(f, old);
+  else document.getElementById('stage').appendChild(f);
+  frame = f;
+})();
+var urlpill = $('urlpill'), urlShow = $('urlShow'), urlHost = $('urlHost'), urlPath = $('urlPath');
+var urlInput = $('urlInput'), spin = $('spin'), sugg = $('sugg');
+var prog = $('prog'), progBar = $('progBar');
+var toastEl = $('toast');
+var setupEl = $('setup');
+var gutL = $('gutL'), gutR = $('gutR'), swipeHint = $('swipeHint');
+var fabTop = $('fabTop');
+
+/* ================= utils ================= */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function () { toastEl.classList.remove('on'); }, 2400);
+}
+function copyText(txt, msg) {
+  var done = function () { toast(msg || 'Copied'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done, function () { legacyCopy(txt, done); });
+  } else legacyCopy(txt, done);
+}
+function legacyCopy(txt, done) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done();
+  } catch (e) { toast('Copy failed'); }
+}
+function relTime(at) {
+  var d = Date.now() - at;
+  if (d < 60000) return 'now';
+  if (d < 3600000) return Math.floor(d / 60000) + 'm ago';
+  if (d < 86400000) return Math.floor(d / 3600000) + 'h ago';
+  return Math.floor(d / 86400000) + 'd ago';
+}
+function hostOf(u) { try { return new URL(u).hostname; } catch (e) { return ''; } }
+function prettyPath(u) {
+  try {
+    var x = new URL(u);
+    var p = decodeURIComponent(x.pathname);
+    if (p.length > 1 && p.charAt(p.length - 1) === '/') p = p.slice(0, -1);
+    return p;
+  } catch (e) { return u; }
+}
+function currentSite() {
+  var h = hostOf(S.curUrl);
+  if (h && isWikiHost(h) && h.indexOf('wdfiles') === -1 &&
+      !/^d3g0gp89917ko\d\.cloudfront\.net$/.test(h) && h !== 'www.wikidot.com') return h;
+  return DEFAULT_SITE;
+}
+function siteHref(path) { return 'https://' + currentSite() + (path.charAt(0) === '/' ? path : '/' + path); }
+
+/* ================= persistence ================= */
+/* Tabs are written to TWO keys (tabs + tabs2) and the active index to
+   two as well: mobile browsers can be killed mid-write, and a torn
+   value used to reset the whole session to the home page on reopen.
+   Reads validate and fall back to the twin; if both are lost, the most
+   recently viewed page (recents[0]) is restored instead of home. */
+function readStoredTabs() {
+  for (var i = 0; i < 2; i++) {
+    var raw = null;
+    try { raw = localStorage.getItem(i ? LS.tabs2 : LS.tabs); } catch (e) {}
+    if (!raw) continue;
+    var t = null;
+    try { t = JSON.parse(raw); } catch (e) {}
+    if (t && Array.isArray(t) && t.length) return t;
+  }
+  return null;
+}
+function readStoredActive() {
+  for (var i = 0; i < 2; i++) {
+    var v = null;
+    try { v = parseInt(localStorage.getItem(i ? LS.active2 : LS.active) || '', 10); } catch (e) {}
+    if (isFinite(v) && v >= 0) return v;
+  }
+  return 0;
+}
+function loadState() {
+  try { S.worker = localStorage.getItem(LS.worker) || ''; } catch (e) { S.worker = ''; }
+  try { S.bookmarks = JSON.parse(localStorage.getItem(LS.bm) || '[]'); } catch (e) { S.bookmarks = []; }
+  try { S.recents = JSON.parse(localStorage.getItem(LS.hist) || '[]'); } catch (e) { S.recents = []; }
+  S.zoom = parseFloat(localStorage.getItem(LS.zoom)) || 1;
+  S.seq = parseInt(localStorage.getItem(LS.seq) || '1', 10) || 1;
+  var tabs = readStoredTabs();
+  S.active = Math.min(readStoredActive(), tabs ? tabs.length - 1 : 0);
+  if (!tabs) {
+    /* both copies lost: reopen on the last page actually viewed, not home */
+    var last = S.recents[0];
+    tabs = [{ id: 1, idx: -1, hist: [] }];
+    if (last && last.u) {
+      tabs[0] = { id: 1, idx: 0, hist: [{ url: last.u, title: last.t || '', y: 0 }] };
+    }
+    S.active = 0;
+  }
+  S.tabs = tabs.map(function (t) {
+    return { id: t.id, idx: t.idx, hist: (t.hist || []).map(function (h) { return { url: h.url, title: h.title || '', y: +h.y || 0 }; }) };
+  });
+  if (S.active >= S.tabs.length) S.active = S.tabs.length - 1;
+}
+function saveState() {
+  try {
+    localStorage.setItem(LS.worker, S.worker);
+    localStorage.setItem(LS.bm, JSON.stringify(S.bookmarks.slice(0, 60)));
+    localStorage.setItem(LS.hist, JSON.stringify(S.recents.slice(0, 24)));
+    localStorage.setItem(LS.zoom, String(S.zoom));
+    localStorage.setItem(LS.seq, String(S.seq));
+    localStorage.setItem(LS.active, String(S.active));
+    localStorage.setItem(LS.active2, String(S.active));
+    var strip = S.tabs.map(function (t) {
+      return { id: t.id, idx: t.idx, hist: t.hist.map(function (h) { return { url: h.url, title: h.title, y: Math.round(h.y || 0) }; }) };
+    });
+    var blob = JSON.stringify(strip);
+    localStorage.setItem(LS.tabs, blob);
+    localStorage.setItem(LS.tabs2, blob);
+  } catch (e) {}
+}
+
+/* ================= api ================= */
+function api(path) {
+  return fetch(S.worker + path, { credentials: 'omit' })
+    .then(function (r) {
+      if (!r.ok) return r.json().catch(function () { throw new Error('http ' + r.status); })
+        .then(function (j) { throw new Error(fmtApiErr(j, r.status)); });
+      return r.json();
+    })
+    .then(function (j) {
+      if (j && j.ok === false) throw new Error(fmtApiErr(j, 0));
+      return j;
+    });
+}
+function fmtApiErr(j, status) {
+  var msg = (j && j.error) ? j.error : ('http ' + status);
+  if (j && j.detail) msg += ' - ' + j.detail;
+  return msg;
+}
+function normalizeWorker(v) {
+  v = String(v || '').trim().replace(/\/+$/, '');
+  if (!v) return '';
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  try { return new URL(v).href.replace(/\/+$/, ''); } catch (e) { return ''; }
+}
+
+/* ================= tabs ================= */
+function tab() { return S.tabs[S.active]; }
+function cur() {
+  var t = tab();
+  return (t && t.idx >= 0 && t.hist[t.idx]) ? t.hist[t.idx] : null;
+}
+function newTab(url, focusIt) {
+  if (S.tabs.length >= MAX_TABS) { toast('Too many tabs - close one first'); return; }
+  var t = { id: S.seq++, hist: [], idx: -1 };
+  S.tabs.push(t);
+  if (focusIt !== false) S.active = S.tabs.length - 1;
+  if (url) nav(url);
+  else goSiteRoot();
+  saveState();
+  updateTabDots();
+  return t;
+}
+function closeTab(i) {
+  S.tabs.splice(i, 1);
+  if (!S.tabs.length) { S.tabs = [{ id: S.seq++, hist: [], idx: -1 }]; S.active = 0; }
+  else if (S.active >= S.tabs.length) S.active = S.tabs.length - 1;
+  else if (i < S.active) S.active--;
+  var e = cur();
+  if (e && e.html) paint(e);
+  else if (e && e.url) navReplace(e.url);
+  else goSiteRoot();
+  saveState();
+  updateTabDots();
+}
+function switchTab(i) {
+  if (i === S.active) { closeSheet('tabsSheet'); return; }
+  S.active = i;
+  var e = cur();
+  if (e && e.html) paint(e);
+  else if (e && e.url) navReplace(e.url);
+  else goSiteRoot();
+  saveState();
+  updateTabDots();
+}
+function updateTabDots() {
+  $('tabCount').textContent = String(S.tabs.length);
+  gutL.classList.toggle('off', !canBack());
+  gutR.classList.toggle('off', !canFwd());
+  $('btnBack').disabled = !canBack();
+  $('btnFwd').disabled = !canFwd();
+}
+function canBack() {
+  var t = tab();
+  return !!(t && t.idx > 0);
+}
+function canFwd() {
+  var t = tab();
+  return !!(t && t.idx >= 0 && t.idx < t.hist.length - 1);
+}
+
+/* ================= navigation ================= */
+function nav(url) {
+  url = String(url || '').trim();
+  if (!url) return;
+  if (/^(mailto:|tel:|sms:)/i.test(url)) { copyText(url, 'Address copied'); return; }
+  var hash = '';
+  var hi = url.indexOf('#');
+  if (hi > -1) { hash = url.slice(hi + 1); url = url.slice(0, hi); }
+  var u;
+  try { u = new URL(url); } catch (e) {
+    if (url.charAt(0) === '/') { try { u = new URL(url, S.curUrl || 'https://' + DEFAULT_SITE + '/'); } catch (e2) {} }
+    if (!u) { toast('Bad address'); return; }
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') { toast('Unsupported address'); return; }
+  if (!isWikiHost(u.hostname)) { openBlocked(u.href); return; }
+  /* The wiki's own search pages are crom-driven frames that show no
+     static results, and search is intentionally gone from this build -
+     a search:site link is a silent dead end (the site's search button
+     stays visible but does nothing). */
+  if (/^\/search:site(\/|$)/.test(u.pathname)) return;
+  loadPage(u.href, true, hash);
+}
+function navReplace(url) { loadPage(url, false, ''); }
+
+function loadPage(absUrl, push, hash) {
+  var t = tab();
+  if (!t) return;
+  S.pendingHash = hash || '';
+  S.pendingScroll = 0;
+  progressOn();
+  var seq = ++S.navSeq;
+  api('/api/render?t=' + encTok(absUrl))
+    .then(function (pkg) {
+      if (seq !== S.navSeq) return; /* superseded */
+      var entry = {
+        url: pkg.finalUrl || absUrl,
+        title: pkg.title || hostOf(absUrl),
+        y: 0,
+        html: pkg.html,
+        icon: pkg.icon || '',
+      };
+      if (push) {
+        t.hist = t.hist.slice(0, t.idx + 1);
+        t.hist.push(entry);
+        t.idx = t.hist.length - 1;
+        trimBfcache(t);
+      } else {
+        var at = cur();
+        if (at && at.url === entry.url) {
+          at.html = entry.html; at.title = entry.title; at.icon = entry.icon;
+          entry = at;
+        } else {
+          t.hist.push(entry); t.idx = t.hist.length - 1;
+        }
+      }
+      paint(entry);
+      recentsLog(entry.url, entry.title);
+      saveState();
+    })
+    .catch(function (e) {
+      if (seq !== S.navSeq) return;
+      showError(e, absUrl);
+    });
+}
+function trimBfcache(t) {
+  for (var i = 0; i < t.hist.length; i++) {
+    if (i > t.idx || t.idx - i >= BFCACHE_KEEP) {
+      var h = t.hist[i];
+      if (h && h.html && h.html.length) h.html = '';
+    }
+  }
+  if (t.hist.length > 40) {
+    var cut = t.hist.length - 40;
+    t.hist.splice(0, cut);
+    t.idx -= cut;
+  }
+}
+function paint(entry) {
+  S.curUrl = entry.url;
+  S.pendingScroll = entry.y || 0;
+  errpage.classList.remove('on');
+  frame.classList.add('on');
+  frame.srcdoc = entry.html;
+  setBarLoading();
+}
+/* the app opens straight into the wiki itself - no start page */
+function goSiteRoot() {
+  nav('https://' + DEFAULT_SITE + '/');
+}
+function back() {
+  var t = tab();
+  if (!t || t.idx <= 0) return;
+  t.hist[t.idx].y = cur() && cur().y || 0;
+  t.idx--;
+  var e = cur();
+  if (e) {
+    if (e.html) paint(e);
+    else navReplace(e.url);
+  }
+  updateTabDots();
+}
+function fwd() {
+  var t = tab();
+  if (!t || t.idx >= t.hist.length - 1) return;
+  t.idx++;
+  var e = cur();
+  if (e) {
+    if (e.html) paint(e);
+    else navReplace(e.url);
+  }
+  updateTabDots();
+}
+
+/* ================= bridge messages ================= */
+window.addEventListener('message', function (ev) {
+  if (ev.source !== frame.contentWindow) return;
+  var d = ev.data;
+  if (!d || !d.scpw) return;
+  switch (d.scpw) {
+    case 'ready': onReady(d); break;
+    case 'nav': nav(d.href); break;
+    case 'scroll': onScroll(d); break;
+    case 'file': openFile(d.href); break;
+    case 'blocked': toast('That action needs wiki sign-in - browsing here is read-only'); break;
+    case 'ext': copyText(d.href, 'Address copied'); break;
+  }
+});
+function sendCmd(o) {
+  o.scpw = 'cmd';
+  try { frame.contentWindow.postMessage(o, '*'); } catch (e) {}
+}
+function onReady(d) {
+  if (d.url && d.url !== S.curUrl) return; /* stale render */
+  progressOff();
+  var e = cur();
+  if (e) {
+    if (d.title) e.title = d.title;
+    if (!e.title) e.title = hostOf(S.curUrl);
+  }
+  setBar(S.curUrl, e ? e.title : (d.title || ''));
+  sendCmd({ op: 'zoom', z: S.zoom * ZOOM_BASE });
+  if (S.pendingHash) {
+    sendCmd({ op: 'anchor', a: S.pendingHash });
+    S.pendingHash = '';
+  } else if (S.pendingScroll) {
+    var sy = S.pendingScroll;
+    sendCmd({ op: 'scrollTo', y: sy });
+    S.pendingScroll = 0;
+    /* images landing after the jump change the page height - settle the
+       restored position once more after the first images decode */
+    setTimeout(function () { sendCmd({ op: 'scrollTo', y: sy }); }, 650);
+  }
+  updateTabDots();
+  saveState();
+}
+function onScroll(d) {
+  var e = cur();
+  if (!e) return;
+  e.y = d.y || 0;
+  fabTop.classList.toggle('on', d.y > 700);
+  /* persist the reading position shortly after scrolling stops, so a
+     killed app restores to where the user actually was */
+  clearTimeout(onScroll._t);
+  onScroll._t = setTimeout(saveState, 600);
+}
+fabTop.addEventListener('click', function () { sendCmd({ op: 'top' }); });
+
+/* ================= files ================= */
+function openFile(url) {
+  if (!url) return;
+  toast('Opening file...');
+  fetch(S.worker + '/api/asset?t=' + encTok(url), { credentials: 'omit' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.blob();
+    })
+    .then(function (b) {
+      var obj = URL.createObjectURL(b);
+      var w = window.open(obj, '_blank');
+      if (!w) copyText(url, 'Popup blocked - address copied instead');
+    })
+    .catch(function () {
+      copyText(url, 'Could not open - address copied instead');
+    });
+}
+
+/* ================= blocked (external) ================= */
+var blockedUrl = '';
+function openBlocked(url) {
+  blockedUrl = url;
+  $('blockedDesc').textContent = 'This link points at ' + hostOf(url) +
+    ', which is outside the SCP network this browser can reach. You can copy the address, or try it in your normal browser.';
+  openSheet('blockedSheet');
+}
+$('btnBlkCopy').addEventListener('click', function () { copyText(blockedUrl, 'Address copied'); closeSheet('blockedSheet'); });
+$('btnBlkOpen').addEventListener('click', function () {
+  closeSheet('blockedSheet');
+  var w = window.open(blockedUrl, '_blank');
+  if (!w) { copyText(blockedUrl, 'Popup blocked - address copied instead'); }
+});
+$('btnBlkCancel').addEventListener('click', function () { closeSheet('blockedSheet'); });
+
+/* ================= errors ================= */
+var errUrl = '';
+function showError(e, url) {
+  progressOff();
+  errUrl = url;
+  var msg = String((e && e.message) || e || '');
+  if (/fetch|network/i.test(msg)) {
+    $('errTitle').textContent = 'Worker unreachable';
+    $('errDesc').textContent = 'Could not reach ' + (S.worker || 'the worker') +
+      '. Check that it is deployed, and that the address is right (Settings).';
+  } else if (/host not allowed/i.test(msg)) {
+    $('errTitle').textContent = 'Outside the network';
+    $('errDesc').textContent = 'This address is not part of the SCP network the browser can open.';
+  } else {
+    $('errTitle').textContent = 'Page could not load';
+    $('errDesc').textContent = msg || 'The page could not be loaded.';
+  }
+  frame.classList.remove('on');
+  errpage.classList.add('on');
+  setBar(url, '');
+  updateTabDots();
+}
+$('btnRetry').addEventListener('click', function () {
+  errpage.classList.remove('on');
+  nav(errUrl);
+});
+$('btnErrCopy').addEventListener('click', function () { copyText(errUrl, 'Address copied'); });
+
+/* ================= progress ================= */
+function progressOn() {
+  S.loading = true;
+  urlpill.classList.add('loading');
+  prog.classList.add('on');
+  progBar.style.width = '12%';
+  S.progTimers.forEach(clearTimeout);
+  S.progTimers = [
+    setTimeout(function () { if (S.loading) progBar.style.width = '42%'; }, 260),
+    setTimeout(function () { if (S.loading) progBar.style.width = '68%'; }, 850),
+    setTimeout(function () { if (S.loading) progBar.style.width = '84%'; }, 2200),
+  ];
+}
+function progressOff() {
+  S.loading = false;
+  S.progTimers.forEach(clearTimeout);
+  S.progTimers = [];
+  progBar.style.width = '100%';
+  urlpill.classList.remove('loading');
+  setTimeout(function () {
+    prog.classList.remove('on');
+    setTimeout(function () { progBar.style.width = '0'; }, 240);
+  }, 180);
+}
+function setBarLoading() {
+  urlHost.textContent = hostOf(S.curUrl).replace(/^www\./, '');
+  urlPath.textContent = prettyPath(S.curUrl);
+}
+
+/* ================= url bar ================= */
+function setBar(url, title) {
+  if (!url) {
+    urlHost.textContent = '';
+    urlPath.textContent = '';
+    urlpill.setAttribute('aria-label', 'Address bar - enter address');
+    document.title = 'SCP Browser';
+  } else {
+    urlHost.textContent = hostOf(url).replace(/^www\./, '');
+    urlPath.textContent = prettyPath(url);
+    document.title = title ? (title + ' - SCP Browser') : 'SCP Browser';
+  }
+}
+function enterEdit(prefill) {
+  S.editing = true;
+  urlpill.classList.add('editing');
+  urlInput.value = prefill != null ? prefill : (S.curUrl || '');
+  renderSugg(urlInput.value);
+  setTimeout(function () {
+    urlInput.focus();
+    try { urlInput.setSelectionRange(0, urlInput.value.length); } catch (e) {}
+  }, 30);
+}
+function exitEdit() {
+  if (!S.editing) return;
+  S.editing = false;
+  urlpill.classList.remove('editing');
+  sugg.classList.remove('on');
+  urlInput.blur();
+  setBar(S.curUrl, cur() ? cur().title : '');
+}
+urlpill.addEventListener('click', function (e) {
+  if (e.target === urlInput || e.target.closest && e.target.closest('#urlClear')) return;
+  if (S.editing) return;
+  enterEdit();
+});
+$('urlClear').addEventListener('click', function (e) {
+  e.stopPropagation();
+  urlInput.value = '';
+  renderSugg('');
+  urlInput.focus();
+});
+urlInput.addEventListener('input', function () { renderSugg(urlInput.value); });
+urlInput.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); resolveInput(urlInput.value); }
+  if (e.key === 'Escape') { exitEdit(); }
+});
+urlInput.addEventListener('blur', function () {
+  setTimeout(function () { if (S.editing && !suggLock) exitEdit(); }, 120);
+});
+document.addEventListener('pointerdown', function (e) {
+  if (S.editing && !e.target.closest('#urlpill') && !e.target.closest('#sugg')) exitEdit();
+}, true);
+
+/* suggestions */
+var suggLock = false;
+function sgRow(icon, t, s, cb) {
+  var b = document.createElement('button');
+  b.className = 'sgRow';
+  b.innerHTML = icon + '<span class="sgTxt"><span class="sgT">' + esc(t) + '</span><span class="sgS">' + esc(s) + '</span></span>';
+  b.addEventListener('pointerdown', function () { suggLock = true; });
+  b.addEventListener('click', function () {
+    suggLock = false;
+    exitEdit();
+    cb();
+  });
+  return b;
+}
+var ICON_CLOCK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.7"/><path d="M12 7 V12 L15.5 14"/></svg>';
+var ICON_STAR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 L14.3 9 L20.3 9.4 L15.7 13.2 L17.2 19 L12 15.8 L6.8 19 L8.3 13.2 L3.7 9.4 L9.7 9 Z"/></svg>';
+var ICON_SITE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12 h18 M12 3 c3 3.5 3 14 0 18 M12 3 c-3 3.5-3 14 0 18"/></svg>';
+var ICON_DOC = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5 h8 l4 4 V21.5 H6 Z"/><path d="M14 2.5 v4 h4"/></svg>';
+
+function renderSugg(q) {
+  q = String(q || '').trim();
+  var box = sugg;
+  box.innerHTML = '';
+  var rows = [];
+  if (!q) {
+    S.recents.slice(0, 7).forEach(function (r) {
+      rows.push(sgRow(ICON_CLOCK, r.t || r.u, hostOf(r.u) + prettyPath(r.u), function () { nav(r.u); }));
+    });
+    SITES.slice(0, 4).forEach(function (st) {
+      rows.push(sgRow(ICON_SITE, st.n, 'https://' + st.h, function () { nav('https://' + st.h + '/'); }));
+    });
+  } else {
+    var lq = q.toLowerCase();
+    S.recents.concat(S.bookmarks).forEach(function (r) {
+      if (rows.length > 5) return;
+      if ((r.t || '').toLowerCase().indexOf(lq) > -1 || (r.u || '').toLowerCase().indexOf(lq) > -1) {
+        rows.push(sgRow(ICON_CLOCK, r.t || r.u, hostOf(r.u) + prettyPath(r.u), function () { nav(r.u); }));
+      }
+    });
+    SITES.forEach(function (st) {
+      if (rows.length > 8) return;
+      if (st.n.toLowerCase().indexOf(lq) > -1 || st.c.toLowerCase() === lq) {
+        rows.push(sgRow(ICON_SITE, st.n, 'https://' + st.h, function () { nav('https://' + st.h + '/'); }));
+      }
+    });
+    var m = q.match(/^scp[\s-]?(\d{1,4})$/i);
+    if (m) {
+      var num = m[1];
+      while (num.length < 3) num = '0' + num;
+      rows.push(sgRow(ICON_DOC, 'SCP-' + num, 'Open the article', function () { nav(siteHref('/scp-' + num)); }));
+    }
+  }
+  if (!rows.length) { box.classList.remove('on'); return; }
+  rows.forEach(function (r) { box.appendChild(r); });
+  box.classList.add('on');
+}
+function resolveInput(v) {
+  v = String(v || '').trim();
+  if (!v) { exitEdit(); return; }
+  exitEdit();
+  if (/^https?:\/\//i.test(v)) { nav(v); return; }
+  if (/^[a-z0-9.-]+\.[a-z]{2,}([\/?#].*)?$/i.test(v) && v.indexOf(' ') === -1) { nav('https://' + v); return; }
+  if (/^scp[\s-]?\S+$/i.test(v)) {
+    var ref = parseScpRef(v);
+    if (ref) { nav(siteHref('/' + ref)); return; }
+  }
+  /* no search in this build - only addresses and SCP numbers resolve */
+  toast('Enter a web address');
+}
+
+/* ================= random ================= */
+function goRandom() {
+  if (S.loading) return;
+  progressOn();
+  var seq = S.navSeq;
+  var site = currentSite();
+  api('/api/random?site=' + encodeURIComponent(site))
+    .then(function (j) {
+      if (seq !== S.navSeq) return;
+      progressOff();
+      if (j && j.p) nav('https://' + (j.site || site || DEFAULT_SITE) + j.p);
+      else nav('https://' + site + '/random:random-scp');
+    })
+    .catch(function () {
+      if (seq !== S.navSeq) return;
+      progressOff();
+      /* Crom down? the site's own random link still works - the worker
+         follows the redirect to the picked page */
+      nav('https://' + site + '/random:random-scp');
+    });
+}
+
+/* ================= recents ================= */
+function recentsLog(url, title) {
+  if (!url) return;
+  S.recents = S.recents.filter(function (r) { return r.u !== url; });
+  S.recents.unshift({ u: url, t: title || '', at: Date.now() });
+  S.recents = S.recents.slice(0, 24);
+  updateMenuCounts();
+}
+
+/* ================= bookmarks ================= */
+function isBookmarked() {
+  var e = cur();
+  return !!(e && S.bookmarks.some(function (b) { return b.u === e.url; }));
+}
+function updateBookmarkUi() {
+  var on = isBookmarked();
+  $('bmLabel').textContent = on ? 'Remove saved page' : 'Save this page';
+  $('bmSub').textContent = cur() ? (cur().title || prettyPath(cur().url)) : '';
+}
+function toggleBookmark() {
+  var e = cur();
+  if (!e) { toast('Nothing to save yet'); return; }
+  if (isBookmarked()) {
+    S.bookmarks = S.bookmarks.filter(function (b) { return b.u !== e.url; });
+    toast('Removed from saved pages');
+  } else {
+    S.bookmarks.unshift({ u: e.url, t: e.title || prettyPath(e.url) });
+    toast('Saved');
+  }
+  saveState();
+  updateBookmarkUi();
+  updateMenuCounts();
+}
+
+/* ================= jump: go to SCP # (inline in the menu) ========= */
+var SERIES = [
+  { l: 'I', p: '/scp-series' },
+  { l: 'II', p: '/scp-series-2' },
+  { l: 'III', p: '/scp-series-3' },
+  { l: 'IV', p: '/scp-series-4' },
+  { l: 'V', p: '/scp-series-5' },
+  { l: 'VI', p: '/scp-series-6' },
+  { l: 'VII', p: '/scp-series-7' },
+  { l: 'VIII', p: '/scp-series-8' },
+  { l: 'IX', p: '/scp-series-9' },
+  { l: 'J', p: '/joke-scps' },
+];
+function buildSeriesChips() {
+  var row = $('menuSeries');
+  if (!row || row.childElementCount) return;
+  SERIES.forEach(function (sr) {
+    var b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = sr.l;
+    b.addEventListener('click', function () {
+      closeSheet('menuSheet');
+      nav(siteHref(sr.p));
+    });
+    row.appendChild(b);
+  });
+}
+function parseScpRef(v) {
+  v = String(v || '').trim().toLowerCase();
+  if (!v) return null;
+  v = v.replace(/^scp[\s-]*/, '');
+  /* number, optional letter prefix (scp-L093 style anomaly designations)
+     and optional suffix (173-J, 2999-EX) */
+  var m = v.match(/^([a-z])?[\s-]?(\d{1,5})(?:[\s-]*([a-z][a-z0-9-]{0,7}))?$/);
+  if (!m) return null;
+  var num = m[2];
+  while (num.length < 3) num = '0' + num;
+  return 'scp-' + (m[1] || '') + num + (m[3] ? '-' + m[3] : '');
+}
+function doJump() {
+  var ref = parseScpRef($('jumpNum').value);
+  if (!ref) { toast('Enter a number like 173 - or 173-J'); return; }
+  closeSheet('menuSheet');
+  try { $('jumpNum').blur(); } catch (e) {}
+  var h = currentSite();
+  if (h.indexOf('scp') !== 0) h = DEFAULT_SITE;
+  nav('https://' + h + '/' + ref);
+}
+$('btnJumpGo').addEventListener('click', doJump);
+$('jumpNum').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); doJump(); }
+});
+/* the X in the SCP finder box: clears the number, stays focused for
+   the next one (visible only when the field has content) */
+function syncJumpClear() {
+  var btn = $('jumpClear');
+  if (!btn) return;
+  var has = !!String($('jumpNum').value || '').trim();
+  btn.classList.toggle('on', has);
+}
+$('jumpNum').addEventListener('input', syncJumpClear);
+$('jumpClear').addEventListener('click', function (e) {
+  e.stopPropagation();
+  $('jumpNum').value = '';
+  syncJumpClear();
+  try { $('jumpNum').focus(); } catch (err) {}
+});
+
+/* ================= saved sheet ================= */
+function renderSavedSheet() {
+  var list = $('savedList');
+  list.innerHTML = '';
+  $('savedCount2').textContent = S.bookmarks.length ? '(' + S.bookmarks.length + ')' : '';
+  var e = cur();
+  var canAdd = !!(e && e.url && !isBookmarked());
+  $('btnSavedAdd').style.display = canAdd ? '' : 'none';
+  $('savedAddLabel').textContent = 'Save "' + ((e && e.title) ? String(e.title) : (e ? prettyPath(e.url) : '')).slice(0, 42) + '"';
+  if (!S.bookmarks.length) {
+    list.innerHTML = '<div class="emptyNote">Pages you save appear here - use "Save this page" in the menu.</div>';
+    return;
+  }
+  S.bookmarks.forEach(function (r) {
+    var b = document.createElement('button');
+    b.className = 'histRow';
+    b.innerHTML = '<span class="rhIcon" style="color:var(--red2)">' + ICON_STAR + '</span><span class="rhTxt">' +
+      '<span class="rhTitle">' + esc(r.t || prettyPath(r.u)) + '</span>' +
+      '<span class="rhSub">' + esc(hostOf(r.u)) + ' &middot; ' + prettyPath(r.u) + '</span></span>' +
+      '<span class="rhDel" aria-label="Remove"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></span>';
+    b.addEventListener('click', function (ev) {
+      if (ev.target.closest && ev.target.closest('.rhDel')) {
+        S.bookmarks = S.bookmarks.filter(function (x) { return x.u !== r.u; });
+        saveState(); renderSavedSheet(); updateBookmarkUi(); updateMenuCounts();
+        toast('Removed from saved pages');
+        return;
+      }
+      closeSheet('savedSheet');
+      nav(r.u);
+    });
+    list.appendChild(b);
+  });
+}
+$('btnSavedAdd').addEventListener('click', function () {
+  if (isBookmarked()) return;
+  toggleBookmark();
+  renderSavedSheet();
+});
+
+/* ================= history sheet ================= */
+function renderHistorySheet() {
+  var list = $('histList');
+  list.innerHTML = '';
+  $('histCount2').textContent = S.recents.length ? '(' + S.recents.length + ')' : '';
+  if (!S.recents.length) {
+    list.innerHTML = '<div class="emptyNote">Pages you open will appear here.</div>';
+    $('btnHistClear').style.display = 'none';
+    return;
+  }
+  $('btnHistClear').style.display = '';
+  S.recents.slice(0, 30).forEach(function (r) {
+    var b = document.createElement('button');
+    b.className = 'histRow';
+    b.innerHTML = '<span class="rhIcon">' + ICON_DOC + '</span><span class="rhTxt">' +
+      '<span class="rhTitle">' + esc(r.t || prettyPath(r.u)) + '</span>' +
+      '<span class="rhSub">' + esc(hostOf(r.u)) + ' &middot; ' + relTime(r.at || Date.now()) + '</span></span>';
+    b.addEventListener('click', function () {
+      closeSheet('historySheet');
+      nav(r.u);
+    });
+    list.appendChild(b);
+  });
+}
+$('btnHistClear').addEventListener('click', function () {
+  S.recents = [];
+  saveState(); renderHistorySheet(); updateMenuCounts();
+  toast('History cleared');
+});
+
+/* menu badges */
+function updateMenuCounts() {
+  $('savedCount').textContent = S.bookmarks.length ? String(S.bookmarks.length) : '';
+  $('histCount').textContent = S.recents.length ? String(S.recents.length) : '';
+  var rs = currentSite();
+  $('randSite').textContent = (rs && rs !== DEFAULT_SITE) ?
+    'on ' + rs.replace(/\.wikidot\.com$/, '') : '';
+}
+
+/* ================= sheets ================= */
+function openSheet(id) {
+  closeAllSheets();
+  $(id).classList.add('on');
+  setTimeout(kbAdjust, 40);
+}
+function closeSheet(id) { $(id).classList.remove('on'); }
+function closeAllSheets() {
+  ['menuSheet', 'tabsSheet', 'blockedSheet', 'settingsSheet',
+    'savedSheet', 'historySheet'].forEach(function (s) {
+    $(s).classList.remove('on');
+  });
+  kbAdjust();
+}
+document.querySelectorAll('.sheet').forEach(function (sh) {
+  sh.addEventListener('click', function (e) {
+    if (e.target === sh) closeSheet(sh.id);
+  });
+});
+
+/* ---- keyboard-aware sheets ----------------------------------------
+   Mobile keyboards overlay the bottom of the layout viewport, so a
+   fixed bottom sheet (saved/history tabs, the settings card) and the
+   full-page menu with the SCP-number field
+   would sit BEHIND the keyboard and disappear. The visual viewport is
+   the part actually visible above the keys: while it is shrunk, every
+   open sheet is resized to exactly that region, so the input and the
+   results stay on screen. Works on iOS Safari + Chrome Android. */
+var vv = window.visualViewport || null;
+function kbAdjust() {
+  if (!vv) return;
+  var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  var up = kb > 120;
+  var targets = [];
+  document.querySelectorAll('.sheet.on').forEach(function (s) { targets.push(s); });
+  if (setupEl.classList.contains('on')) targets.push(setupEl);
+  targets.forEach(function (el) {
+    var card = el.classList && el.classList.contains('sheet') ? el.querySelector('.sheetCard') : null;
+    if (up) {
+      el.style.top = vv.offsetTop + 'px';
+      el.style.height = vv.height + 'px';
+      el.style.bottom = 'auto';
+      if (card) card.style.maxHeight = '96%';
+    } else {
+      el.style.top = '';
+      el.style.height = '';
+      el.style.bottom = '';
+      if (card) card.style.maxHeight = '';
+    }
+  });
+}
+if (vv) {
+  vv.addEventListener('resize', kbAdjust);
+  vv.addEventListener('scroll', kbAdjust);
+}
+window.addEventListener('resize', kbAdjust);
+document.addEventListener('focusin', function () {
+  /* the keyboard animates in: re-measure a few times as it settles */
+  setTimeout(kbAdjust, 300); setTimeout(kbAdjust, 700);
+});
+document.addEventListener('focusout', function () {
+  setTimeout(kbAdjust, 150); setTimeout(kbAdjust, 500);
+});
+
+/* menu (a full page: always opens scrolled to the top) */
+function openMenu() {
+  updateBookmarkUi();
+  updateMenuCounts();
+  buildSeriesChips();
+  $('zoomPct').textContent = Math.round(S.zoom * 100) + '%';
+  var e = cur();
+  $('menuTitle').textContent = e ? (e.title || prettyPath(e.url)) : 'Menu';
+  openSheet('menuSheet');
+  /* start at the top every single time */
+  var card = $('menuCard');
+  if (card) { card.scrollTop = 0; setTimeout(function () { card.scrollTop = 0; }, 30); }
+  syncJumpClear();
+}
+$('btnMenu').addEventListener('click', function () {
+  if ($('menuSheet').classList.contains('on')) { closeSheet('menuSheet'); return; }
+  openMenu();
+});
+$('btnMenuDone').addEventListener('click', function () { closeSheet('menuSheet'); });
+document.querySelectorAll('#menuSheet .mrow[data-m]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var m = b.getAttribute('data-m');
+    if (m === 'random') { closeSheet('menuSheet'); goRandom(); }
+    if (m === 'saved') { closeSheet('menuSheet'); renderSavedSheet(); openSheet('savedSheet'); }
+    if (m === 'history') { closeSheet('menuSheet'); renderHistorySheet(); openSheet('historySheet'); }
+    if (m === 'newtab') { closeSheet('menuSheet'); newTab(); }
+    if (m === 'tabs') { closeSheet('menuSheet'); renderTabsSheet(); openSheet('tabsSheet'); }
+    if (m === 'reload') {
+      closeSheet('menuSheet');
+      var e = cur();
+      if (e && e.url) { e.html = ''; navReplace(e.url); }
+    }
+    if (m === 'bookmark') { toggleBookmark(); }
+    if (m === 'copy') {
+      closeSheet('menuSheet');
+      var e2 = cur();
+      copyText(e2 ? e2.url : '', e2 ? 'Address copied' : 'Nothing open');
+    }
+    if (m === 'home') { closeSheet('menuSheet'); goSiteRoot(); }
+    if (m === 'settings') { closeSheet('menuSheet'); openSettings(); }
+  });
+});
+$('zoomIn').addEventListener('click', function (e) {
+  e.stopPropagation();
+  var i = nearestZoom(1);
+  if (i < ZOOMS.length - 1) i++;
+  S.zoom = ZOOMS[i];
+  $('zoomPct').textContent = Math.round(S.zoom * 100) + '%';
+  sendCmd({ op: 'zoom', z: S.zoom * ZOOM_BASE });
+  saveState();
+});
+$('zoomOut').addEventListener('click', function (e) {
+  e.stopPropagation();
+  var i = nearestZoom(-1);
+  if (i > 0) i--;
+  S.zoom = ZOOMS[i];
+  $('zoomPct').textContent = Math.round(S.zoom * 100) + '%';
+  sendCmd({ op: 'zoom', z: S.zoom * ZOOM_BASE });
+  saveState();
+});
+function nearestZoom(dir) {
+  var best = 0, bd = 1e9;
+  for (var i = 0; i < ZOOMS.length; i++) {
+    var d = Math.abs(ZOOMS[i] - S.zoom);
+    if (d < bd) { bd = d; best = i; }
+  }
+  return best;
+}
+
+/* tabs sheet */
+function renderTabsSheet() {
+  var grid = $('tabGrid');
+  grid.innerHTML = '';
+  $('tabsCount2').textContent = '(' + S.tabs.length + ')';
+  S.tabs.forEach(function (t, i) {
+    var e = t.idx >= 0 && t.hist[t.idx] ? t.hist[t.idx] : null;
+    var b = document.createElement('button');
+    b.className = 'tabCard' + (i === S.active ? ' cur' : '');
+    b.innerHTML = (e
+      ? '<span class="ttHost">' + esc(hostOf(e.url)) + '</span>' +
+        '<span class="ttTitle">' + esc(e.title || prettyPath(e.url)) + '</span>'
+      : '<span class="ttHost">NEW TAB</span><span class="ttHome">Home screen</span>') +
+      '<span class="ttClose" aria-label="Close tab"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></span>';
+    b.addEventListener('click', function (ev) {
+      if (ev.target.closest && ev.target.closest('.ttClose')) {
+        closeTab(i);
+        renderTabsSheet();
+        return;
+      }
+      closeSheet('tabsSheet');
+      switchTab(i);
+    });
+    grid.appendChild(b);
+  });
+}
+$('btnNewTab').addEventListener('click', function () {
+  closeSheet('tabsSheet');
+  newTab();
+});
+
+/* ================= settings ================= */
+function openSettings() {
+  $('setWorker').value = S.worker || '';
+  $('setOk').textContent = '';
+  $('setErr').textContent = '';
+  $('setVer').textContent = 'SCP BROWSER ' + APP_VERSION;
+  renderWorkerInfo();
+  openSheet('settingsSheet');
+}
+/* ---- worker version handshake --------------------------------------
+   Fixes live in BOTH files: the app and the worker. When the worker
+   runs an older version than the app (e.g. it was not redeployed after
+   an HTML update), some features silently misbehave - themes, the
+   6634 game and footnote popups being the classic ones. The status
+   endpoint reports its version; the app shows the pairing here and
+   warns when the worker is stale. */
+function verCmp(a, b) {
+  var pa = String(a || '0').split('.').map(Number);
+  var pb = String(b || '0').split('.').map(Number);
+  for (var i = 0; i < 3; i++) {
+    var d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return d < 0 ? -1 : 1;
+  }
+  return 0;
+}
+function workerStale() {
+  return !!(S.workerVer && verCmp(S.workerVer, APP_VERSION) < 0);
+}
+function renderWorkerInfo() {
+  var el = $('setWorkerInfo');
+  if (!el) return;
+  if (!S.workerVer) {
+    el.textContent = 'Version: unknown (worker did not answer)';
+    el.className = 'setWInfo stale';
+    return;
+  }
+  if (workerStale()) {
+    el.innerHTML = 'Version: <b>v' + esc(S.workerVer) + '</b> - older than the app (v' + APP_VERSION +
+      '). Update the worker file on Cloudflare, or some fixes (themes, games, footnote popups) will stay broken.';
+    el.className = 'setWInfo stale';
+  } else {
+    el.innerHTML = 'Version: <b>v' + esc(S.workerVer) + '</b> - up to date with the app.';
+    el.className = 'setWInfo';
+  }
+}
+function checkWorkerVersion(quiet) {
+  if (!S.worker) return;
+  fetch(S.worker + '/', { credentials: 'omit' })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.proxy === 'scp-wiki-worker') {
+        var was = S.workerVer;
+        S.workerVer = String(j.version || '');
+        if (!quiet && workerStale()) {
+          toast('Worker v' + S.workerVer + ' is older than app v' + APP_VERSION + ' - update it in Settings');
+        } else if (was !== S.workerVer) {
+          renderWorkerInfo();
+        }
+      }
+    })
+    .catch(function () {});
+}
+function testAndSave(inputEl, okEl, errEl, after) {
+  var w = normalizeWorker(inputEl.value);
+  if (!w) { errEl.textContent = 'Enter the worker address first.'; okEl.textContent = ''; return; }
+  errEl.textContent = '';
+  okEl.textContent = 'Testing connection...';
+  fetch(w + '/', { credentials: 'omit' })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.proxy === 'scp-wiki-worker') {
+        S.worker = w;
+        S.workerVer = String(j.version || '');
+        saveState();
+        renderWorkerInfo();
+        okEl.textContent = 'Connected - worker v' + (j.version || '?') + '. Saved.';
+        errEl.textContent = '';
+        toast('Worker saved');
+        if (after) setTimeout(after, 350);
+      } else {
+        okEl.textContent = '';
+        errEl.textContent = 'That URL answered, but it is not an scp-wiki-worker.';
+      }
+    })
+    .catch(function () {
+      okEl.textContent = '';
+      errEl.textContent = 'Could not reach the worker. Check the address and deployment.';
+    });
+}
+$('btnSetSave').addEventListener('click', function () {
+  testAndSave($('setWorker'), $('setOk'), $('setErr'), function () { closeSheet('settingsSheet'); });
+});
+$('btnClearData').addEventListener('click', function () {
+  try {
+    Object.keys(LS).forEach(function (k) { localStorage.removeItem(LS[k]); });
+  } catch (e) {}
+  S.tabs = [{ id: 1, hist: [], idx: -1 }];
+  S.active = 0; S.bookmarks = []; S.recents = []; S.zoom = 1;
+  closeSheet('settingsSheet');
+  goSiteRoot();
+  toast('All local data cleared');
+});
+
+/* ================= gestures ================= */
+function bindGutter(el, dir) {
+  var sx = 0, sy = 0, t0 = 0, active = false;
+  el.addEventListener('touchstart', function (e) {
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    t0 = Date.now(); active = true;
+  }, { passive: true });
+  el.addEventListener('touchmove', function (e) {
+    if (!active) return;
+    var dx = e.touches[0].clientX - sx;
+    var dy = e.touches[0].clientY - sy;
+    if (dx * dir > 24 && Math.abs(dx) > Math.abs(dy)) {
+      swipeHint.classList.add('on');
+      swipeHint.style.left = dir > 0 ? '-80px' : '';
+      swipeHint.style.right = dir > 0 ? '' : '-80px';
+      swipeHint.style.transform = 'translateX(' + Math.min(60, dx * dir * .55) * dir + 'px)';
+    }
+  }, { passive: true });
+  el.addEventListener('touchend', function (e) {
+    swipeHint.classList.remove('on');
+    swipeHint.style.transform = '';
+    if (!active) return;
+    active = false;
+    var dx = (e.changedTouches[0].clientX || 0) - sx;
+    var dy = (e.changedTouches[0].clientY || 0) - sy;
+    var dt = Date.now() - t0;
+    if (dx * dir > 72 && Math.abs(dx) > Math.abs(dy) * 1.4 && dt < 650) {
+      if (dir > 0) back(); else fwd();
+    }
+  });
+}
+bindGutter(gutL, 1);
+bindGutter(gutR, -1);
+
+$('btnBack').addEventListener('click', back);
+$('btnFwd').addEventListener('click', fwd);
+$('btnHome').addEventListener('click', goSiteRoot);
+
+/* keyboard shortcuts (desktop testing) */
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowLeft' && (e.metaKey || e.altKey)) back();
+  if (e.key === 'ArrowRight' && (e.metaKey || e.altKey)) fwd();
+});
+
+/* ================= setup ================= */
+$('btnSetupSave').addEventListener('click', function () {
+  testAndSave($('setupInput'), $('setupOk'), $('setupErr'), function () {
+    setupEl.classList.remove('on');
+    bootAfterConnect();
+  });
+});
+$('setupInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); $('btnSetupSave').click(); }
+});
+
+/* ================= boot ================= */
+function showSetup() {
+  $('setupVer').textContent = 'v' + APP_VERSION;
+  setupEl.classList.add('on');
+  app.classList.remove('on');
+  setTimeout(function () { $('setupInput').focus(); }, 200);
+}
+function bootAfterConnect() {
+  setupEl.classList.remove('on');
+  app.classList.add('on');
+  restoreTabs();
+}
+function restoreTabs() {
+  var t = tab();
+  var e = cur();
+  if (e && e.url) { navReplace(e.url); }
+  else goSiteRoot();
+}
+function boot() {
+  loadState();
+  document.title = 'SCP Browser';
+  if (!S.worker) { showSetup(); return; }
+  app.classList.add('on');
+  checkWorkerVersion(false);
+  restoreTabs();
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') saveState();
+});
+window.addEventListener('beforeunload', saveState);
+/* iOS fires pagehide (not beforeunload) when the app is killed or the
+   tab closed - flush the session there too */
+window.addEventListener('pagehide', saveState);
+boot();
+</script>
+</body>
+</html>
