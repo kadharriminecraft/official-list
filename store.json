@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-08T15:58:42.044Z",
+  "updated_at": "2026-09-15T14:56:45.341Z",
   "categories": [
     {
       "id": "developers",
@@ -80,18 +80,6 @@
   ],
   "apps": [
     {
-      "name": "Relay",
-      "rawName": "Relay.html",
-      "path": "Other/Relay.html",
-      "author": "Bluevader🔷️",
-      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
-      "icon": "🌐",
-      "color": "#101014",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
-    {
       "name": "Epoch",
       "path": "Fun/Epoch",
       "author": "Anonymous",
@@ -112,6 +100,21 @@
       "icon": "fa:fa-gamepad",
       "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
       "iconColor": "#ffffff",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
+      "name": "Song Search",
+      "rawName": "SongSearch.html",
+      "path": "Audio/SongSearch.html",
+      "author": "Bluevader🔷️",
+      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
+      "icon": "🎵",
+      "color": "#101014",
+      "tags": [
+        "audio-lyrics"
+      ],
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -194,11 +197,16 @@
       "author": "Throk"
     },
     {
-      "name": "Minesweeper",
-      "rawName": "Minesweeper.html",
-      "path": "Fun/Single Player/Minesweeper.html",
-      "author": "Throk",
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Anonymous",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
       "featured": true,
+      "isNew": true,
       "pinned": true
     },
     {
@@ -779,18 +787,11 @@
       "author": "Throk"
     },
     {
-      "name": "Song Search",
-      "rawName": "SongSearch.html",
-      "path": "Audio/SongSearch.html",
-      "author": "Bluevader🔷️",
-      "description": "Advanced song search app that can handle finding songs, albums, or artists. Some features include 30 second preview of song, full song lyrics, clickable links everywhere to go to the artists page or to the full album.",
-      "icon": "🎵",
-      "color": "#101014",
-      "tags": [
-        "audio-lyrics"
-      ],
+      "name": "Minesweeper",
+      "rawName": "Minesweeper.html",
+      "path": "Fun/Single Player/Minesweeper.html",
+      "author": "Throk",
       "featured": true,
-      "isNew": true,
       "pinned": true
     },
     {
@@ -882,14 +883,14 @@
       "icon": "fa:fa-code"
     },
     {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Anonymous",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
+      "name": "Youtube",
+      "rawName": "Youtube.html",
+      "path": "Other/Youtube.html",
+      "author": "Bluevader🔷️",
+      "description": "🚨OPEN METHOD HAS TO BE IFRAME TO WORK🚨",
+      "icon": "fa:fa-play",
+      "color": "#101014",
+      "iconColor": "#e11d48",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -989,33 +990,32 @@
       "icon": "📧"
     },
     {
+      "name": "Scp",
+      "rawName": "Scp.html",
+      "path": "Other/Scp.html",
+      "author": "Bluevader🔷",
+      "description": "This is to view the official Scp website",
+      "icon": "👽",
+      "color": "#101014",
+      "isNew": true
+    },
+    {
+      "name": "Radio V4",
+      "rawName": "Radio v4.html",
+      "path": "Audio/Radio v4.html",
+      "author": "Throk",
+      "icon": "fa:fa-radio",
+      "iconColor": "#4f46e5",
+      "featured": true,
+      "pinned": true
+    },
+    {
       "name": "Googleish",
       "rawName": "Googleish.html",
       "path": "Other/Googleish.html",
       "author": "Bluevader🔷️",
       "description": "This uses SerpApi key to operate as a Google search. It only does the search results nothing deeper",
       "icon": "🌐",
-      "isNew": true
-    },
-    {
-      "name": "Youtube",
-      "rawName": "Youtube.html",
-      "path": "Other/Youtube.html",
-      "author": "Bluevader🔷️",
-      "description": "🚨OPEN METHOD HAS TO BE IFRAME TO WORK🚨",
-      "icon": "fa:fa-play",
-      "color": "#101014",
-      "iconColor": "#e11d48",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "4D Chess",
-      "rawName": "4D Chess.html",
-      "path": "Fun/Multiplayer/Chess/4D Chess.html",
-      "author": "Throk",
-      "icon": "fa:fa-chess-knight",
       "isNew": true
     },
     {
@@ -1040,6 +1040,14 @@
       "pinned": true
     },
     {
+      "name": "4D Chess",
+      "rawName": "4D Chess.html",
+      "path": "Fun/Multiplayer/Chess/4D Chess.html",
+      "author": "Throk",
+      "icon": "fa:fa-chess-knight",
+      "isNew": true
+    },
+    {
       "name": "Songsearch+",
       "rawName": "songsearch+.html",
       "path": "Audio/songsearch+.html",
@@ -1050,13 +1058,15 @@
       "isNew": true
     },
     {
-      "name": "Radio V4",
-      "rawName": "Radio v4.html",
-      "path": "Audio/Radio v4.html",
-      "author": "Throk",
-      "icon": "fa:fa-radio",
-      "iconColor": "#4f46e5",
+      "name": "Relay",
+      "rawName": "Relay.html",
+      "path": "Other/Relay.html",
+      "author": "Bluevader🔷️",
+      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
+      "icon": "🌐",
+      "color": "#101014",
       "featured": true,
+      "isNew": true,
       "pinned": true
     }
   ]
