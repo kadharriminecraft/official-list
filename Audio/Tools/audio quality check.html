@@ -1,395 +1,2840 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Audio Quality Checker v6</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="SonicCheck — analyze music file quality entirely on your device. Bit depth, bitrate, sample rate, lossless &amp; Dolby Atmos detection, spectral analysis.">
+<title>SonicCheck · Music Quality Analyzer</title>
 <style>
-  :root{
-    --bg:#0a0c12;--card:#141821;--card2:#1a1f2b;--border:#2a3142;--border2:#364056;
-    --text:#e9ecf1;--muted:#8b95a7;--dim:#5c6678;
-    --good:#22c55e;--ok:#f59e0b;--high:#3b82f6;--audiophile:#a855f7;--warn:#ef4444;
-    --accent:#6366f1;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-  body{
-    padding:24px 20px 48px;
-    background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(99,102,241,.12),transparent),var(--bg);
-  }
-  .wrap{max-width:620px;margin:0 auto}
+/* ================================================================
+   SonicCheck — on-device music file quality analyzer
+   Single-file build · no dependencies · 100% local analysis
+   ================================================================ */
+:root{
+  --bg:#05070d;
+  --card:rgba(255,255,255,.032);
+  --card-2:rgba(255,255,255,.055);
+  --line:rgba(255,255,255,.075);
+  --line-2:rgba(255,255,255,.13);
+  --txt:#eef2fa;
+  --txt-2:#a3adc2;
+  --txt-3:#6b7790;
+  --tier:#60a5fa;            /* set by JS */
+  --tier-soft:rgba(96,165,250,.14);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r-lg:20px;
+  --r-md:14px;
+  --r-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  background:
+    radial-gradient(1200px 500px at 85% -10%,rgba(96,105,220,.16),transparent 60%),
+    radial-gradient(900px 420px at -10% 12%,rgba(64,200,190,.09),transparent 55%),
+    radial-gradient(700px 500px at 50% 110%,rgba(167,110,250,.08),transparent 60%),
+    var(--bg);
+  color:var(--txt);
+  min-height:100dvh;
+  line-height:1.45;
+  overscroll-behavior-y:contain;
+}
+.app{max-width:540px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
 
-  .card{
-    background:linear-gradient(180deg,var(--card),var(--card2));
-    border:1px solid var(--border);border-radius:22px;padding:24px;margin-bottom:16px;
-    box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 20px 40px -20px rgba(0,0,0,.5);
-  }
+/* ---------- header ---------- */
+.top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:21px;letter-spacing:.2px}
+.logo svg{width:34px;height:34px;flex:none;filter:drop-shadow(0 2px 10px rgba(96,165,250,.45))}
+.logo b{background:linear-gradient(92deg,#7db4ff 0%,#8f7bff 55%,#c084fc 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tagline{color:var(--txt-2);font-size:12.5px;margin:0 0 14px 44px;margin-top:-6px}
+.privacy{display:flex;align-items:center;gap:6px;color:var(--txt-3);font-size:11.5px;margin:-8px 0 16px 44px}
+.privacy svg{width:12px;height:12px}
 
-  .header{display:flex;align-items:center;gap:14px;margin-bottom:4px}
-  .logo{
-    width:44px;height:44px;border-radius:13px;flex-shrink:0;
-    background:linear-gradient(135deg,var(--accent),var(--audiophile));
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 8px 20px -6px rgba(99,102,241,.5);
-  }
-  .logo svg{width:24px;height:24px;fill:#fff}
-  h1{font-size:1.35rem;font-weight:700;letter-spacing:-.02em}
-  .subtitle{color:var(--muted);font-size:.85rem;margin-top:2px}
+/* ---------- dropzone ---------- */
+.dropzone{
+  position:relative;border:1.5px dashed var(--line-2);border-radius:var(--r-lg);
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+  padding:34px 22px 30px;text-align:center;cursor:pointer;transition:border-color .25s,background .25s,transform .15s;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;
+}
+.dropzone:active{transform:scale(.985)}
+.dropzone.drag{border-color:var(--tier);background:rgba(96,165,250,.08)}
+.dz-pulse{width:74px;height:74px;margin:0 auto 16px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 32% 28%,rgba(125,180,255,.28),rgba(125,180,255,.05) 65%);border:1px solid rgba(125,180,255,.35)}
+.dz-pulse::before,.dz-pulse::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(125,180,255,.45);animation:pulse 2.6s ease-out infinite}
+.dz-pulse::after{animation-delay:1.3s}
+@keyframes pulse{0%{transform:scale(1);opacity:.8}70%,100%{transform:scale(1.55);opacity:0}}
+.dz-pulse svg{width:30px;height:30px;color:#9ec5ff}
+.dz-title{font-size:17px;font-weight:700}
+.dz-sub{color:var(--txt-2);font-size:12px;margin-top:8px;line-height:1.6;max-width:340px;margin-left:auto;margin-right:auto}
+.dz-sub b{color:#b9c3d8;font-weight:600}
+.dz-hint{color:var(--txt-3);font-size:11px;margin-top:12px}
+@media (hover:hover){.dropzone:hover{border-color:rgba(125,180,255,.55)}}
 
-  .dropzone{
-    margin-top:18px;border-radius:16px;
-    padding:36px 20px;text-align:center;cursor:pointer;
-    background:rgba(15,19,28,.5);transition:all .2s ease;position:relative;
-    outline:none;
-  }
-  .dropzone:hover,.dropzone.drag{background:rgba(99,102,241,.06)}
-  .dropzone .dz-text{font-size:.95rem;font-weight:600}
-  .dropzone .dz-sub{font-size:.8rem;color:var(--dim);margin-top:6px}
-  
-  #fileInput{display:none}
+/* ---------- chips (multi file) ---------- */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:14px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card);font-size:12px;color:var(--txt-2);cursor:pointer;transition:all .2s;max-width:190px}
+.chip .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.chip .g{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--tier)}
+.chip.on{border-color:var(--tier);color:var(--txt);background:var(--tier-soft)}
+.chip.busy{opacity:.55}
 
-  .results{display:none;animation:fadeUp .35s ease}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ---------- cards ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;margin-top:14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card h3{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt-2);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.card h3 svg{width:13px;height:13px;color:var(--tier)}
 
-  .section-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:14px}
+/* ---------- file header card ---------- */
+.file-card{display:flex;gap:14px;align-items:center}
+.fc-art{width:64px;height:64px;flex:none;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1a2236,#111625);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;position:relative}
+.fc-art img{width:100%;height:100%;object-fit:cover;display:block}
+.fc-art svg{width:28px;height:28px;color:var(--tier)}
+.fc-art.note svg{animation:eq 1.1s ease-in-out infinite}
+@keyframes eq{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+.fc-info{min-width:0;flex:1}
+.fc-name{font-size:15px;font-weight:700;word-break:break-all;line-height:1.3}
+.fc-meta{color:var(--txt-2);font-size:12px;margin-top:3px;font-family:var(--mono)}
+.fc-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.08em;padding:4px 9px;border-radius:7px;border:1px solid transparent}
+.badge svg{width:11px;height:11px}
+.badge.spatial{color:#f0abfc;background:rgba(240,171,252,.12);border-color:rgba(240,171,252,.35)}
+.badge.lossless{color:#5eead4;background:rgba(94,234,212,.1);border-color:rgba(94,234,212,.3)}
+.badge.drm{color:#fca5a5;background:rgba(252,165,165,.1);border-color:rgba(252,165,165,.32)}
+.badge.video{color:#93c5fd;background:rgba(147,197,253,.1);border-color:rgba(147,197,253,.3)}
+.badge.codec{color:var(--txt-2);background:var(--card-2);border-color:var(--line)}
 
-  .row{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:13px 0;border-bottom:1px solid var(--border);
-  }
-  .row:last-child{border-bottom:none}
-  .label{color:var(--muted);font-size:.88rem;display:flex;align-items:center;gap:8px}
-  .value{font-weight:600;font-size:.92rem;font-variant-numeric:tabular-nums}
+/* ---------- score hero ---------- */
+.score-card{display:flex;flex-direction:column;align-items:center;padding:22px 16px 18px}
+.ring-wrap{position:relative;width:148px;height:148px}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:11}
+.ring-val{fill:none;stroke:url(#ringGrad);stroke-width:11;stroke-linecap:round;transition:stroke-dashoffset 1.25s cubic-bezier(.25,.8,.3,1)}
+.ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ring-score-big{font-size:44px;font-weight:800;font-family:var(--mono);line-height:1;letter-spacing:-1px}
+.ring-unit{font-size:11.5px;color:var(--txt-2);font-family:var(--mono);letter-spacing:.4px}
+.tier-label{margin-top:14px;font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tier);text-align:center}
+.verdict{margin-top:7px;color:var(--txt-2);font-size:13px;text-align:center;max-width:360px;line-height:1.5}
 
-  .badge{
-    padding:5px 13px;border-radius:999px;font-size:.78rem;font-weight:700;
-    letter-spacing:.01em;display:inline-flex;align-items:center;gap:6px;
-  }
-  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-  .good{background:rgba(34,197,94,.14);color:var(--good)}
-  .ok{background:rgba(245,158,11,.14);color:var(--ok)}
-  .high{background:rgba(59,130,246,.14);color:var(--high)}
-  .audiophile{background:rgba(168,85,247,.14);color:var(--audiophile)}
-  .warn{background:rgba(239,68,68,.14);color:var(--warn)}
+/* ---------- ladder ---------- */
+.ladder{width:100%;margin-top:18px}
+.ladder-bar{position:relative;height:10px;border-radius:99px;overflow:visible;display:flex}
+.ladder-seg{height:100%;flex:1}
+.ladder-seg:first-child{border-radius:99px 0 0 99px}
+.ladder-seg:last-child{border-radius:0 99px 99px 0}
+.ladder-mark{position:absolute;top:-5px;width:3px;height:20px;border-radius:2px;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.22),0 2px 10px rgba(0,0,0,.7);transition:left 1.15s cubic-bezier(.25,.8,.3,1);transform:translateX(-50%)}
+.ladder-labels{display:flex;justify-content:space-between;margin-top:9px;font-size:9.5px;color:var(--txt-3);letter-spacing:.03em;font-family:var(--mono)}
+.ladder-here{margin-top:10px;text-align:center;font-size:11px;color:var(--txt-2)}
+.ladder-here b{color:var(--txt);font-family:var(--mono)}
 
-  .quality-box{
-    margin-top:18px;padding:18px;border-radius:16px;background:rgba(10,12,18,.6);
-    border:1px solid var(--border);
-  }
-  .q-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  .q-row:last-child{margin-bottom:0}
-  .q-label{font-size:.82rem;color:var(--muted);font-weight:600}
+/* ---------- stat grid ---------- */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(min-width:460px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+.stat{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 12px 10px;min-width:0}
+.stat .lb{font-size:9.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--txt-3);display:flex;align-items:center;gap:5px}
+.stat .lb svg{width:11px;height:11px;flex:none}
+.stat .v{font-size:16.5px;font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums;margin-top:5px;letter-spacing:-.01em;word-break:break-word}
+.stat .v small{font-size:10.5px;color:var(--txt-2);font-weight:500}
+.stat .s{font-size:10px;color:var(--txt-3);margin-top:3px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat.hero .v{color:var(--tier);font-size:18px}
 
-  .meter{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:14px}
-  .meter-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+/* ---------- notes ---------- */
+.notes{list-style:none;display:flex;flex-direction:column;gap:9px}
+.notes li{display:flex;gap:10px;font-size:13px;color:#c6cede;line-height:1.5;align-items:flex-start}
+.notes li svg{width:15px;height:15px;flex:none;margin-top:1px}
+.notes .warn{color:#fbbf24}
+.notes .bad{color:#f87171}
+.notes .good{color:#4ade80}
+.notes .info{color:#7db4ff}
 
-  .note{font-size:.78rem;color:var(--dim);margin-top:12px;line-height:1.5}
-  .note code{background:rgba(255,255,255,.06);padding:1px 6px;border-radius:5px;font-size:.76rem}
+/* ---------- spectrum ---------- */
+.spec-canvas-wrap{position:relative;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);background:linear-gradient(180deg,#0a0e18,#070a12)}
+canvas.spec{display:block;width:100%;height:190px}
+.spec-cutoff{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.55);pointer-events:none}
+.spec-cutoff span{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.92);color:#0a0e18;font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;font-family:var(--mono);white-space:nowrap}
+.spec-cutoff.flipped span{left:auto;right:0;transform:translateX(100%);border-radius:5px 0 0 5px}
+.spec-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:11px}
+.spec-stat .k{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-3);font-weight:700}
+.spec-stat .val{font-size:13px;font-family:var(--mono);font-weight:700;margin-top:2px}
+.spec-note{font-size:11.5px;color:var(--txt-3);margin-top:10px;line-height:1.5}
+.spec-unavailable{display:flex;gap:10px;align-items:flex-start;padding:12px 13px;border-radius:var(--r-md);border:1px dashed var(--line-2);background:rgba(255,255,255,.02);color:var(--txt-2);font-size:12px;line-height:1.55}
+.spec-unavailable svg{width:15px;height:15px;flex:none;margin-top:1px;color:var(--txt-3)}
+.loading{display:flex;align-items:center;gap:10px;color:var(--txt-2);font-size:13px;padding:6px 0}
+.spinner{width:17px;height:17px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--tier);animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  .spinner{
-    width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);
-    border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px;
-  }
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .loading-text{text-align:center;color:var(--muted);font-size:.9rem;padding:20px 0}
+/* ---------- tags table ---------- */
+.kv{display:grid;grid-template-columns:88px 1fr;gap:7px 12px;font-size:12.5px}
+.kv .k{color:var(--txt-3);font-weight:600;padding-top:1px}
+.kv .val{color:#c9d2e4;word-break:break-word;font-family:var(--mono);font-size:11.5px}
+.kv .val.big{font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--txt)}
+.tags-empty{color:var(--txt-3);font-size:12.5px}
+.tech{font-size:11px;color:var(--txt-2);font-family:var(--mono);line-height:1.9;word-break:break-all}
+.tech b{color:#9fb0cc;font-weight:600}
 
-  .est{color:var(--ok);font-size:.7rem;font-weight:700;margin-left:4px}
+/* ---------- actions ---------- */
+.actions{display:flex;gap:9px;margin-top:16px}
+.btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:46px;border-radius:13px;border:1px solid var(--line-2);background:var(--card-2);color:var(--txt);font-size:13px;font-weight:700;font-family:var(--sans);cursor:pointer;transition:all .2s;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.btn svg{width:15px;height:15px}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:linear-gradient(92deg,rgba(125,180,255,.2),rgba(143,123,255,.2));border-color:rgba(125,180,255,.45)}
+@media(hover:hover){.btn:hover{border-color:var(--tier);background:rgba(125,180,255,.12)}}
+
+/* ---------- error ---------- */
+.error-card{border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.05)}
+.error-card .t{font-weight:800;color:#fca5a5;font-size:14px;display:flex;gap:8px;align-items:center}
+.error-card .t svg{width:16px;height:16px}
+.error-card .d{color:var(--txt-2);font-size:12.5px;margin-top:8px;line-height:1.55;word-break:break-word}
+
+/* ---------- details/summary ---------- */
+details.card{padding:0;overflow:hidden}
+details.card summary{list-style:none;cursor:pointer;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt-2);touch-action:manipulation;-webkit-user-select:none;user-select:none}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::after{content:"";width:8px;height:8px;border-right:1.6px solid var(--txt-3);border-bottom:1.6px solid var(--txt-3);transform:rotate(45deg);transition:transform .25s;margin-right:2px}
+details[open].card summary::after{transform:rotate(-135deg)}
+details.card .body{padding:0 16px 16px}
+
+/* ---------- toast / footer ---------- */
+#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#161d2e;border:1px solid var(--line-2);color:var(--txt);font-size:13px;font-weight:600;padding:11px 18px;border-radius:12px;opacity:0;transition:all .3s;z-index:99;pointer-events:none;max-width:88vw;text-align:center;box-shadow:0 10px 34px rgba(0,0,0,.55)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{margin-top:26px;text-align:center;color:var(--txt-3);font-size:10.5px;line-height:1.7}
+footer b{color:var(--txt-2)}
+[hidden]{display:none!important}
+
+/* ---------- reveal animation ---------- */
+.reveal{opacity:0;transform:translateY(12px);animation:reveal .5s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes reveal{to{opacity:1;transform:none}}
+.d1{animation-delay:.05s}.d2{animation-delay:.11s}.d3{animation-delay:.17s}.d4{animation-delay:.23s}.d5{animation-delay:.3s}.d6{animation-delay:.37s}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .reveal{opacity:1;transform:none}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
 
-  <div class="card">
-    <div class="header">
-      <div class="logo">
-        <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <rect x="4" y="4" width="40" height="40" rx="11" fill="url(#lg1)"/>
+        <path d="M20 32V17.5c0-.9.6-1.7 1.5-1.9l9-2.3c1.1-.3 2.2.5 2.2 1.7v13" stroke="#0b1020" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="16.5" cy="32" r="4" fill="#0b1020"/>
+        <circle cx="30.5" cy="28.5" r="4" fill="#0b1020"/>
+        <defs><linearGradient id="lg1" x1="6" y1="6" x2="42" y2="42"><stop stop-color="#7db4ff"/><stop offset=".55" stop-color="#8f7bff"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs>
+      </svg>
+      <span>Sonic<b>Check</b></span>
+    </div>
+    <div class="tagline">Music file quality analyzer</div>
+    <div class="privacy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      100% on-device · your files never leave this phone
+    </div>
+  </header>
+
+  <section id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Choose a music file to analyze">
+    <input id="fileInput" type="file" multiple hidden
+      accept="audio/*,video/*,.mp3,.flac,.m4a,.m4b,.m4p,.mp4,.aac,.ogg,.oga,.opus,.wav,.aiff,.aif,.dsf,.dff,.ec3,.eac3,.ac3,.thd,.mka,.mkv,.alac,.wv,.ape">
+    <div class="dz-pulse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.6"/><circle cx="17.5" cy="16" r="2.6"/></svg>
+    </div>
+    <div class="dz-title">Tap to analyze a music file</div>
+    <div class="dz-sub">
+      <b>MP3</b> · <b>FLAC</b> · <b>M4A / MP4</b> · AAC · ALAC · WAV · Opus · Vorbis ·
+      <b>DSD (DSF)</b> · <b>Dolby&nbsp;DD+ / Atmos (E-AC-3)</b> · AC-3 · AC-4 · TrueHD · AIFF · MKA
+    </div>
+    <div class="dz-hint">on desktop you can also drop files here</div>
+  </section>
+
+  <div id="chips" class="chips" hidden></div>
+
+  <section id="result" hidden>
+
+    <div class="card file-card reveal d1">
+      <div class="fc-art" id="fcArt"></div>
+      <div class="fc-info">
+        <div class="fc-name" id="fcName"></div>
+        <div class="fc-meta" id="fcMeta"></div>
+        <div class="fc-badges" id="fcBadges"></div>
       </div>
-      <div>
-        <h1>Audio Quality Checker</h1>
-        <div class="subtitle">Analyze bit depth, sample rate, bitrate &amp; more</div>
+    </div>
+
+    <div class="card score-card reveal d2">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 148 148" aria-hidden="true">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop id="rgA" offset="0%" stop-color="#7db4ff"/>
+              <stop id="rgB" offset="100%" stop-color="#8f7bff"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="74" cy="74" r="63"/>
+          <circle class="ring-val" id="ringVal" cx="74" cy="74" r="63" stroke-dasharray="395.8" stroke-dashoffset="395.8"/>
+        </svg>
+        <div class="ring-txt">
+          <div class="ring-score-big" id="ringScore">–</div>
+          <div class="ring-unit">/ 100</div>
+        </div>
       </div>
+      <div class="tier-label" id="tierLabel"></div>
+      <div class="verdict" id="verdictTxt"></div>
+      <div class="ladder" id="ladder"></div>
     </div>
-    <div class="dropzone" id="dropzone">
-      <div class="dz-text">Drop an audio file or click to browse</div>
-      <div class="dz-sub">MP3 · WAV · FLAC · AAC · M4A · MP4 · E-AC3 / Atmos</div>
-    </div>
-    <input type="file" id="fileInput" accept="audio/*,video/mp4,.flac,.wav,.mp3,.aac,.m4a,.mp4">
-  </div>
 
-  <div class="card results" id="results">
-    <div class="section-title">File Details</div>
-    <div id="details"></div>
-    <div class="quality-box">
-      <div class="q-row"><div class="q-label">Overall Quality</div><div id="quality"></div></div>
-      <div class="q-row"><div class="q-label">Bit Depth Rating</div><div id="bitdepth"></div></div>
-      <div class="meter"><div class="meter-fill" id="meter"></div></div>
-      <div class="note" id="extraNote"></div>
+    <div class="card reveal d3">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 10h1v4M14 10h.01M9 14h.01" stroke-linecap="round"/></svg>
+        Specifications
+      </h3>
+      <div class="stats-grid" id="statsGrid"></div>
     </div>
-  </div>
 
+    <div class="card reveal d4" id="notesCard" hidden>
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        Quality notes
+      </h3>
+      <ul class="notes" id="notesList"></ul>
+    </div>
+
+    <div class="card reveal d5">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h2l2-7 3 14 3-9 2 4 2-2h4"/></svg>
+        Spectral analysis
+      </h3>
+      <div id="specBody"></div>
+    </div>
+
+    <details class="card reveal d5" id="tagsCard">
+      <summary>Tags &amp; metadata</summary>
+      <div class="body" id="tagsBody"></div>
+    </details>
+
+    <details class="card reveal d6">
+      <summary>Technical details</summary>
+      <div class="body"><div class="tech" id="techBody"></div></div>
+    </details>
+
+    <div class="actions reveal d6">
+      <button class="btn primary" id="btnNew">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        New file
+      </button>
+      <button class="btn" id="btnCopy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>
+        Copy
+      </button>
+      <button class="btn" id="btnShare">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.4"/><circle cx="17.5" cy="5.5" r="2.4"/><circle cx="17.5" cy="18.5" r="2.4"/><path d="M8.2 10.9l7-4M8.2 13.1l7 4"/></svg>
+        Share
+      </button>
+    </div>
+  </section>
+
+  <div id="errorCard" class="card error-card" hidden></div>
+
+  <footer>
+    <b>SonicCheck</b> v1.2 — every byte is parsed locally in your browser.<br>
+    Bitrate tiers: 128 ok · 256 good · 320 high · 512 very high · 768+ ultra · lossless &amp; DSD ranked by bit depth &amp; rate · 24-bit ≥ 1000 kbps = audiophile.
+  </footer>
 </div>
 
+<div id="toast" role="status" aria-live="polite"></div>
 <script>
-const fileInput = document.getElementById('fileInput');
-const dropzone = document.getElementById('dropzone');
+'use strict';
+/* =====================================================================
+   SonicCheck v1.2 — single-file on-device music quality analyzer
+   Parsing targets: MP3 · FLAC · M4A/MP4 · AAC(ADTS) · ALAC · WAV/RF64 ·
+   AIFF · Ogg Vorbis/Opus · DSF(DSD) · raw AC-3/E-AC-3(.ac3/.eac3/.ec3) ·
+   raw TrueHD(.thd) · Matroska(.mka/.mkv) · Dolby Atmos (E-AC-3 JOC,
+   TrueHD 16-ch presentation, AC-4, MPEG-H)
+   ===================================================================== */
+const SC = (() => {
 
-dropzone.addEventListener('click', () => fileInput.click());
-
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault(); dropzone.classList.remove('drag');
-  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.onchange = e => { if(e.target.files[0]) handleFile(e.target.files[0]); };
-
-async function handleFile(file){
-  const results = document.getElementById('results');
-  results.style.display = 'block';
-  document.getElementById('details').innerHTML = '<div class="loading-text"><div class="spinner"></div>Analyzing audio file…</div>';
-  document.getElementById('quality').innerHTML = '';
-  document.getElementById('bitdepth').innerHTML = '';
-  document.getElementById('extraNote').innerHTML = '';
-  document.getElementById('meter').style.width = '0%';
-
+/* =============================== utils =============================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const fmtKBps = v => v == null ? '—' : (v >= 1000 ? Math.round(v).toLocaleString('en-US') : Math.round(v * 10) / 10) + '';
+const fmtHz = v => { if (v == null) return '—';
+  if (v >= 1000000) return (v/1000000).toFixed(v % 1000000 ? 2 : 0).replace(/\.?0+$/,'') + ' MHz';
+  if (v >= 1000) { const k = v/1000; return (k >= 100 ? Math.round(k) : (Math.round(k*10)/10).toString().replace(/\.0$/,'')) + ' kHz'; }
+  return v + ' Hz'; };
+const fmtDur = s => { if (s == null || !isFinite(s)) return '—';
+  if (s >= 3600) { const h = Math.floor(s/3600), m = Math.floor(s%3600/60), sec = Math.floor(s%60);
+    return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+  const m = Math.floor(s/60), sec = Math.floor(s%60); return `${m}:${String(sec).padStart(2,'0')}`; };
+const fmtBytes = b => { if (b == null) return '—';
+  if (b >= 1<<30) return (b/(1<<30)).toFixed(2) + ' GB';
+  if (b >= 1<<20) return (b/(1<<20)).toFixed(2) + ' MB';
+  if (b >= 1024) return (b/1024).toFixed(1) + ' KB'; return b + ' B'; };
+const decodeText = (bytes, enc) => {
   try {
-    const buf = await file.arrayBuffer();
-    const name = file.name.toLowerCase();
-    const view = new DataView(buf);
+    if (enc === 'latin1') { let s=''; for (const b of bytes) s += String.fromCharCode(b); return s; }
+    if (enc === 'utf16le') return new TextDecoder('utf-16le').decode(bytes);
+    if (enc === 'utf16be') return new TextDecoder('utf-16be').decode(bytes);
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch(e){ return decodeText(bytes,'latin1'); }
+};
+const bytesToBlobURL = (bytes, mime) => URL.createObjectURL(new Blob([bytes], {type: mime || 'image/jpeg'}));
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 2400); }
 
-    // E-AC3 / Atmos detection in MP4
-    if(await isEAC3(buf, name)){
-      analyzeEAC3(file, buf);
-      return;
-    }
+/* ============================ byte reader ============================ */
+class Reader {
+  constructor(u8, start = 0, end = u8 ? u8.length : 0){ this.b = u8; this.o = start; this.e = end; }
+  get left(){ return this.e - this.o; }
+  tell(){ return this.o; }
+  seek(n){ this.o = n; return this; }
+  skip(n){ this.o += n; return this; }
+  u8(){ return this.o < this.e ? this.b[this.o++] : 0; }
+  peek(n = 0){ return this.o + n < this.e ? this.b[this.o + n] : 0; }
+  u16le(){ return this.u8() | (this.u8() << 8); }
+  u16be(){ return (this.u8() << 8) | this.u8(); }
+  u24le(){ return this.u8() | (this.u8() << 8) | (this.u8() << 16); }
+  u32le(){ return (this.u16le() + this.u16le() * 65536); }
+  u32be(){ return (this.u16be() * 65536) + this.u16be(); }
+  u64le(){ return this.u32le() + this.u32le() * 4294967296; }
+  u64be(){ return this.u32be() * 4294967296 + this.u32be(); }
+  i16be(){ return (this.u16be() << 16) >> 16; }
+  ascii(n){ let s = ''; for (let i = 0; i < n && this.o < this.e; i++) s += String.fromCharCode(this.b[this.o++]); return s; }
+  bytes(n){ n = Math.min(n, this.e - this.o); const r = this.b.slice(this.o, this.o + n); this.o += n; return r; }
+  find(needle, from = this.o){ const L = needle.length;
+    for (let i = from; i <= this.e - L; i++){ let ok = true;
+      for (let j = 0; j < L; j++) if (this.b[i+j] !== needle[j]){ ok = false; break; }
+      if (ok) return i; }
+    return -1; }
+  syncsafe32(){ return ((this.u8()&0x7f)<<21)|((this.u8()&0x7f)<<14)|((this.u8()&0x7f)<<7)|(this.u8()&0x7f); }
+}
 
-    // Get duration via Audio element (reliable for all decodable formats)
-    const duration = await getDuration(file);
+/* ============================ bit reader ============================= */
+class BitReader {
+  constructor(u8, start = 0){ this.b = u8; this.byte = start; this.bit = 0; }
+  read(n){ let v = 0; while (n-- > 0){ const b = this.b[this.byte];
+    v = (v << 1) | ((b === undefined ? 0 : (b >> (7 - this.bit))) & 1);
+    if (++this.bit === 8){ this.bit = 0; this.byte++; } } return v >>> 0; }
+  read1(){ return this.read(1); }
+  pos(){ return this.byte * 8 + this.bit; }
+}
 
-    // Decode for sample rate / channels (decode a slice for speed on large files)
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const sliceSize = Math.min(buf.byteLength, 4 * 1024 * 1024);
-    const decoded = await audioCtx.decodeAudioData(buf.slice(0, sliceSize));
-    audioCtx.close();
-
-    // Bitrate: bytes * 8 / seconds / 1000 = kbps
-    const bitrate = duration > 0 ? (file.size * 8) / duration / 1000 : 0;
-
-    // Bit depth from container headers
-    const bd = getBitDepth(file, view);
-
-    // For FLAC, also try to read sample rate & channels from header for accuracy
-    let sampleRate = decoded.sampleRate;
-    let channels = decoded.numberOfChannels;
-    if(name.endsWith('.flac')){
-      const flac = parseFlacSTREAMINFO(view);
-      if(flac){
-        if(flac.sampleRate) sampleRate = flac.sampleRate;
-        if(flac.channels) channels = flac.channels;
-        if(flac.bitDepth) bd.bitDepth = flac.bitDepth;
-        bd.note = 'Read from FLAC STREAMINFO';
-      }
-    }
-
-    renderNormal(file, duration, sampleRate, channels, bitrate, bd.bitDepth, bd.note);
-  } catch(err){
-    showError("Couldn't decode this file. It may be DRM-protected or use an unsupported codec.");
+/* ===================== lazy chunked file reader ====================== */
+class Chunker {
+  constructor(file){ this.f = file; this.cache = null; this.cOff = 0; this.cLen = 0; }
+  async read(off, len){
+    len = Math.max(1, Math.min(len, this.f.size - off));
+    if (off < 0 || off >= this.f.size) return new Uint8Array(0);
+    if (this.cache && off >= this.cOff && off + len <= this.cOff + this.cLen)
+      return this.cache.subarray(off - this.cOff, off - this.cOff + len);
+    const want = Math.max(len, 256 * 1024);           // read ahead
+    const ab = await this.f.slice(off, Math.min(off + want, this.f.size)).arrayBuffer();
+    this.cache = new Uint8Array(ab); this.cOff = off; this.cLen = this.cache.length;
+    return this.cache.subarray(0, Math.min(len, this.cLen));
   }
+  async reader(off, len){ return new Reader(await this.read(off, len), 0, Math.min(len, Math.max(0, this.f.size - off))); }
+  get size(){ return this.f.size; }
 }
 
-function getDuration(file){
-  return new Promise((resolve) => {
-    const audio = new Audio(URL.createObjectURL(file));
-    audio.onloadedmetadata = () => resolve(audio.duration || 0);
-    audio.onerror = () => resolve(0);
-    // Fallback timeout
-    setTimeout(() => resolve(audio.duration || 0), 3000);
-  });
+/* ========================= shared info schema ======================== */
+function newInfo(file){
+  return {
+    file, fileName: file.name, fileSize: file.size,
+    container: null, codec: null, codecName: null, lossless: false, codecClass: null, // 'lossy'|'lossless-pcm'|'lossless-comp'|'dsd'
+    sampleRate: null, bitDepth: null, bitDepthFloat: false, channels: null, channelDesc: null,
+    durationSec: null, audioBitrate: null, overallBitrate: null, nominalBitrate: null, bitrateMode: null,
+    encoder: null, tags: {}, art: null, artMime: null,
+    spatial: null,     // {type:'atmos'|'ac4'|'mpegh', label, confirmed, complexity?, objects?}
+    drm: false, hasVideo: false,
+    tech: [],          // technical lines
+    warnings: [], notes: [],
+    spectrum: null,    // filled async
+    ext: (file.name.match(/\.([a-z0-9]+)$/i) || [])[1] || ''
+  };
 }
+const addTech = (i, k, v) => { if (v !== null && v !== undefined && v !== '' && !(typeof v === 'number' && !isFinite(v))) i.tech.push([k, v]); };
 
-async function isEAC3(buf, name){
-  if(!name.endsWith('.mp4') && !name.endsWith('.m4a')) return false;
-  const str = new TextDecoder('utf8', {fatal:false}).decode(buf.slice(0, 60000));
-  return str.includes('ec-3') || str.includes('Atmos') || name.includes('atmos');
-}
-
-function analyzeEAC3(file, buf){
-  getDuration(file).then(duration => {
-    const bitrate = duration > 0 ? (file.size * 8) / duration / 1000 : 768;
-
-    const info = [
-      ['File', file.name],
-      ['Size', formatSize(file.size)],
-      ['Format', 'MP4 / E-AC-3 Dolby Atmos'],
-      ['Duration', formatTime(duration)],
-      ['Sample Rate', '48.0 kHz <span class="est">est</span>'],
-      ['Channels', '6ch / Atmos <span class="est">est</span>'],
-      ['Bitrate', Math.round(bitrate) + ' kbps <span class="est">est</span>'],
-      ['Bit Depth', '24 bit <span class="est">est</span>']
-    ];
-
-    renderDetails(info);
-    setQuality('audiophile', 'Audiophile Master', 100);
-    setBitDepth('audiophile', 'Studio Master — 24-bit');
-    document.getElementById('extraNote').innerHTML =
-      '<span class="badge warn">Estimated</span> Browsers cannot decode E-AC3/Atmos natively. ' +
-      'Typical Atmos: <code>768 kbps</code>, <code>6ch</code>, <code>24-bit/48kHz</code>. ' +
-      'Convert to FLAC for exact analysis.';
-  });
-}
-
-function getBitDepth(file, view){
-  const name = file.name.toLowerCase();
-
-  if(name.endsWith('.wav')){
-    // Validate RIFF/WAVE, then read bits per sample at offset 34
-    if(view.byteLength >= 44){
-      const fmt = view.getUint16(20, true);
-      const bits = view.getUint16(34, true);
-      if([1,3,6,7,0xFFFE].includes(fmt) && bits > 0){
-        return {bitDepth: bits, note: 'Read from WAV fmt chunk'};
-      }
-    }
-    return {bitDepth: 16, note: 'WAV header unreadable — assuming 16-bit'};
+/* =========================== format sniffing ========================= */
+async function sniff(ch){
+  const head = await ch.read(0, 512);
+  const r = new Reader(head);
+  const m = (s) => { for (let i = 0; i < s.length; i++) if (head[i] !== s.charCodeAt(i)) return false; return true; };
+  if (m('fLaC')) return 'flac';
+  if (m('ID3'))  return 'mp3-ish';
+  if (m('OggS')) return 'ogg';
+  if (m('RIFF')) return 'wav';
+  if (m('RF64')) return 'wav';
+  if (m('FORM')) return 'aiff';
+  if (m('DSD ')) return 'dsf';
+  if (head[0] === 0xFF && (head[1] & 0xF6) === 0xF0) return 'adts';   // MPEG audio sync (ADTS AAC or raw MP3 w/o tag)
+  if (head[0] === 0x0B && head[1] === 0x77) return 'ac3-raw';        // AC-3 / E-AC-3 syncword
+  if (m('\x1A\x45\xDF\xA3')) return 'mka';                            // EBML (Matroska)
+  if (m('ftyp') || head[4] === 0x66 && head[5] === 0x74 && head[6] === 0x79 && head[7] === 0x70) return 'mp4';
+  if (m('moov') || m('styp') || m('skip') || m('free') || m('wide')) return 'mp4'; // rare: no ftyp first
+  // TrueHD / MLP major sync somewhere near the start (frames have a 4-byte prefix)
+  {
+    const rr = new Reader(head);
+    if (rr.find([0xF8,0x72,0x6F]) !== -1) return 'thd-raw';
   }
-
-  if(name.endsWith('.flac')){
-    const flac = parseFlacSTREAMINFO(view);
-    if(flac && flac.bitDepth){
-      return {bitDepth: flac.bitDepth, note: 'Read from FLAC STREAMINFO'};
-    }
-    return {bitDepth: 16, note: 'FLAC STREAMINFO not found — assuming 16-bit'};
-  }
-
-  // Lossy formats: bit depth is meaningless, source was typically 16-bit
-  return {bitDepth: 16, note: 'Lossy format — bit depth reflects typical source (16-bit)'};
-}
-
-// Parse FLAC STREAMINFO metadata block
-function parseFlacSTREAMINFO(view){
-  try{
-    if(view.byteLength < 38) return null;
-    // "fLaC" signature = 4 bytes
-    if(view.getUint32(0) !== 0x664C6143) return null;
-
-    let pos = 4;
-    // Walk metadata blocks
-    while(pos + 4 <= view.byteLength){
-      const header = view.getUint8(pos);
-      const blockType = header & 0x7F;
-      const isLast = (header & 0x80) !== 0;
-      const blockSize = (view.getUint8(pos+1) << 16) | (view.getUint8(pos+2) << 8) | view.getUint8(pos+3);
-
-      if(blockType === 0 && blockSize >= 18 && pos + 4 + blockSize <= view.byteLength){
-        const d = pos + 4; // block data start
-        // bytes 10-12: sampleRate(20) | channels-1(3) | bps-1(5) = 28 bits
-        const b10 = view.getUint8(d+10);
-        const b11 = view.getUint8(d+11);
-        const b12 = view.getUint8(d+12);
-        const b13 = view.getUint8(d+13);
-
-        const sampleRate = (b10 << 12) | (b11 << 4) | (b12 >> 4);
-        const channels = ((b12 >> 1) & 0x07) + 1;
-        const bitDepth = (((b12 & 0x01) << 4) | (b13 >> 4)) + 1;
-
-        return {sampleRate, channels, bitDepth};
-      }
-
-      if(isLast) break;
-      pos += 4 + blockSize;
-    }
-  }catch(e){}
   return null;
 }
 
-function renderNormal(file, duration, sampleRate, channels, bitrate, bitDepth, note){
-  const format = (file.type && file.type !== '') ? file.type.split('/')[1].toUpperCase() : file.name.split('.').pop().toUpperCase();
-
-  const info = [
-    ['File', file.name],
-    ['Size', formatSize(file.size)],
-    ['Format', format],
-    ['Duration', formatTime(duration)],
-    ['Sample Rate', (sampleRate / 1000).toFixed(1) + ' kHz'],
-    ['Channels', channels === 1 ? 'Mono' : channels === 2 ? 'Stereo' : channels + 'ch'],
-    ['Bitrate', Math.round(bitrate) + ' kbps'],
-    ['Bit Depth', bitDepth + ' bit']
-  ];
-
-  renderDetails(info);
-
-  // Overall quality rating by bitrate
-  let rating, cls, pct;
-  if(bitrate >= 1411){ rating = 'Audiophile Master'; cls = 'audiophile'; pct = 100; }
-  else if(bitrate >= 700){ rating = 'Hi-Res / Lossless'; cls = 'audiophile'; pct = 92; }
-  else if(bitrate >= 320){ rating = 'High Quality'; cls = 'high'; pct = 80; }
-  else if(bitrate >= 256){ rating = 'Good Quality'; cls = 'good'; pct = 65; }
-  else if(bitrate >= 128){ rating = 'Standard'; cls = 'ok'; pct = 45; }
-  else { rating = 'Low Quality'; cls = 'warn'; pct = 25; }
-
-  setQuality(cls, rating, pct);
-
-  // Bit depth rating
-  let bdRating, bdCls;
-  if(bitDepth >= 24){ bdRating = 'Studio Master — 24-bit'; bdCls = 'audiophile'; }
-  else if(bitDepth >= 16){ bdRating = 'CD Quality — 16-bit'; bdCls = 'good'; }
-  else if(bitDepth > 0){ bdRating = 'Low — ' + bitDepth + '-bit'; bdCls = 'ok'; }
-  else { bdRating = 'Unknown'; bdCls = 'warn'; }
-  setBitDepth(bdCls, bdRating);
-
-  document.getElementById('extraNote').innerHTML =
-    note + '. Reference: <code>16-bit / 44.1kHz</code> = CD standard · ' +
-    '<code>24-bit / 48kHz+</code> = Hi-Res.';
-}
-
-function renderDetails(info){
-  let html = '';
-  for(const [k, v] of info){
-    html += `<div class="row"><div class="label">${k}</div><div class="value">${v}</div></div>`;
+/* ============================== ID3v2 ================================ */
+function deunsync(u8){
+  const out = new Uint8Array(u8.length);
+  let n = 0;
+  for (let i = 0; i < u8.length; i++){
+    out[n++] = u8[i];
+    if (u8[i] === 0xFF && u8[i+1] === 0x00) i++;   // skip inserted 0x00
   }
-  document.getElementById('details').innerHTML = html;
+  return out.subarray(0, n);
+}
+function id3Text(data){
+  if (!data.length) return null;
+  const enc = data[0], rest = data.subarray(1);
+  let s = enc === 1 ? decodeText(rest, (rest[0]===0xFF&&rest[1]===0xFE)||rest[0]===0x00 ? 'utf16le' : 'utf16be')
+        : enc === 2 ? decodeText(rest, 'utf16be')
+        : enc === 3 ? decodeText(rest, 'utf8')
+        : decodeText(rest, 'latin1');
+  const z = s.indexOf('\0'); if (z > 0) s = s.slice(0, z);
+  return s.trim() || null;
+}
+const ID3_22_MAP = { TT2:'TIT2', TP1:'TPE1', TP2:'TPE2', TAL:'TALB', TYE:'TYER', TEN:'TENC', TCO:'TCON', PIC:'APIC', COM:'COMM' };
+function parseID3v2(u8){
+  const r = new Reader(u8);
+  if (r.left < 10 || r.ascii(3) !== 'ID3') return null;
+  const verMajor = r.u8(), verMinor = r.u8(), flags = r.u8();
+  const size = r.syncsafe32();
+  const tagEnd = Math.min(10 + size, u8.length);
+  const frames = {};
+  let body = u8.slice(10, tagEnd);
+  if ((flags & 0x80) && verMajor <= 3) body = deunsync(body);
+  const br = new Reader(body);
+  const v22 = verMajor === 2, idLen = v22 ? 3 : 4, hdrLen = v22 ? 6 : 10;
+  while (br.left > hdrLen){
+    let rawId = br.ascii(idLen);
+    if (!/^[A-Z0-9]{3,4}$/.test(rawId)) break;
+    const wasV22 = v22;
+    let fsize, fflags = 0;
+    if (v22) fsize = (br.u8()<<16)|(br.u8()<<8)|br.u8();
+    else { fsize = verMajor === 4 ? br.syncsafe32() : br.u32be(); fflags = br.u16be(); }
+    if (fsize <= 0 || fsize > br.left) break;
+    let data = br.bytes(fsize);
+    if (!v22){
+      if (verMajor === 4 && (fflags & 0x02)) data = deunsync(data);
+      if (verMajor === 4 && (fflags & 0x01)) data = data.slice(4);   // data-length indicator
+      if (verMajor === 3 && (fflags & 0x80)) data = deunsync(data);  // frame-level unsync
+      if (fflags & 0x20) data = data.slice(2);                        // compression flag (rare, skip 2)
+    }
+    const id = ID3_22_MAP[rawId] || rawId;
+    if (id === 'TIT2') frames.title = id3Text(data);
+    else if (id === 'TPE1') frames.artist = id3Text(data);
+    else if (id === 'TPE2') frames.albumArtist = id3Text(data);
+    else if (id === 'TALB') frames.album = id3Text(data);
+    else if (id === 'TYER' || id === 'TDRC') frames.year = id3Text(data);
+    else if (id === 'TENC' || id === 'TSSE') frames.encoder = id3Text(data);
+    else if (id === 'TCON') frames.genre = id3Text(data);
+    else if (id === 'APIC' && !frames.art){
+      const enc = data[0]; let p = 1, mime;
+      if (!wasV22){ let z = data.indexOf(0, p); mime = decodeText(data.subarray(p, z), 'latin1'); p = z + 1; }
+      else { mime = 'image/' + decodeText(data.subarray(p, p+3), 'latin1').toLowerCase(); p += 3; }
+      p += 1; // picture type
+      // description terminator: utf-16 encodings use 0x0000
+      if (enc === 1 || enc === 2){ while (p + 1 < data.length && !(data[p] === 0 && data[p+1] === 0)) p += 2; p += 2; }
+      else { while (p < data.length && data[p] !== 0) p++; p += 1; }
+      if (p < data.length){
+        frames.art = data.subarray(p);
+        frames.artMime = mime && mime.includes('/') ? mime : (mime === 'PNG' ? 'image/png' : 'image/jpeg');
+      }
+    }
+  }
+  return { verMajor, tagEnd, frames };
+}
+function parseID3v1(ch){
+  if (ch.size < 128) return null;
+  return ch.read(ch.size - 128, 128).then(u8 => {
+    const r = new Reader(u8);
+    if (r.ascii(3) !== 'TAG') return null;
+    const f = n => { const b = r.bytes(30); let s = ''; for (const c of b){ if (c === 0) break; s += String.fromCharCode(c); } return s.trim() || null; };
+    return { title: f(), artist: f(), album: f(), year: (r.bytes(4), null) };
+  });
 }
 
-function setQuality(cls, label, pct){
-  document.getElementById('quality').innerHTML = `<span class="badge ${cls}">${label}</span>`;
-  const meter = document.getElementById('meter');
-  const colors = {audiophile:'#a855f7', high:'#3b82f6', good:'#22c55e', ok:'#f59e0b', warn:'#ef4444'};
-  meter.style.background = colors[cls] || '#3b82f6';
-  meter.style.width = '0%';
-  requestAnimationFrame(() => { meter.style.width = pct + '%'; });
+/* =============================== MP3 ================================= */
+const MP3_BR_V1L1 = [0,32,64,96,128,160,192,224,256,288,320,352,384,416,448,0];
+const MP3_BR_V1L2 = [0,32,48,56,64,80,96,112,128,160,192,224,256,320,384,0];
+const MP3_BR_V1L3 = [0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0];
+const MP3_BR_V2L1 = [0,32,48,56,64,80,96,112,128,144,160,176,192,224,256,0];
+const MP3_BR_V2   = [0,8,16,24,32,40,48,56,64,80,96,112,128,144,160,0];
+const MP3_SR = { 3: [44100,48000,32000], 2: [22050,24000,16000], 0: [11025,12000,8000] };
+function mp3FrameHeader(u8, off){
+  if (off + 4 > u8.length) return null;
+  if (u8[off] !== 0xFF || (u8[off+1] & 0xE0) !== 0xE0) return null;
+  const b1 = u8[off+1], b2 = u8[off+2];
+  const verBits = (b1 >> 3) & 3, layerBits = (b1 >> 1) & 3;   // version: b1 bits4-3, layer: b1 bits2-1
+  if (verBits === 1 || layerBits === 0) return null;
+  const bri = (b2 >> 4) & 15, sri = (b2 >> 2) & 3;
+  if (bri === 0 || bri === 15 || sri === 3) return null;
+  const version = verBits === 3 ? 1 : verBits === 2 ? 2 : 2.5;
+  const layer = layerBits === 3 ? 1 : layerBits === 2 ? 2 : 3;
+  const brTable = version === 1 ? (layer === 1 ? MP3_BR_V1L1 : layer === 2 ? MP3_BR_V1L2 : MP3_BR_V1L3)
+                                : (layer === 1 ? MP3_BR_V2L1 : MP3_BR_V2);
+  const bitrate = brTable[bri], sampleRate = MP3_SR[verBits][sri];
+  if (!bitrate || !sampleRate) return null;
+  const padding = (b2 >> 1) & 1, modeBits = (u8[off+3] >> 6) & 3;
+  const spf = version === 1 ? (layer === 1 ? 384 : layer === 2 ? 1152 : 1152) : (layer === 1 ? 384 : 1152);
+  const frameLen = layer === 1
+    ? Math.floor((12 * bitrate * 1000 / sampleRate + padding) * 4)
+    : Math.floor((version === 1 ? 144 : 72) * bitrate * 1000 / sampleRate + padding);
+  return { version, layer, bitrate, sampleRate, padding, spf, frameLen,
+    mode: ['Stereo','Joint stereo','Dual channel','Mono'][modeBits], modeBits,
+    modeExt: modeBits === 1 ? ['','Intensity','MS','Intensity+MS'][(u8[off+3]>>4)&3] : null };
+}
+async function parseMp3(ch, info){
+  const HEAD = await ch.read(0, Math.min(ch.size, 2 * 1024 * 1024));
+  let pos = 0, id3 = null;
+  if (HEAD[0] === 0x49 && HEAD[1] === 0x44 && HEAD[2] === 0x33){
+    id3 = parseID3v2(HEAD);
+    pos = id3 ? id3.tagEnd : 0;
+  }
+  // find first valid frame
+  let hdr = null, frameOff = -1;
+  for (let i = pos; i < Math.min(HEAD.length - 4, pos + 200 * 1024); i++){
+    if (HEAD[i] === 0xFF && (HEAD[i+1] & 0xE0) === 0xE0){
+      const h = mp3FrameHeader(HEAD, i);
+      if (h){ const h2 = mp3FrameHeader(HEAD, i + h.frameLen);
+        if (h2 || i + h.frameLen > HEAD.length - 4){ hdr = h; frameOff = i; break; }  // confirm with 2nd frame when available
+      }
+    }
+  }
+  if (!hdr) throw new Error('No valid MPEG audio frame found');
+  info.container = 'MP3'; info.codec = 'mp3'; info.codecClass = 'lossy';
+  info.codecName = `MP3 (MPEG-${hdr.version === 1 ? '1' : hdr.version === 2 ? '2' : '2.5'} Layer ${['I','II','III'][hdr.layer-1]})`;
+  info.sampleRate = hdr.sampleRate; info.channels = hdr.modeBits === 3 ? 1 : 2;
+  info.channelDesc = hdr.mode; info.bitrateMode = 'CBR';
+  addTech(info, 'MPEG version', `MPEG-${hdr.version}`);
+  addTech(info, 'Layer', `Layer ${hdr.layer}`);
+  if (hdr.modeExt) addTech(info, 'Joint stereo mode', hdr.modeExt);
+  // Xing / Info / VBRI headers
+  const sideInfo = hdr.version === 1 ? (hdr.modeBits === 3 ? 17 : 32) : (hdr.modeBits === 3 ? 9 : 17);
+  const xingOff = frameOff + 4 + sideInfo;
+  let xing = null, vbri = null, frames = null, xingBytes = null;
+  const tag = new Reader(HEAD).find([0x58,0x69,0x6E,0x67], xingOff); // 'Xing'
+  const tagInfo = new Reader(HEAD).find([0x49,0x6E,0x66,0x6F], xingOff); // 'Info'
+  const xat = tag !== -1 ? tag : tagInfo;
+  if (xat !== -1 && xat < xingOff + 16){
+    const xr = new Reader(HEAD, xat + 4);
+    const fl = xr.u32be();
+    if (fl & 1) frames = xr.u32be();
+    if (fl & 2) xingBytes = xr.u32be();
+    xing = { isInfo: tagInfo !== -1, flags: fl };
+    // LAME encoder string follows frames/bytes/toc/quality
+    const scan = new Reader(HEAD, xat + 8, Math.min(xat + 8 + 190, HEAD.length));
+    const lameAt = scan.find([0x4C,0x41,0x4D,0x45]); // 'LAME'
+    if (lameAt !== -1){ const lr = new Reader(HEAD, lameAt, lameAt + 20);
+      info.encoder = lr.ascii(9).replace(/\0.*$/,'') || null; }
+    info.bitrateMode = xing.isInfo ? 'CBR' : 'VBR';
+  } else {
+    const vAt = new Reader(HEAD).find([0x56,0x42,0x52,0x49], frameOff + 36); // 'VBRI'
+    if (vAt === frameOff + 36){
+      const vr = new Reader(HEAD, vAt + 4);
+      vr.u16be(); vr.u16be(); vr.u16be();             // version, delay, quality
+      xingBytes = vr.u32be(); frames = vr.u32be();
+      vbri = true; info.encoder = info.encoder || 'Fraunhofer (VBRI)'; info.bitrateMode = 'VBR';
+    }
+  }
+  // duration + bitrates
+  const audioBytes = ch.size - pos;
+  if (frames){
+    info.durationSec = frames * hdr.spf / hdr.sampleRate;
+    const bytes = xingBytes || audioBytes;
+    info.audioBitrate = bytes * 8 / info.durationSec / 1000;
+    info.bitrateMode = xing && xing.isInfo ? 'CBR' : (info.bitrateMode === 'CBR' ? 'CBR' : 'VBR');
+    addTech(info, 'Frame count', frames.toLocaleString('en-US'));
+  } else {
+    info.durationSec = audioBytes * 8 / (hdr.bitrate * 1000);
+    info.audioBitrate = hdr.bitrate;
+  }
+  if (xing && xing.isInfo) info.audioBitrate = hdr.bitrate;  // 'Info' = CBR marker (LAME)
+  info.nominalBitrate = hdr.bitrate;
+  info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  addTech(info, 'Nominal bitrate', hdr.bitrate + ' kbps');
+  if (xing) addTech(info, 'Xing header', xing.isInfo ? 'Info (CBR marker)' : 'Xing (VBR)');
+  if (vbri) addTech(info, 'VBRI header', 'present');
+  // tags
+  if (id3) for (const [k, v] of Object.entries(id3.frames)) if (k !== 'art' && k !== 'artMime') info.tags[k] = v;
+  if (id3 && id3.frames.art){ info.art = id3.frames.art; info.artMime = id3.frames.artMime;
+    addTech(info, 'ID3v2', 'v2.' + id3.verMajor + ' · ' + fmtBytes(id3.tagEnd) + ' tag'); }
+  else if (id3) addTech(info, 'ID3v2', 'v2.' + id3.verMajor + ' · ' + fmtBytes(id3.tagEnd) + ' tag');
+  const id3v1 = await parseID3v1(ch);
+  if (id3v1){ info.tags.title = info.tags.title || id3v1.title;
+    info.tags.artist = info.tags.artist || id3v1.artist;
+    info.tags.album = info.tags.album || id3v1.album; addTech(info, 'ID3v1', 'present'); }
+  info.encoder = info.encoder || info.tags.encoder || null;
+  return info;
 }
 
-function setBitDepth(cls, label){
-  document.getElementById('bitdepth').innerHTML = `<span class="badge ${cls}">${label}</span>`;
+/* ============================ AAC (ADTS) ============================= */
+const AAC_SRT = [96000,88200,64000,48000,44100,32000,24000,22050,16000,12000,11025,8000,7350,0,0,0];
+async function parseAdts(ch, info){
+  const HEAD = await ch.read(0, Math.min(ch.size, 256 * 1024));
+  let off = 0, sr = null, profile = null, chCfg = null, frames = 0, bytes = 0, lastLen = 0;
+  while (off + 7 < HEAD.length && frames < 400){
+    if (HEAD[off] !== 0xFF || (HEAD[off+1] & 0xF0) !== 0xF0) { off++; continue; }
+    const br = new BitReader(HEAD, off);
+    br.read(12); br.read(1); br.read(2); const prot = br.read(1) ? 0 : 2;
+    profile = br.read(2); const sfi = br.read(4); br.read(1); chCfg = br.read(3);
+    br.read(4); // orig/home
+    const frameLen = br.read(13);
+    if (frameLen < 7) break;
+    if (off + frameLen > HEAD.length) break;
+    sr = AAC_SRT[sfi] || sr; lastLen = frameLen;
+    bytes += frameLen; frames++; off += frameLen;
+  }
+  if (!sr) throw new Error('No ADTS frame found');
+  info.container = 'ADTS'; info.codec = 'aac'; info.codecClass = 'lossy';
+  const profName = ['AAC Main','AAC-LC','AAC SSR','AAC LTP'][profile] || 'AAC';
+  info.codecName = profName + ' (ADTS)';
+  info.sampleRate = sr;
+  info.channels = chCfg === 0 ? null : chCfg;
+  info.channelDesc = chCfg ? ({1:'Mono',2:'Stereo',3:'L C R',4:'L R C',5:'L C R Ls Rs',6:'5.1',7:'6.1',8:'7.1'})[chCfg] : 'PCE-defined';
+  const avgFrame = bytes / frames;
+  const totalFrames = ch.size / avgFrame;
+  info.durationSec = totalFrames * 1024 / sr;
+  info.audioBitrate = avgFrame * 8 * sr / 1024 / 1000;
+  info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  info.bitrateMode = 'CBR';
+  addTech(info, 'Frame length', Math.round(lastLen) + ' B');
+  addTech(info, 'Frames sampled', frames + ' (avg ' + avgFrame.toFixed(1) + ' B)');
+  return info;
+}
+/* =============================== FLAC ================================= */
+function parseVorbisComment(u8, info){
+  const r = new Reader(u8);
+  if (r.left < 8) return;
+  const vlen = r.u32le();
+  const vendor = decodeText(r.bytes(Math.min(vlen, r.left)), 'utf8');
+  if (vendor && !info.encoder) info.encoder = vendor;
+  const count = r.u32le();
+  const map = { TITLE:'title', ARTIST:'artist', ALBUM:'album', ALBUMARTIST:'albumArtist',
+    DATE:'year', YEAR:'year', ENCODER:'encoder', GENRE:'genre', DESCRIPTION:'comment',
+    REPLAYGAIN_TRACK_GAIN:'rgTrack', REPLAYGAIN_ALBUM_GAIN:'rgAlbum', TITLE2:'title2' };
+  for (let i = 0; i < Math.min(count, 500) && r.left >= 4; i++){
+    const len = r.u32le(); if (len > r.left) break;
+    const kv = decodeText(r.bytes(len), 'utf8');
+    const eq = kv.indexOf('='); if (eq < 1) continue;
+    const k = kv.slice(0, eq).toUpperCase(), v = kv.slice(eq + 1).trim();
+    if (map[k] && v && !(map[k] === 'encoder' && info.encoder)) info.tags[map[k]] = v;
+  }
+}
+async function parseFlac(ch, info){
+  let off = 0;
+  const first = await ch.read(0, 10);
+  if (first[0] === 0x49 && first[1] === 0x44 && first[2] === 0x33){
+    const r = new Reader(first); r.skip(3); r.skip(3); off = 10 + r.syncsafe32();
+    const id3 = parseID3v2(await ch.read(0, off));
+    if (id3) for (const [k, v] of Object.entries(id3.frames)) if (k !== 'art' && k !== 'artMime') info.tags[k] = v;
+  }
+  const magic = await ch.read(off, 4);
+  if (magic[0] !== 0x66 || magic[1] !== 0x4C || magic[2] !== 0x61 || magic[3] !== 0x43)
+    throw new Error('fLaC magic not found');
+  off += 4;
+  info.container = 'FLAC'; info.codec = 'flac'; info.codecClass = 'lossless-comp'; info.lossless = true;
+  info.codecName = 'FLAC (Free Lossless Audio Codec)';
+  let last = false, blocks = 0, streamInfo = null;
+  while (!last && blocks++ < 60){
+    const hdr = await ch.read(off, 4);
+    if (hdr.length < 4) break;
+    const type = hdr[0] & 0x7f, len = (hdr[1] << 16) | (hdr[2] << 8) | hdr[3];
+    last = !!(hdr[0] & 0x80);
+    if (type === 0 && len >= 34){                       // STREAMINFO
+      const si = await ch.read(off + 4, 34);
+      const b = si;
+      const sr = (b[10] << 12) | (b[11] << 4) | (b[12] >> 4);
+      const chn = ((b[12] >> 1) & 7) + 1;
+      const bps = (((b[12] & 1) << 4) | (b[13] >> 4)) + 1;
+      const total = ((b[13] & 0x0f) * 4294967296) + ((b[14] << 24) | (b[15] << 16) | (b[16] << 8) | b[17]) >>> 0;
+      streamInfo = {
+        minBlock: (b[0] << 8) | b[1], maxBlock: (b[2] << 8) | b[3],
+        minFrame: (b[4] << 16) | (b[5] << 8) | b[6], maxFrame: (b[7] << 16) | (b[8] << 8) | b[9],
+        sr, chn, bps, total,
+        md5: Array.from(si.slice(18, 34)).map(x => x.toString(16).padStart(2, '0')).join('')
+      };
+    } else if (type === 4 && len > 8 && len < 4 * 1024 * 1024){   // VORBIS_COMMENT
+      parseVorbisComment(await ch.read(off + 4, len), info);
+    } else if (type === 6 && len > 32){                            // PICTURE
+      const pr = new Reader(await ch.read(off + 4, Math.min(len, 1024)));
+      if (pr.left >= 8){
+        pr.u32be(); const mimeLen = pr.u32be();
+        if (mimeLen <= 200 && pr.left >= mimeLen + 4){
+          const mime = decodeText(pr.bytes(mimeLen), 'latin1');
+          const descLen = pr.u32be(); pr.skip(descLen);
+          let w = 0, h = 0, dataLen = 0;
+          if (pr.left >= 16){ w = pr.u32be(); h = pr.u32be(); pr.u32be(); pr.u32be(); dataLen = pr.u32be(); }
+          const dataOff = off + 4 + 32 + mimeLen + descLen;
+          if (!info.art && dataLen > 100 && dataLen < 24 * 1024 * 1024 && dataLen <= len - 32 - mimeLen - descLen && dataOff + dataLen <= ch.size){
+            info.art = await ch.read(dataOff, dataLen);
+            info.artMime = mime || 'image/jpeg'; info.artW = w; info.artH = h;
+          }
+        }
+      }
+    }
+    off += 4 + len;
+  }
+  if (!streamInfo) throw new Error('FLAC STREAMINFO missing');
+  info.sampleRate = streamInfo.sr; info.channels = streamInfo.chn; info.bitDepth = streamInfo.bps;
+  info.channelDesc = ({1:'Mono',2:'Stereo'})[streamInfo.chn] || streamInfo.chn + ' channels';
+  info.durationSec = streamInfo.total ? streamInfo.total / streamInfo.sr : null;
+  if (info.durationSec) info.audioBitrate = info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  else info.notes.push('unknown duration (streamed FLAC)');
+  addTech(info, 'Block size', streamInfo.minBlock === streamInfo.maxBlock
+    ? streamInfo.minBlock + ' samples' : streamInfo.minBlock + '–' + streamInfo.maxBlock + ' samples');
+  addTech(info, 'Frame size range', streamInfo.minFrame + '–' + streamInfo.maxFrame + ' B');
+  if (streamInfo.md5 && !/^0+$/.test(streamInfo.md5)) addTech(info, 'MD5 of PCM', streamInfo.md5);
+  if (info.bitDepth && info.sampleRate && info.channels && info.durationSec && info.audioBitrate){
+    const raw = info.sampleRate * info.channels * (info.codecClass === 'dsd' ? 1 : info.bitDepth);
+    const comp = (info.audioBitrate * 1000) / raw;
+    if (comp > 0 && comp < 1.2) addTech(info, 'Compression ratio', (comp * 100).toFixed(1) + '% of raw PCM');
+  }
+  return info;
 }
 
-function showError(msg){
-  document.getElementById('details').innerHTML =
-    `<div class="row"><div class="label">Error</div><div class="value"><span class="badge warn">${msg}</span></div></div>`;
-  document.getElementById('quality').innerHTML = '';
-  document.getElementById('bitdepth').innerHTML = '';
-  document.getElementById('meter').style.width = '0%';
-  document.getElementById('extraNote').innerHTML = '';
+/* ============================ WAV / RF64 ============================= */
+const WAV_FMT = {1:'PCM',3:'IEEE float',6:'A-law',7:'µ-law',2:'ADPCM',0x11:'IMA ADPCM',0x40:'WMA',0xFFFE:'Extensible'};
+async function parseWav(ch, info){
+  const head = await ch.read(0, 128 * 1024);
+  const r = new Reader(head);
+  const kind = r.ascii(4); r.skip(4); const wave = r.ascii(4);
+  if (!['RIFF','RF64','RIFX'].includes(kind) || wave !== 'WAVE') throw new Error('Not a WAV file');
+  let rf64Data = null, fmt = null, dataSize = null, infoChunks = {}, end = head.length;
+  while (r.left >= 8){
+    const cStart = r.tell();
+    const id = r.ascii(4); let size = r.u32le();
+    if (id === 'data' && size === 0xFFFFFFFF && rf64Data) size = rf64Data.dataSize;
+    if (size > 0xFFFFFFF0) size = 0;
+    if (id === 'ds64' && r.left >= 28){
+      rf64Data = { riffSize: r.u64le(), dataSize: r.u64le(), sampleCount: r.u64le() }; r.skip(4);
+      r.seek(cStart + 8 + size + (size & 1));
+      continue;
+    }
+    if (id === 'fmt ' && r.left >= 16){
+      const f = {};
+      f.format = r.u16le(); f.channels = r.u16le(); f.sampleRate = r.u32le();
+      f.byteRate = r.u32le(); f.blockAlign = r.u16le(); f.bits = r.u16le();
+      if (f.format === 0xFFFE && r.left >= 40){
+        r.u16le(); f.validBits = r.u16le(); f.chanMask = r.u32le();
+        f.subFormat = r.u16le(); r.skip(14);
+        if (f.subFormat) f.format = f.subFormat;
+      } else r.skip(Math.max(0, Math.min(size - 16, r.left)));
+      fmt = f;
+      r.seek(cStart + 8 + size + (size & 1));
+      continue;
+    }
+    if (id === 'data'){ dataSize = size; r.seek(cStart + 8 + size + (size & 1)); continue; }
+    if (id === 'LIST' && r.left >= 4){
+      const lt = r.ascii(4); const stop = Math.min(r.tell() + size - 4, end);
+      if (lt === 'INFO'){
+        while (r.tell() + 8 <= stop){
+          const sid = r.ascii(4); const ssize = r.u32le();
+          const sval = decodeText(r.bytes(Math.min(ssize, r.left)), 'latin1').replace(/\0+$/,'').trim();
+          if (sid === 'INAM') infoChunks.title = sval;
+          if (sid === 'IART') infoChunks.artist = sval;
+          if (sid === 'IPRD') infoChunks.album = sval;
+          if (sid === 'ISFT') infoChunks.encoder = sval;
+          if (sid === 'ICRD') infoChunks.year = sval;
+        }
+      }
+      r.seek(cStart + 8 + size + (size & 1));
+      continue;
+    }
+    r.seek(cStart + 8 + size + (size & 1));            // word-aligned next chunk
+  }
+  if (!fmt) throw new Error('WAV fmt chunk not found');
+  info.container = kind === 'RF64' ? 'RF64 (WAV)' : 'WAV';
+  info.codec = 'pcm';
+  info.codecClass = 'lossless-pcm'; info.lossless = [1].includes(fmt.format);
+  info.bitDepthFloat = fmt.format === 3;
+  info.codecName = (fmt.bitDepthFloat ? 'PCM float' : WAV_FMT[fmt.format] || 'PCM') + ' WAV';
+  info.sampleRate = fmt.sampleRate; info.channels = fmt.channels;
+  info.bitDepth = fmt.bits === 0 ? null : (fmt.validBits || fmt.bits);
+  info.channelDesc = wavChannelDesc(fmt);
+  if (fmt.byteRate && dataSize != null){
+    info.durationSec = dataSize / fmt.byteRate;
+    info.audioBitrate = fmt.byteRate * 8 / 1000;
+    info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  }
+  info.bitrateMode = 'CBR';
+  addTech(info, 'Format tag', '0x' + fmt.format.toString(16) + ' · ' + (WAV_FMT[fmt.format] || 'unknown'));
+  if (fmt.chanMask != null) addTech(info, 'Channel mask', '0x' + fmt.chanMask.toString(16) + ' · ' + (wavChannelDesc(fmt) || '?'));
+  if (fmt.blockAlign) addTech(info, 'Block align', fmt.blockAlign + ' B');
+  info.tags = {...infoChunks, ...info.tags};
+  return info;
+}
+const WAV_MASK_BITS = ['FL','FR','FC','LFE','BL','BR','FLC','FRC','BC','SL','SR','TC','FHL','FHR','FBC','FBC2'];
+function wavChannelDesc(fmt){
+  if (fmt.chanMask && fmt.channels){
+    const bits = []; for (let i = 0; i < 16; i++) if (fmt.chanMask & (1 << i)) bits.push(WAV_MASK_BITS[i]);
+    const label = { 2:'Stereo', 6:'5.1', 8:'6.1/7.1' }[fmt.channels] || fmt.channels + 'ch';
+    return label + (bits.length ? ' (' + bits.join(' ') + ')' : '');
+  }
+  return ({1:'Mono',2:'Stereo',6:'5.1',8:'7.1'})[fmt.channels] || (fmt.channels ? fmt.channels + ' channels' : null);
 }
 
-// ---- Formatting helpers ----
-
-function formatSize(bytes){
-  if(bytes < 1024) return bytes + ' B';
-  if(bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  if(bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+/* =============================== AIFF ================================ */
+function aiffExtended80(b){
+  const exp = ((b[0] & 0x7f) << 8) | b[1];
+  const hi = ((b[2] << 24) | (b[3] << 16) | (b[4] << 8) | b[5]) >>> 0;
+  const lo = ((b[6] << 24) | (b[7] << 16) | (b[8] << 8) | b[9]) >>> 0;
+  const mant = hi * 4294967296 + lo;
+  if (exp === 0 && mant === 0) return 0;
+  if (exp === 0x7fff) return NaN;
+  return mant * Math.pow(2, exp - 16383 - 63) * ((b[0] & 0x80) ? -1 : 1);
+}
+async function parseAiff(ch, info){
+  const head = await ch.read(0, 64 * 1024);
+  const r = new Reader(head);
+  if (r.ascii(4) !== 'FORM') throw new Error('Not an AIFF');
+  r.skip(4);
+  const formType = r.ascii(4);
+  if (!['AIFF','AIFC'].includes(formType)) throw new Error('Not an AIFF (FORM type ' + formType + ')');
+  let comm = null, ssnd = null;
+  while (r.left >= 8){
+    const id = r.ascii(4); const size = r.u32be();
+    if (id === 'COMM' && r.left >= 18){
+      comm = { channels: r.u16be(), frames: r.u32be(), bits: r.u16be(), rate: aiffExtended80(r.bytes(10)) };
+      if (formType === 'AIFC' && r.left >= 4) comm.comp = r.ascii(4);
+      continue;
+    }
+    if (id === 'SSND'){ ssnd = size; r.skip(Math.min(size, r.left)); continue; }
+    r.skip(Math.min(size, r.left));
+  }
+  if (!comm) throw new Error('AIFF COMM chunk missing');
+  info.container = 'AIFF' + (formType === 'AIFC' ? ' (compressed)' : '');
+  const comp = comm.comp || 'NONE';
+  const isFloat = comp === 'fl32' || comp === 'fl64' || comp === 'FL32';
+  const lossless = ['NONE','sowt','fl32','fl64','FL32'].includes(comp);
+  info.codec = lossless ? 'pcm' : comp;
+  info.codecClass = lossless ? 'lossless-pcm' : 'lossy';
+  info.lossless = ['NONE','sowt'].includes(comp);
+  info.codecName = (isFloat ? 'PCM float' : lossless ? 'PCM' : comp) + (formType === 'AIFC' ? ' AIFF-C' : ' AIFF');
+  info.channels = comm.channels; info.bitDepth = comm.bits || null; info.bitDepthFloat = isFloat;
+  info.sampleRate = Math.round(comm.rate);
+  info.channelDesc = ({1:'Mono',2:'Stereo'})[comm.channels] || comm.channels + ' channels';
+  info.durationSec = comm.rate ? comm.frames / comm.rate : null;
+  if (info.durationSec && ssnd != null){
+    info.audioBitrate = (ssnd - 8) * 8 / info.durationSec / 1000;
+    info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  }
+  info.bitrateMode = 'CBR';
+  addTech(info, 'Compression', comp);
+  return info;
 }
 
-function formatTime(s){
-  if(!s || !isFinite(s)) return '—';
-  s = Math.floor(s);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if(h > 0) return `${h}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
-  return `${m}:${sec.toString().padStart(2,'0')}`;
+/* ============================ Ogg container ========================== */
+function oggPage(u8, off){
+  if (off + 27 > u8.length || u8[off] !== 0x4F || u8[off+1] !== 0x67 || u8[off+2] !== 0x67 || u8[off+3] !== 0x53) return null;
+  const r = new Reader(u8, off + 4);
+  r.skip(1);              // version
+  r.skip(1);              // header type
+  r.skip(8);              // granule position
+  r.skip(4);              // serial
+  r.skip(4);              // sequence
+  r.skip(4);              // crc
+  const nsegs = r.u8();
+  let payloadLen = 0;
+  for (let i = 0; i < nsegs; i++){ payloadLen += r.u8(); }
+  return { granule: new Reader(u8, off + 6).u64le(), payloadStart: r.tell(), payloadLen, headerType: u8[off + 5] };
 }
+async function parseOgg(ch, info){
+  const head = await ch.read(0, Math.min(ch.size, 1024 * 1024));
+  const p0 = oggPage(head, 0);
+  if (!p0) throw new Error('Ogg page not found');
+  info.container = 'Ogg';
+  let codec = null, sr = null, chn = null, nominal = null, preskip = null, inputSr = null;
+  const first = head.subarray(p0.payloadStart, p0.payloadStart + Math.min(p0.payloadLen, 64));
+  if (first[0] === 1 && first[1] === 0x76 && first[2] === 0x6F && first[3] === 0x72){   // \x01vorbis
+    codec = 'vorbis';
+    const r = new Reader(first, 7);
+    r.skip(4); chn = r.u8(); sr = r.u32le(); r.skip(4); nominal = r.u32le();
+    info.codecName = 'Vorbis'; 
+  } else if (first[0] === 0x4F && first[1] === 0x70 && first[2] === 0x75 && first[3] === 0x73 && first[4] === 0x48){ // OpusHead
+    codec = 'opus';
+    const r = new Reader(first, 8);
+    r.skip(1); chn = r.u8(); preskip = r.u16le(); inputSr = r.u32le();
+    sr = 48000;
+    info.codecName = 'Opus (IETF)';
+  } else throw new Error('Unknown Ogg codec');
+  info.codec = codec; info.codecClass = 'lossy';
+  info.sampleRate = sr; info.channels = chn;
+  info.channelDesc = ({1:'Mono',2:'Stereo'})[chn] || (chn ? chn + ' channels' : null);
+  // vendor/comment header: page 2 (or later)
+  {
+    const marker = codec === 'vorbis' ? [0x03,0x76,0x6F,0x72,0x62,0x69,0x73] : [0x4F,0x70,0x75,0x73,0x54,0x61,0x67,0x73];
+    const at = new Reader(head).find(marker, p0.payloadStart);
+    if (at !== -1) parseVorbisComment(head.subarray(at + marker.length, Math.min(at + marker.length + 65536, head.length)), info);
+  }
+  // duration from last page granule
+  let dur = null;
+  if (ch.size > 128){
+    const tail = await ch.read(Math.max(0, ch.size - 256 * 1024), 256 * 1024);
+    let lastG = 0;
+    for (let i = 0; i <= tail.length - 27; i++){
+      if (tail[i] === 0x4F && tail[i+1] === 0x67 && tail[i+2] === 0x67 && tail[i+3] === 0x53){
+        const pg = oggPage(tail, i);
+        if (pg && pg.granule > lastG) lastG = pg.granule;
+      }
+    }
+    if (lastG > 0) dur = lastG / (codec === 'opus' ? 48000 : sr);
+  }
+  info.durationSec = dur;
+  if (dur){
+    info.audioBitrate = codec === 'vorbis' && nominal ? nominal / 1000 : ch.size * 8 / dur / 1000;
+    info.overallBitrate = ch.size * 8 / dur / 1000;
+  } else if (nominal) info.audioBitrate = nominal / 1000;
+  if (codec === 'vorbis' && nominal) info.nominalBitrate = nominal / 1000;
+  info.bitrateMode = (codec === 'vorbis' && nominal) ? 'VBR' : null;
+  if (codec === 'opus'){
+    addTech(info, 'Opus pre-skip', preskip + ' samples');
+    if (inputSr && inputSr !== 48000) addTech(info, 'Original sample rate', fmtHz(inputSr));
+    info.notes.push('Opus always decodes at 48 kHz; its quality at a given bitrate is higher than MP3/AAC.');
+  }
+  return info;
+}
+
+/* ============================ DSF (DSD) ============================== */
+async function parseDsf(ch, info){
+  const head = await ch.read(0, 256);
+  const r = new Reader(head);
+  if (r.ascii(4) !== 'DSD ') throw new Error('Not a DSF');
+  const dsdSize = r.u64le(); r.u64le(); const metaPtr = r.u64le();
+  if (r.ascii(4) !== 'fmt ') throw new Error('DSF fmt chunk missing');
+  r.u64le(); // fmt size (52)
+  const ver = r.u32le(), fmtId = r.u32le(), chType = r.u32le(), chNum = r.u32le();
+  const blockSize = r.u32le(), sampleCount = Number(r.u64le());
+  const freq = r.u32le(), freqOrig = r.u32le(), bitsPerSlot = r.u32le();
+  info.container = 'DSF'; info.codec = 'dsd'; info.codecClass = 'dsd'; info.lossless = true;
+  const mult = freq / 44100, mult48 = freq / 48000;
+  const dsdLabel = Number.isInteger(mult) && mult >= 1 && mult <= 1024 ? 'DSD' + mult
+                 : Number.isInteger(mult48) && mult48 >= 1 ? 'DSD' + (mult48 * 48 / 44.1).toFixed(0).replace(/\.0$/, '') : 'DSD';
+  info.codecName = 'DSD (' + (dsdLabel === 'DSD' ? fmtHz(freq) : dsdLabel) + ', 1-bit)';
+  info.sampleRate = freq; info.channels = chNum;
+  info.channelDesc = ({1:'Mono',2:'Stereo',3:'3ch',4:'Quad',5:'4.0',6:'5.0',7:'5.1'})[chType] || (chNum ? chNum + ' channels' : null);
+  info.bitDepth = 1;
+  info.durationSec = sampleCount && freq ? sampleCount / freq : null;
+  if (info.durationSec) info.audioBitrate = info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  info.bitrateMode = 'VBR';
+  addTech(info, 'DSD rate', fmtHz(freq));
+  addTech(info, 'Channel type', chType + ' · ' + (info.channelDesc || '?'));
+  addTech(info, 'Block size', blockSize + ' B/channel');
+  if (metaPtr && metaPtr < ch.size){                         // trailing ID3v2
+    const tag = await ch.read(metaPtr, Math.min(ch.size - metaPtr, 2 * 1024 * 1024));
+    const id3 = parseID3v2(tag);
+    if (id3) for (const [k, v] of Object.entries(id3.frames)) if (k !== 'art' && k !== 'artMime') info.tags[k] = v;
+  }
+  return info;
+}
+/* ==================== Dolby bitstream parsing ========================
+   Field orders follow ETSI TS 102 366 (Annex E for E-AC-3), verified
+   against MediaInfoLib's File_Ac3.cpp and real encoder output.
+   ==================================================================== */
+const AC3_BR_TABLE = [32,40,48,56,64,80,96,112,128,160,192,224,256,320,384,448,512,576,640];
+const AC3_SR = [48000, 44100, 32000, 0];
+const EC3_SR2 = [24000, 22050, 16000, 0];
+const ACMOD_CH = [2, 1, 2, 3, 3, 4, 4, 5];
+const ACMOD_DESC = ['Dual mono (L R)', 'Mono (C)', 'Stereo (L R)', 'L C R', 'L R S', 'L C R S', 'L R Ls Rs', 'L C R Ls Rs'];
+
+function parseAc3Header(u8, off){
+  if (u8[off] !== 0x0B || u8[off+1] !== 0x77 || off + 7 > u8.length) return null;
+  const br = new BitReader(u8, off);
+  br.read(16); br.read(16);                 // syncword, crc1
+  const fscod = br.read(2), frmsizecod = br.read(6);
+  const bsid = br.read(5);
+  if (bsid > 9 || fscod === 3 || frmsizecod > 37) return null;   // this is E-AC-3 territory or invalid
+  const idx = frmsizecod >> 1;
+  if (idx >= 19) return null;
+  const bitrate = AC3_BR_TABLE[idx];
+  const sr = AC3_SR[fscod];
+  const bsmod = br.read(3), acmod = br.read(3);
+  let bits = 7;
+  if ((acmod & 1) && acmod !== 1){ br.read(2); bits += 2; }
+  if (acmod & 4){ br.read(2); bits += 2; }
+  let dsurmod = null;
+  if (acmod === 2){ dsurmod = br.read(2); bits += 2; }
+  const lfeon = br.read(1); bits += 1;
+  const frameBytes = Math.floor(bitrate * 1000 * 1536 / (sr * 16)) * 2;
+  return { bsid, fscod, sr, bitrate, acmod, lfeon, frameBytes, dsurmod,
+    channels: ACMOD_CH[acmod] + (lfeon ? 1 : 0),
+    channelDesc: ACMOD_DESC[acmod] + (lfeon ? ' + LFE' : '') };
+}
+
+function parseEac3Syncframe(u8, off){
+  if (u8[off] !== 0x0B || u8[off+1] !== 0x77 || off + 8 > u8.length) return null;
+  const br = new BitReader(u8, off);
+  br.read(16);                                    // syncword 0x0B77
+  const strmtyp = br.read(2), substreamid = br.read(3);
+  const frmsiz = br.read(11);
+  const frameBytes = 2 * (frmsiz + 1);
+  if (frameBytes < 8 || frameBytes > 65536) return null;
+  const fscod = br.read(2);
+  let sr, numblkscod;
+  if (fscod === 3){ const fscod2 = br.read(2); sr = EC3_SR2[fscod2]; numblkscod = 3; }
+  else { sr = AC3_SR[fscod]; numblkscod = br.read(2); }
+  const acmod = br.read(3), lfeon = br.read(1);
+  const bsid = br.read(5);
+  if (sr === 0) return null;
+  const samples = [256, 512, 768, 1536][numblkscod];
+  const out = { strmtyp, substreamid, frameBytes, sr, numblkscod, acmod, lfeon, bsid, samples,
+    channels: ACMOD_CH[acmod] + (lfeon ? 1 : 0),
+    channelDesc: ACMOD_DESC[acmod] + (lfeon ? ' + LFE' : ''),
+    joc: false, jocComplexity: null, addbsi: null };
+  try {
+    const dialnorm = br.read(5);
+    const compre = br.read(1); if (compre) br.read(8);
+    if (acmod === 0){ br.read(5); const c2 = br.read(1); if (c2) br.read(8); }
+    if (strmtyp === 1){ const cm = br.read(1); if (cm) br.read(16); }
+    const mixmdate = br.read(1);
+    if (mixmdate){
+      if (acmod > 2) br.read(2);
+      if ((acmod & 1) && acmod > 2){ br.read(3); br.read(3); }
+      if (acmod > 4){ br.read(3); br.read(3); }
+      if (lfeon){ const lfec = br.read(1); if (lfec) br.read(5); }
+      if (strmtyp === 0){
+        const pgmscle = br.read(1); if (pgmscle) br.read(6);
+        if (acmod === 0){ const p12 = br.read(1); if (p12) br.read(6); }
+        const extpg = br.read(1); if (extpg) br.read(6);
+        const mixdef = br.read(2);
+        if (mixdef === 1){ br.read(1); br.read(1); br.read(3); }
+        else if (mixdef === 2){ br.read(12); }
+        else if (mixdef === 3){
+          const mixdeflen = br.read(5);
+          const m2 = br.read(1);
+          if (m2){ br.read(6); br.read(1); br.read(3);
+            for (const f of [1,1,1,1,1,1,1]){ if (br.read(1)) br.read(4); } }
+          const m3 = br.read(1);
+          if (m3){ br.read(5); const asd = br.read(1);
+            if (asd){ br.read(5); br.read(2); const a1 = br.read(1); if (a1){ br.read(5); br.read(2); } } }
+          br.read(8 * (mixdeflen + 2));
+        }
+        if (acmod < 2){ const pe = br.read(1); if (pe){ br.read(6); br.read(8); } }
+        if (acmod === 0){ const p2e = br.read(1); if (p2e){ br.read(6); br.read(8); } }
+        const frmcfg = br.read(1);
+        if (frmcfg){
+          if (numblkscod === 0) br.read(5);
+          else { const nb = numblkscod === 3 ? 6 : numblkscod + 1;
+            for (let b = 0; b < nb; b++){ const e = br.read(1); if (e) br.read(5); } }
+        }
+      }
+    }
+    const infomdate = br.read(1);
+    let bsmod = null, dsurmod = null;
+    if (infomdate){
+      bsmod = br.read(3); br.read(1); br.read(1);
+      if (acmod === 2){ dsurmod = br.read(2); br.read(2); }
+      if (acmod >= 6) br.read(2);
+      const audprodie = br.read(1); if (audprodie){ br.read(5); br.read(2); br.read(1); }
+      if (acmod === 0){ const ap2 = br.read(1); if (ap2){ br.read(5); br.read(2); br.read(1); } }
+      if (fscod < 3) br.read(1);
+    }
+    if (strmtyp === 0 && numblkscod !== 3) br.read(1);   // convsync
+    if (strmtyp === 2){
+      let blkid = 1;
+      if (numblkscod !== 3) blkid = br.read(1);
+      if (blkid) br.read(6);
+    }
+    const addbsie = br.read(1);
+    if (addbsie){
+      const addbsil = br.read(6);
+      const n = addbsil + 1;
+      const addbsi = [];
+      for (let i = 0; i < n; i++) addbsi.push(br.read(8));
+      out.addbsi = addbsi;
+      if (n >= 2 && (addbsi[0] & 0x01)){                 // E-AC-3 JOC flag
+        out.joc = true;
+        out.jocComplexity = addbsi[1];
+      }
+    }
+  } catch (e){ /* deep BSI optional */ }
+  return out;
+}
+
+function parseTrueHDMajorSync(u8, off){
+  if (u8[off] !== 0xF8 || u8[off+1] !== 0x72 || u8[off+2] !== 0x6F || off + 18 > u8.length) return null;
+  const type = u8[off + 3];
+  if ((type & 0xFE) !== 0xBA) return null;               // 0xBA TrueHD, 0xBB MLP
+  const rateCode = u8[off + 4] >> 4;
+  const sr = rateCode === 0xF ? null : ((rateCode & 8) ? 44100 : 48000) << (rateCode & 7);
+  const varRate = !!(u8[off + 14] & 0x80);
+  const peakRate = ((u8[off + 14] & 0x7f) << 8) | u8[off + 15];
+  const substreams = u8[off + 16] >> 4;
+  const atmos = !!(u8[off + 17] & 0x80);                 // 16-channel presentation => Dolby Atmos
+  return { sr, varRate, peakRate, substreams, atmos, isMLP: type === 0xBB };
+}
+
+/* ------------- raw Dolby files (.ac3 / .eac3 / .ec3 / .thd) ---------- */
+async function parseRawDolby(ch, info){
+  const HEAD = await ch.read(0, Math.min(ch.size, 4 * 1024 * 1024));
+  // decide AC-3 vs E-AC-3 via bsid at the right bit position
+  let isEac3 = false;
+  {
+    const b5 = HEAD[5];
+    const bsid = b5 >> 3;
+    if (HEAD[0] === 0x0B && HEAD[1] === 0x77){
+      const fscod = HEAD[4] >> 6;
+      if (fscod === 3) isEac3 = true;                    // fscod 3 only exists in E-AC-3
+      else if (bsid >= 11 && bsid <= 16) isEac3 = true;
+      else if (bsid <= 9) isEac3 = false;
+      else isEac3 = true;
+    }
+  }
+  if (isEac3){
+    info.container = 'E-AC-3 (raw)'; info.codec = 'ec3'; info.codecClass = 'lossy';
+    info.codecName = 'Dolby Digital Plus (E-AC-3)';
+    let off = 0, frames = 0, indFrames = 0, joc = false, complexity = null, sr = null, samples = 1536,
+        acmod = null, lfeon = null, frameSamples = null, guard = 0, addbsiSeen = false;
+    while (off + 8 <= HEAD.length && guard++ < 200000){
+      const f = parseEac3Syncframe(HEAD, off);
+      if (!f) break;
+      if (frames === 0 || f.sr !== null){ sr = sr || f.sr; acmod = f.acmod; lfeon = f.lfeon; }
+      if (f.strmtyp === 0 && f.substreamid === 0){
+        indFrames++;
+        if (f.samples) frameSamples = f.samples;
+      }
+      if (f.joc && !joc){ joc = true; complexity = f.jocComplexity; }
+      if (f.addbsi && !addbsiSeen){ addbsiSeen = true;
+        addTech(info, 'addbsi', f.addbsi.map(b => b.toString(16).padStart(2, '0')).join(' ')); }
+      frames++;
+      off += f.frameBytes;
+      if (joc && frames > 40) break;                      // enough for stats
+    }
+    if (!sr) throw new Error('E-AC-3 parse failed');
+    const srUse = sr;
+    // whole-file duration needs full scan; extrapolate from scanned region
+    const scannedBytes = off, scannedDur = indFrames * (frameSamples || 1536) / srUse;
+    info.sampleRate = srUse;
+    info.channels = acmod != null ? ACMOD_CH[acmod] + (lfeon ? 1 : 0) : null;
+    info.channelDesc = acmod != null ? ACMOD_DESC[acmod] + (lfeon ? ' + LFE' : '') : null;
+    if (scannedDur > 0){
+      info.durationSec = scannedDur * (ch.size / scannedBytes);
+      info.audioBitrate = info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+    }
+    info.bitrateMode = 'CBR';
+    addTech(info, 'Substream frames scanned', frames.toLocaleString('en-US'));
+    if (joc){
+      info.spatial = { type: 'atmos', confirmed: true, complexity,
+        label: 'Dolby Atmos (E-AC-3 JOC)' };
+      info.codecName = 'Dolby Digital Plus Atmos (E-AC-3 JOC)';
+      addTech(info, 'JOC complexity index', complexity);
+    }
+    addTech(info, 'Samples / substream frame', (frameSamples || 1536));
+    return info;
+  }
+  // AC-3
+  const f0 = parseAc3Header(HEAD, 0);
+  if (!f0) throw new Error('AC-3 sync not found');
+  info.container = 'AC-3 (raw)'; info.codec = 'ac3'; info.codecClass = 'lossy';
+  info.codecName = 'Dolby Digital (AC-3)';
+  let off = 0, frames = 0;
+  while (off + f0.frameBytes <= HEAD.length && frames < 200000){
+    const f = parseAc3Header(HEAD, off);
+    if (!f || f.frameBytes !== f0.frameBytes) break;
+    frames++; off += f.frameBytes;
+  }
+  info.sampleRate = f0.sr; info.channels = f0.channels; info.channelDesc = f0.channelDesc;
+  info.audioBitrate = f0.bitrate; info.nominalBitrate = f0.bitrate; info.bitrateMode = 'CBR';
+  const estFrames = ch.size / f0.frameBytes;
+  info.durationSec = estFrames * 1536 / f0.sr;
+  info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  if (f0.dsurmod === 2) info.notes.push('Dolby Surround encoded stereo (matrixed).');
+  addTech(info, 'Frame size', f0.frameBytes + ' B');
+  return info;
+}
+
+async function parseRawTrueHD(ch, info){
+  const HEAD = await ch.read(0, 4096);
+  const at = new Reader(HEAD).find([0xF8, 0x72, 0x6F]);
+  if (at === -1) throw new Error('TrueHD major sync not found');
+  const ms = parseTrueHDMajorSync(HEAD, at);
+  if (!ms) throw new Error('TrueHD parse failed');
+  info.container = 'TrueHD (raw)'; info.codec = 'truehd';
+  info.codecClass = 'lossless-comp'; info.lossless = true;
+  info.codecName = ms.isMLP ? 'MLP (Meridian Lossless Packing)' : 'Dolby TrueHD';
+  info.sampleRate = ms.sr; info.bitDepth = 24;
+  if (ms.atmos){
+    info.spatial = { type: 'atmos', confirmed: true, label: 'Dolby Atmos (TrueHD)' };
+    info.codecName = 'Dolby TrueHD Atmos';
+  }
+  info.notes.push('Raw TrueHD/MLP stream — exact duration needs a container (MKA/MP4).');
+  addTech(info, 'Peak data rate field', ms.peakRate);
+  addTech(info, 'Substreams', ms.substreams);
+  addTech(info, 'Rate mode', ms.varRate ? 'variable' : 'constant');
+  return info;
+}
+
+/* ======================== Matroska (MKA/MKV) ========================= */
+function ebmlVint(r, keepMarker){
+  const first = r.u8();
+  let len = 1, mask = 0x80;
+  while (len <= 8 && !(first & mask)){ mask >>= 1; len++; }
+  if (len > 8) return null;
+  let val = keepMarker ? first : (first & (mask - 1));
+  for (let i = 1; i < len; i++) val = (val << 8) | r.u8();
+  const unknown = !keepMarker && val === (2 ** (8 * len - len)) - 1;   // all value bits = 1
+  return { val, len, unknown };
+}
+async function parseMka(ch, info){
+  const head = await ch.read(0, Math.min(ch.size, 512 * 1024));
+  const r = new Reader(head);
+  if (!r.left || head[0] !== 0x1A) throw new Error('Not EBML');
+  let timecodeScale = 1000000, durationUnits = null, muxApp = null, writeApp = null;
+  let audioTracks = [], sawVideo = false, clusterAt = -1;
+  const idOf = v => v && v.val;
+  function walkElements(r, end, cb, depth){
+    depth = depth || 0;
+    while (r.left >= 2 && depth < 12){
+      const id = ebmlVint(r, true);
+      if (!id) break;
+      const sz = ebmlVint(r, false);
+      if (!sz) break;
+      if (sz.unknown){ cb(id.val, r.tell(), Infinity); return; }
+      const szVal = Math.min(sz.val, end - r.tell());
+      if (cb(id.val, r.tell(), szVal) === 'stop') return;
+      r.skip(szVal);
+    }
+  }
+  const E = { EBML: 0x1A45DFA3, Segment: 0x18538067, Info: 0x1549A966, TimecodeScale: 0x2AD7B1,
+    Duration: 0x4489, MuxingApp: 0x4D80, WritingApp: 0x5741, Tracks: 0x1654AE6B,
+    TrackEntry: 0xAE, TrackType: 0x83, CodecID: 0x86, CodecPrivate: 0x63A2, Audio: 0xE1,
+    SamplingFrequency: 0xB5, OutputSF: 0x78B5, Channels: 0x9F, BitDepth: 0x6264, Cluster: 0x1F43B675 };
+  // top level
+  let off = 0;
+  const top = new Reader(head);
+  while (top.left >= 2){
+    const id = ebmlVint(top, true); const sz = ebmlVint(top, false);
+    if (!id || !sz) break;
+    const size = sz.val === 0xFFFFFFFFFFFFFF ? top.left : Math.min(sz.val, top.left);
+    const segStart = top.tell(), segEnd = segStart + size;
+    if (id.val === E.Segment){
+      const seg = new Reader(head, segStart, Math.min(segEnd, head.length));
+      while (seg.left >= 2){
+        const sid = ebmlVint(seg, true), ssz = ebmlVint(seg, false);
+        if (!sid || !ssz) break;
+        const ssize = ssz.val >= 0xFFFFFFFFFFFFFF ? seg.left : Math.min(ssz.val, seg.left);
+        const sStart = seg.tell(), sEnd = sStart + ssize;
+        if (sid.val === E.Info){
+          walkElements(new Reader(head, sStart, sEnd), sEnd, (id2, p, sz2) => {
+            if (id2 === E.TimecodeScale){
+              const b = head.slice(p, p + Math.min(sz2, 8));
+              let v = 0; for (const x of b) v = v * 256 + x;
+              if (v > 0) timecodeScale = v;
+            } else if (id2 === E.Duration) durationUnits = sz2 === 4 ? beFloat(head.slice(p, p+4))
+                             : sz2 === 8 ? beFloat64(head.slice(p, p+8)) : null;
+            else if (id2 === E.MuxingApp) muxApp = cleanEbmlString(head.slice(p, p + Math.min(sz2, 200)));
+            else if (id2 === E.WritingApp) writeApp = cleanEbmlString(head.slice(p, p + Math.min(sz2, 200)));
+          }, 0);
+        } else if (sid.val === E.Tracks){
+          walkElements(new Reader(head, sStart, sEnd), sEnd, (id2, p, sz2) => {
+            if (id2 !== E.TrackEntry) return;
+            const tr = new Reader(head, p, p + sz2);
+            const t = { type: 0, codec: null, private: null, sr: null, ch: null, bits: null };
+            walkElements(tr, p + sz2, (id3, p3, sz3) => {
+              if (id3 === E.TrackType) t.type = head[p3];
+              else if (id3 === E.CodecID) t.codec = cleanEbmlString(head.slice(p3, p3 + Math.min(sz3, 64)));
+              else if (id3 === E.CodecPrivate) t.private = head.slice(p3, p3 + Math.min(sz3, 4096));
+              else if (id3 === E.Audio){
+                walkElements(new Reader(head, p3, p3 + sz3), p3 + sz3, (id4, p4, sz4) => {
+                  const rr = new Reader(head, p4, p4 + 8);
+                  if (id4 === E.SamplingFrequency) t.sr = (sz4 === 4 ? beFloat(head.slice(p4, p4+4)) : beFloat(head.slice(p4, p4+8)));
+                  else if (id4 === E.Channels) t.ch = rr.u16be() || 1;
+                  else if (id4 === E.BitDepth) t.bits = rr.u16be() || null;
+                }, 1);
+              }
+            }, 1);
+            if (t.type === 1) sawVideo = true;
+            if (t.type === 2) audioTracks.push(t);
+          }, 0);
+        } else if (sid.val === E.Cluster){ clusterAt = sStart; break; }
+        seg.skip(ssize);
+      }
+    }
+    top.skip(size);
+  }
+  if (!audioTracks.length) throw new Error('No audio track in Matroska');
+  const t = audioTracks[0];
+  info.container = 'Matroska (MKA)';
+  info.hasVideo = sawVideo;
+  info.encoder = writeApp || muxApp || null;
+  const cid = t.codec || '';
+  let ok = true;
+  if (cid.startsWith('A_FLAC')){
+    info.codec = 'flac'; info.codecClass = 'lossless-comp'; info.lossless = true;
+    info.codecName = 'FLAC (in Matroska)';
+    let si = null;
+    if (t.private && t.private.length >= 34){
+      if (t.private[0] === 0x66 && t.private[1] === 0x4C){          // 'fLaC' + block header + STREAMINFO
+        if (t.private.length >= 42) si = t.private.subarray(8, 42);
+      } else if (t.private.length === 34) si = t.private;
+    }
+    if (si){
+      const sr = (si[10] << 12) | (si[11] << 4) | (si[12] >> 4);
+      const chn = ((si[12] >> 1) & 7) + 1;
+      const bps = (((si[12] & 1) << 4) | (si[13] >> 4)) + 1;
+      info.sampleRate = sr; info.channels = chn; info.bitDepth = bps;
+    }
+  } else if (cid.startsWith('A_ALAC')){
+    info.codec = 'alac'; info.codecClass = 'lossless-comp'; info.lossless = true;
+    info.codecName = 'ALAC (in Matroska)';
+    const p = t.private || new Uint8Array(0);
+    const al = parseAlacCookie(p.length === 36 ? p : (p[0] === 0x61 && p[1] === 0x6C && p[2] === 0x61 && p[3] === 0x63 ? p.subarray(8) : p));
+    if (al){ info.bitDepth = al.bitDepth; info.channels = al.channels; info.sampleRate = al.sampleRate; }
+  } else if (cid.startsWith('A_AAC')){
+    info.codec = 'aac'; info.codecClass = 'lossy';
+    info.codecName = cid.includes('/MAIN') ? 'AAC Main (MKA)' : cid.includes('/SBR') ? 'HE-AAC (MKA)' : 'AAC-LC (MKA)';
+    if (t.private && t.private.length >= 2){
+      const asc = parseASC(new BitReader(t.private));
+      if (asc){ info.sampleRate = asc.outRate; info.channels = asc.channels;
+        if (asc.label) info.codecName = asc.label + ' (MKA)'; }
+    }
+  } else if (cid === 'A_AC3' || cid === 'A_EAC3' || cid === 'A_TRUEHD' || cid === 'A_MLP'){
+    info.codec = cid === 'A_AC3' ? 'ac3' : cid === 'A_EAC3' ? 'ec3' : 'truehd';
+    info.codecClass = cid === 'A_AC3' || cid === 'A_EAC3' ? 'lossy' : 'lossless-comp';
+    info.lossless = cid === 'A_TRUEHD' || cid === 'A_MLP';
+    info.codecName = cid === 'A_AC3' ? 'Dolby Digital (AC-3)' : cid === 'A_EAC3' ? 'Dolby Digital Plus (E-AC-3)' : 'Dolby TrueHD';
+    // sniff first cluster for bitstream details
+    if (clusterAt > 0){
+      const cl = await ch.read(clusterAt, Math.min(64 * 1024, ch.size - clusterAt));
+      if (cid === 'A_EAC3'){
+        for (let i = 0; i < cl.length - 8; i++){
+          if (cl[i] === 0x0B && cl[i+1] === 0x77){
+            const f = parseEac3Syncframe(cl, i);
+            if (f){ info.sampleRate = f.sr; info.channels = f.channels; info.channelDesc = f.channelDesc;
+              if (f.joc){ info.spatial = { type: 'atmos', confirmed: true, complexity: f.jocComplexity,
+                label: 'Dolby Atmos (E-AC-3 JOC)' };
+                info.codecName = 'Dolby Digital Plus Atmos (E-AC-3 JOC)';
+                addTech(info, 'JOC complexity index', f.jocComplexity); }
+              break; }
+          }
+        }
+      } else if (cid === 'A_TRUEHD' || cid === 'A_MLP'){
+        const at2 = new Reader(cl).find([0xF8, 0x72, 0x6F]);
+        if (at2 !== -1){
+          const ms = parseTrueHDMajorSync(cl, at2);
+          if (ms){ info.sampleRate = ms.sr || info.sampleRate; info.bitDepth = info.bitDepth || 24;
+            if (ms.atmos){ info.spatial = { type: 'atmos', confirmed: true, label: 'Dolby Atmos (TrueHD)' };
+              info.codecName = 'Dolby TrueHD Atmos'; } }
+        }
+      } else { // AC-3
+        const f = parseAc3Header(cl, 0) || parseAc3Header(cl, findSync(cl, 0));
+        if (f){ info.sampleRate = f.sr; info.channels = f.channels; info.channelDesc = f.channelDesc;
+          info.audioBitrate = f.bitrate; info.nominalBitrate = f.bitrate; }
+      }
+    }
+  } else if (cid === 'A_OPUS'){
+    info.codec = 'opus'; info.codecClass = 'lossy'; info.codecName = 'Opus (in Matroska)';
+    info.sampleRate = 48000;
+    if (t.private && t.private.length >= 11 && t.private[0] === 0x4F){
+      info.channels = t.private[9];
+      addTech(info, 'Opus pre-skip', (t.private[10] << 8 | t.private[11]) + ' samples');
+    }
+    info.notes.push('Opus always decodes at 48 kHz; quality per kbps is higher than MP3/AAC.');
+  } else if (cid === 'A_VORBIS'){
+    info.codec = 'vorbis'; info.codecClass = 'lossy'; info.codecName = 'Vorbis (in Matroska)';
+    const p = t.private || new Uint8Array(0);
+    const at2 = new Reader(p).find([0x01, 0x76, 0x6F, 0x72]);
+    if (at2 !== -1 && p.length >= at2 + 16){
+      info.channels = p[at2 + 7];
+      info.sampleRate = p[at2 + 8] | p[at2 + 9] << 8 | p[at2 + 10] << 16 | p[at2 + 11] << 24;
+    }
+  } else if (cid.startsWith('A_PCM')){
+    info.codec = 'pcm'; info.codecClass = 'lossless-pcm'; info.lossless = true;
+    info.codecName = (cid.includes('FLOAT') ? 'PCM float' : 'PCM') + ' (in Matroska)';
+    info.bitDepthFloat = cid.includes('FLOAT');
+  } else if (cid === 'A_DTS'){
+    info.codec = 'dts'; info.codecClass = 'lossy'; info.codecName = 'DTS (Coherent Acoustics)';
+    info.notes.push('DTS profile (core vs DTS-HD MA / DTS:X) cannot be confirmed from the container alone.');
+  } else if (cid === 'A_WAVPACK4'){ info.codec = 'wv'; info.codecClass = 'lossless-comp'; info.lossless = true; info.codecName = 'WavPack';
+  } else if (cid === 'A_TTA1'){ info.codec = 'tta'; info.codecClass = 'lossless-comp'; info.lossless = true; info.codecName = 'True Audio (TTA)';
+  } else if (cid === 'A_APE'){ info.codec = 'ape'; info.codecClass = 'lossless-comp'; info.lossless = true; info.codecName = "Monkey's Audio";
+  } else { info.codecName = cid; ok = false; }
+  if (info.sampleRate == null && t.sr) info.sampleRate = Math.round(t.sr);
+  if (info.channels == null && t.ch) info.channels = t.ch;
+  if (info.bitDepth == null && t.bits && info.codecClass !== 'lossy') info.bitDepth = t.bits;
+  info.channelDesc = info.channelDesc || ({1:'Mono',2:'Stereo',6:'5.1'})[info.channels] || (info.channels ? info.channels + ' channels' : null);
+  if (durationUnits != null && isFinite(durationUnits) && durationUnits > 0){
+    info.durationSec = durationUnits * timecodeScale / 1e9;
+    info.audioBitrate = info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  }
+  addTech(info, 'CodecID', cid);
+  if (muxApp) addTech(info, 'Muxing app', muxApp);
+  if (audioTracks.length > 1) info.notes.push(audioTracks.length + ' audio tracks — analyzing the first.');
+  return info;
+}
+function beFloat(b){
+  const dv = new DataView(b.buffer, b.byteOffset, b.length);
+  try { return dv.getFloat32(0, false); } catch(e){ return NaN; }
+}
+function cleanEbmlString(b){ return decodeText(b, 'utf8').replace(/\0+$/g, '').trim(); }
+function findSync(cl, from){ for (let i = from; i < cl.length - 1; i++) if (cl[i] === 0x0B && cl[i+1] === 0x77) return i; return -1; }
+function beFloat64(b){ const dv = new DataView(b.buffer, b.byteOffset, b.length); try { return dv.getFloat64(0, false); } catch(e){ return NaN; } }
+/* ===================== AAC AudioSpecificConfig ======================= */
+function parseASC(bits){
+  const aot = bits.read(5);
+  let sfi = bits.read(4);
+  let sr = sfi === 15 ? bits.read(24) : AAC_SRT[sfi];
+  const ch = bits.read(4);
+  const out = { aot, coreRate: sr, outRate: sr, channels: ch === 0 ? null : ch,
+    label: ({1:'AAC Main',2:'AAC-LC',3:'AAC SSR',4:'AAC LTP',5:'HE-AAC',6:'Scalable',17:'ER AAC',29:'HE-AAC v2'})[aot] || ('AAC (AOT ' + aot + ')') };
+  if (aot === 5 || aot === 29){ out.outRate = sr * 2; if (aot === 29) out.channels = 2; }
+  return out;
+}
+/* MPEG descriptor walk (esds) → OTI, bitrates, DecoderSpecificInfo */
+function parseEsds(u8){
+  const r = new Reader(u8);
+  r.skip(4);                                     // version + flags
+  const out = {};
+  function walk(r, end, depth){
+    while (r.tell() < end - 1 && depth < 6){
+      const tag = r.u8();
+      let len = 0, b;
+      do { b = r.u8(); len = (len << 7) | (b & 0x7f); } while ((b & 0x80) && r.tell() < end);
+      const start = r.tell(), stop = Math.min(start + len, end);
+      if (tag === 0x03){                         // ES_Descriptor
+        const esId = r.u16be(); const flags = r.u8();
+        let p = r.tell();
+        if (flags & 0x80) p += 2;
+        if (flags & 0x40){ const urlLen = r.b[p] || 0; p += 1 + urlLen; }
+        if (flags & 0x20) p += 2;
+        if (p >= start && p < stop){ r.seek(p); walk(r, stop, depth + 1); }
+      } else if (tag === 0x04){                  // DecoderConfigDescriptor
+        out.oti = r.u8(); r.u8();
+        r.skip(3);
+        out.maxBitrate = r.u32be();
+        out.avgBitrate = r.u32be();
+        if (r.tell() < stop) walk(r, stop, depth + 1);
+      } else if (tag === 0x05){                  // DecoderSpecificInfo
+        out.dsi = r.bytes(stop - start);
+      }
+      r.seek(stop);
+    }
+  }
+  walk(r, u8.length, 0);
+  return out;
+}
+/* ---- dec3 (EC3SpecificBox) — incl. trailing JOC extension ---- */
+function parseDec3(u8){
+  const br = new BitReader(u8);
+  const dataRate = br.read(13);
+  const numIndSub = br.read(3);
+  const subs = [];
+  try {
+    for (let i = 0; i <= numIndSub; i++){
+      const s = { fscod: br.read(2), bsid: br.read(5), reserved: br.read(1), asvc: br.read(1),
+        bsmod: br.read(3), acmod: br.read(3), lfeon: br.read(1), reserved2: br.read(3) };
+      const numDepSub = br.read(4);
+      if (numDepSub > 0) s.chanLoc = br.read(9); else br.read(1);
+      s.numDepSub = numDepSub;
+      subs.push(s);
+    }
+    // optional trailing extension: reserved(7) flag_ec3_extension_type_joc(1) [joc_complexity(8)]
+    if (Math.ceil(br.pos() / 8) < u8.length){
+      br.read(7);
+      const jocFlag = br.read(1);
+      let jocComplexity = null;
+      if (jocFlag) jocComplexity = br.read(8);
+      return { dataRate, subs, joc: jocFlag === 1, jocComplexity };
+    }
+  } catch (e){}
+  return { dataRate, subs, joc: false, jocComplexity: null };
+}
+function parseDac3(u8){
+  const br = new BitReader(u8);
+  const fscod = br.read(2), bsid = br.read(5), bsmod = br.read(3), acmod = br.read(3);
+  const lfeon = br.read(1), bitRateCode = br.read(5);
+  return { fscod, bsid, bsmod, acmod, lfeon, bitrate: AC3_BR_TABLE[bitRateCode] || null,
+    channels: ACMOD_CH[acmod] + (lfeon ? 1 : 0), sr: AC3_SR[fscod] };
+}
+function parseDac4(u8){
+  // light parse: bitstream_version(3) fs_index(1) frame_rate_index(4) n_substreams(4)
+  const br = new BitReader(u8);
+  const version = br.read(3), fsIndex = br.read(1), frameRateIdx = br.read(4), nSub = br.read(4);
+  return { version, sr: fsIndex ? 44100 : 48000, nSub };
+}
+
+/* ALAC magic cookie: ffmpeg writes a 4-byte zero prefix before the ALACSpecific
+   fields, and numChannels may be 1 byte (ffmpeg) or 2 (Apple spec). Parse defensively
+   and validate against sane anchors: bitDepth 8-32, sr 8k-768k, channels 1-8. */
+function parseAlacCookie(p){
+  if (!p || p.length < 24) return null;
+  for (const base of [0, 4]){
+    if (base + 24 > p.length) continue;
+    const q = p.subarray(base);
+    const frameLength = (q[0]<<24) | (q[1]<<16) | (q[2]<<8) | q[3];
+    const bitDepth = q[5];
+    let channels = (q[9]<<8) | q[10];
+    if (channels > 64) channels = q[9];              // 1-byte channel count (ffmpeg)
+    const avgBr = (q[16]<<24) | (q[17]<<16) | (q[18]<<8) | q[19];
+    const sr = (q[20]<<24) | (q[21]<<16) | (q[22]<<8) | q[23];
+    if (bitDepth >= 8 && bitDepth <= 32 && channels >= 1 && channels <= 8 &&
+        sr >= 8000 && sr <= 768000 && frameLength >= 64 && frameLength <= 65536){
+      return { frameLength, bitDepth, channels, avgBr, sampleRate: sr };
+    }
+  }
+  return null;
+}
+
+/* ============================ MP4 / M4A ============================== */
+const MP4_CONTAINERS = new Set(['moov','trak','mdia','minf','stbl','udta','sinf','schi','mvex','traf']);
+async function mp4Boxes(ch, start, end, cb, depth){
+  let off = start;
+  depth = depth || 0;
+  let guard = 0;
+  while (off + 8 <= end && guard++ < 4096){
+    const hdr = await ch.read(off, 16);
+    const r = new Reader(hdr);
+    let size = r.u32be();
+    const type = r.ascii(4);
+    let hdrLen = 8;
+    if (size === 1){ size = Number(new Reader(hdr, 8).u64be()); hdrLen = 16; }
+    else if (size === 0) size = end - off;
+    if (size < hdrLen || off + size > end + 8) return;
+    const res = await cb(type, off + hdrLen, size - hdrLen, depth, off);
+    if (res === 'stop') return;
+    off += size;
+  }
+}
+async function parseMp4(ch, info){
+  let brands = [], mvhdDur = null, sidxDur = null, fragmented = false, mdatStart = -1, mdatLen = 0;
+  const tracks = [], moovAllTracks = [];
+  let curTrack = null, inStsd = false, ilstTags = null;
+  info.container = 'MP4 / M4A';
+  const finishTrack = () => { if (curTrack){ moovAllTracks.push(curTrack); if (curTrack.isAudio) tracks.push(curTrack); } curTrack = null; };
+
+  await mp4Boxes(ch, 0, ch.size, async (type, payload, size, depth) => {
+    if (type === 'ftyp'){
+      const b = await ch.read(payload, Math.min(size, 64));
+      const r = new Reader(b);
+      const major = r.ascii(4); r.skip(4);
+      brands = [major];
+      while (r.left >= 4){ const c = r.ascii(4); if (/^[a-z0-9]{4}$/i.test(c)) brands.push(c); }
+    } else if (type === 'sidx'){
+      const b = await ch.read(payload, Math.min(size, 8192));
+      const r = new Reader(b);
+      const version = r.u8(); r.skip(3);
+      r.skip(4); const timescale = r.u32be(); r.skip(version === 0 ? 8 : 16);
+      r.skip(2); const count = r.u16be();
+      let dur = 0;
+      for (let i = 0; i < count && r.left >= 8; i++){
+        const ref = r.u32be(); r.skip(4); const sd = r.u32be(); r.skip(8);
+        if (!(ref & 0x80000000)) dur += sd;
+      }
+      if (timescale) sidxDur = dur / timescale;
+    } else if (type === 'moof') fragmented = true;
+    else if (type === 'mdat'){ if (mdatStart === -1){ mdatStart = payload; mdatLen = size; } }
+    else if (type === 'moov'){
+      await mp4Boxes(ch, payload, payload + size, async (t2, p2, s2, d2) => {
+        if (t2 === 'mvhd'){
+          const b = await ch.read(p2, Math.min(s2, 32));
+          const r = new Reader(b);
+          const v = r.u8(); r.skip(3);
+          r.skip(v === 1 ? 16 : 8);
+          const ts = r.u32be();
+          const dur = v === 1 ? Number(r.u64be()) : r.u32be();
+          if (ts) mvhdDur = dur / ts;
+        } else if (t2 === 'trak'){
+          finishTrack();
+          curTrack = { isAudio: false, hasVideo: false, duration: null, timescale: null,
+            stsd: null, stszSum: null, stszCount: 0, mdhdDur: null };
+          // walk trak children: tkhd / edts / mdia
+          await mp4Boxes(ch, p2, p2 + s2, async (tt, pt, stt) => {
+            if (tt === 'tkhd' && curTrack){
+              try {
+                const b = await ch.read(pt, Math.min(stt, 96));
+                const r = new Reader(b);
+                const v = r.u8(); r.skip(3); r.skip(v === 1 ? 16 : 8);
+                r.skip(4); r.skip(4); r.skip(v === 1 ? 8 : 4);
+                r.skip(2); r.skip(2); r.skip(8); r.skip(2); r.skip(2); r.skip(36);
+                const w = r.u32be() >> 16, h = r.u32be() >> 16;
+                if (w > 0 && h > 0) curTrack.hasVideo = true;
+              } catch (e){}
+            } else if (tt === 'mdia'){
+              await mp4Boxes(ch, pt, pt + stt, async (t3, p3, s3) => {
+                if (t3 === 'hdlr'){
+                  const b = await ch.read(p3 + 8, 4);
+                  const ht = new Reader(b).ascii(4);
+                  if (curTrack){ curTrack.isAudio = ht === 'soun'; }
+                } else if (t3 === 'mdhd' && curTrack){
+                  const b = await ch.read(p3, Math.min(s3, 32));
+                  const r = new Reader(b);
+                  const v = r.u8(); r.skip(3);
+                  r.skip(v === 1 ? 16 : 8);
+                  const ts = r.u32be();
+                  const dur = v === 1 ? Number(r.u64be()) : r.u32be();
+                  curTrack.timescale = ts; curTrack.mdhdDur = ts ? dur / ts : null;
+                } else if (t3 === 'minf'){
+                  await mp4Boxes(ch, p3, p3 + s3, async (t4, p4, s4) => {
+                    if (t4 === 'stbl'){
+                      await mp4Boxes(ch, p4, p4 + s4, async (t5, p5, s5) => {
+                        if (t5 === 'stsd' && curTrack && curTrack.isAudio){
+                          const b = await ch.read(p5, Math.min(s5, 4 + 8));
+                          const r = new Reader(b);
+                          r.skip(4); const n = r.u32be();
+                          if (n >= 1){
+                            // first entry header
+                            const eh = await ch.read(r.tell() + p5, 8);
+                            const er = new Reader(eh);
+                            const esize = er.u32be(), etype = er.ascii(4);
+                            curTrack.stsd = { type: etype, off: r.tell() + p5, size: esize };
+                            await parseStsdEntry(ch, curTrack, etype, r.tell() + p5, esize, info);
+                          }
+                        } else if (t5 === 'stsz' && curTrack && curTrack.isAudio){
+                          const b = await ch.read(p5, Math.min(s5, 20));
+                          const r = new Reader(b);
+                          r.skip(4);
+                          const sampleSize = r.u32be(), count = r.u32be();
+                          if (sampleSize !== 0){ curTrack.stszSum = sampleSize * count; }
+                          else if (count > 0 && count < 3e6){
+                            // stream through entries in 1 MB windows
+                            let sum = 0, off2 = p5 + 12, left = Math.min(count * 4, s5 - 12);
+                            while (left > 0){
+                              const w = await ch.read(off2, Math.min(left, 1 << 20));
+                              if (!w.length) break;
+                              const dv = new DataView(w.buffer, w.byteOffset, w.byteLength);
+                              for (let i = 0; i + 4 <= w.length; i += 4) sum += dv.getUint32(i, false);
+                              off2 += w.length; left -= w.length;
+                            }
+                            curTrack.stszSum = sum;
+                          }
+                          curTrack.stszCount = count;
+                        }
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          });
+        } else if (t2 === 'udta'){
+          await mp4Boxes(ch, p2, p2 + s2, async (t3, p3, s3) => {
+            if (t3 === 'meta'){
+              // FullBox: skip 4 bytes of version/flags
+              await mp4Boxes(ch, p3 + 4, p3 + s3, async (t4, p4, s4) => {
+                if (t4 === 'ilst') await parseIlst(ch, p4, p4 + s4, info);
+              });
+            }
+          });
+        }
+      }, depth + 1);
+      finishTrack();
+    }
+  });
+  if (!tracks.length) throw new Error('No audio track found in MP4');
+  const t = tracks[0];
+  info.hasVideo = moovAllTracks.some(x => x.hasVideo || !x.isAudio);
+  if (brands.length){
+    info.container = 'MP4 (' + brands[0] + ')';
+    addTech(info, 'Brands', brands.slice(0, 6).join(' '));
+    if (brands.includes('M4A ')) info.container = 'M4A (MPEG-4 Audio)';
+    if (brands.includes('M4B ')) { info.container = 'M4B (audiobook)'; }
+    if (brands.includes('mp42') || brands.includes('isom')) info.container += ' · ISO base media';
+    if (brands.includes('dash')) info.container = 'DASH MP4';
+  }
+  info.durationSec = t.mdhdDur || mvhdDur || sidxDur || null;
+  if (fragmented) addTech(info, 'Structure', 'fragmented MP4 (moof)');
+  if (info.durationSec && t.stszSum && t.stszCount > 1){
+    info.audioBitrate = t.stszSum * 8 / info.durationSec / 1000;
+    info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+  } else if (info.durationSec){
+    info.overallBitrate = ch.size * 8 / info.durationSec / 1000;
+    info.audioBitrate = info.audioBitrate || info.overallBitrate;
+  }
+  addTech(info, 'Audio samples', t.stszCount.toLocaleString('en-US'));
+  // mdat sniff for bitstream-level details (Atmos etc.)
+  if (mdatStart > 0 && !info.spatial){
+    const md = await ch.read(mdatStart, Math.min(mdatLen, 8192));
+    if (info.codec === 'ec3'){
+      for (let i = 0; i < md.length - 8; i++){
+        if (md[i] === 0x0B && md[i+1] === 0x77){
+          const f = parseEac3Syncframe(md, i);
+          if (f){
+            info.sampleRate = f.sr || info.sampleRate;
+            if (!info.channelDesc){ info.channels = f.channels; info.channelDesc = f.channelDesc; }
+            if (f.joc){
+              info.spatial = { type: 'atmos', confirmed: true, complexity: f.jocComplexity, label: 'Dolby Atmos (E-AC-3 JOC)' };
+              info.codecName = 'Dolby Digital Plus Atmos (E-AC-3 JOC)';
+              addTech(info, 'JOC complexity index', f.jocComplexity);
+            }
+            break;
+          }
+        }
+      }
+    } else if (info.codec === 'truehd'){
+      const at = new Reader(md).find([0xF8, 0x72, 0x6F]);
+      if (at !== -1){
+        const ms = parseTrueHDMajorSync(md, at);
+        if (ms && ms.atmos){
+          info.spatial = { type: 'atmos', confirmed: true, label: 'Dolby Atmos (TrueHD)' };
+          info.codecName = 'Dolby TrueHD Atmos';
+        }
+      }
+    }
+  }
+  if (t.esdsInfo && t.esdsInfo.avgBitrate && !t.stszSum){
+    info.audioBitrate = t.esdsInfo.avgBitrate / 1000;
+  }
+  return info;
+}
+async function parseStsdEntry(ch, track, type, entryOff, entrySize, info){
+  const BODY = 36;                                     // standard AudioSampleEntry body
+  if (['mp4a','alac','ec-3','ac-3','ac-4','fLaC','flac','Opus','opus','mlpa','samr','sawb','.mp3','mp3 ','lpcm','sowt','twos','in24','in32','fl32','fl64','ulaw','alaw','mha1','mhm1','wma ','dra1'].includes(type)){
+    const b = await ch.read(entryOff + 8, Math.min(entrySize - 8, 128));
+    const r = new Reader(b);
+    r.skip(6); r.skip(2);                              // reserved, data ref index
+    const version = r.u16be(); r.skip(2);              // revision
+    r.skip(4);                                          // vendor
+    const chCount = r.u16be(), sampleSize = r.u16be();
+    r.skip(2); r.skip(2);
+    const sr1632 = r.u32be();
+    const entrySr = sr1632 === 0 ? null : Math.round(sr1632 / 65536);
+    let childAt = entryOff + 8 + 28;
+    if (version === 1) childAt += 16;
+    else if (version === 2) childAt += 36;
+    const children = [];
+    if (type === 'mp4a'){
+      // find esds among child boxes
+      let off = childAt, end = entryOff + entrySize, g = 0;
+      while (off + 8 <= end && g++ < 8){
+        const h = await ch.read(off, 8);
+        const hr = new Reader(h);
+        const sz = hr.u32be(); const ty = hr.ascii(4);
+        if (sz < 8) break;
+        if (ty === 'esds'){
+          const payload = await ch.read(off + 8, Math.min(sz - 8, 4096));
+          const es = parseEsds(payload);
+          track.esdsInfo = es;
+          info.codec = 'aac'; info.codecClass = 'lossy';
+          let label = 'AAC';
+          if (es.oti === 0x6B || es.oti === 0x69){ info.codec = 'mp3'; label = 'MP3 (in MP4)'; info.codecClass = 'lossy'; }
+          else if (es.oti === 0xAB){ info.codec = 'alac'; label = 'ALAC'; info.codecClass = 'lossless-comp'; info.lossless = true; }
+          else if (es.dsi && es.dsi.length >= 2){
+            const asc = parseASC(new BitReader(es.dsi));
+            label = asc.label;
+            if (asc.outRate) info.sampleRate = asc.outRate;
+            if (asc.channels) info.channels = asc.channels;
+            info.channelDesc = ({1:'Mono',2:'Stereo',6:'5.1',7:'7.1'})[asc.channels] || (asc.channels ? asc.channels + 'ch' : null);
+            addTech(info, 'AAC profile', 'AOT ' + asc.aot + ' · ' + label);
+          }
+          info.codecName = label + ' (MPEG-4)';
+          if (es.avgBitrate) addTech(info, 'esds avg bitrate', Math.round(es.avgBitrate / 1000) + ' kbps');
+          if (es.maxBitrate) addTech(info, 'esds max bitrate', Math.round(es.maxBitrate / 1000) + ' kbps');
+        } else if (ty === 'sinf'){
+          info.drm = true;
+          const sPay = await ch.read(off + 8, Math.min(sz - 8, 256));
+          const sr2 = new Reader(sPay);
+          let frma = null, scheme = null;
+          let o2 = 0;
+          while (o2 + 8 <= sPay.length){
+            const sz2 = sr2.u32be(), ty2 = sr2.ascii(4);
+            if (ty2 === 'frma') frma = sr2.ascii(4);
+            else if (ty2 === 'schm'){ sr2.skip(4); scheme = sr2.ascii(4); }
+            else sr2.skip(Math.max(0, sz2 - 8));
+            o2 += Math.max(8, sz2);
+          }
+          info.notes.push('DRM-protected (FairPlay/encrypted' + (scheme ? ', scheme ' + scheme : '') + '). Stream specs may be limited.');
+        }
+        off += sz;
+      }
+    } else if (type === 'alac'){
+      info.codec = 'alac'; info.codecClass = 'lossless-comp'; info.lossless = true;
+      info.codecName = 'ALAC (Apple Lossless)';
+      let off = childAt, end = entryOff + entrySize, g = 0;
+      while (off + 8 <= end && g++ < 8){
+        const h = await ch.read(off, 8);
+        const hr = new Reader(h);
+        const sz = hr.u32be(); const ty = hr.ascii(4);
+        if (sz < 8) break;
+        if (ty === 'alac'){
+          const p = await ch.read(off + 8, Math.min(sz - 8, 36));
+          const al = parseAlacCookie(p);
+          if (al){
+            info.bitDepth = al.bitDepth; info.channels = al.channels; info.sampleRate = al.sampleRate;
+            if (al.avgBr) addTech(info, 'ALAC avg bitrate', Math.round(al.avgBr / 1000) + ' kbps');
+            addTech(info, 'ALAC frame length', al.frameLength + ' samples');
+          }
+        }
+        off += sz;
+      }
+    } else if (type === 'ec-3'){
+      info.codec = 'ec3'; info.codecClass = 'lossy';
+      info.codecName = 'Dolby Digital Plus (E-AC-3)';
+      let off = childAt, end = entryOff + entrySize, g = 0;
+      while (off + 8 <= end && g++ < 8){
+        const h = await ch.read(off, 8);
+        const hr = new Reader(h);
+        const sz = hr.u32be(); const ty = hr.ascii(4);
+        if (sz < 8) break;
+        if (ty === 'dec3'){
+          const p = await ch.read(off + 8, Math.min(sz - 8, 64));
+          const d3 = parseDec3(p);
+          const s0 = d3.subs[0];
+          if (s0){
+            info.sampleRate = AC3_SR[s0.fscod] || info.sampleRate;
+            info.channels = ACMOD_CH[s0.acmod] + (s0.lfeon ? 1 : 0);
+            info.channelDesc = ACMOD_DESC[s0.acmod] + (s0.lfeon ? ' + LFE' : '');
+          }
+          addTech(info, 'DD+ substreams', d3.subs.length + ' independent' +
+            (d3.subs.some(s => s.numDepSub) ? ' + dependent' : ''));
+          addTech(info, 'dec3 data_rate', d3.dataRate * 1000 + ' bps');
+          if (d3.joc){
+            info.spatial = { type: 'atmos', confirmed: true, complexity: d3.jocComplexity, label: 'Dolby Atmos (E-AC-3 JOC)' };
+            info.codecName = 'Dolby Digital Plus Atmos (E-AC-3 JOC)';
+            addTech(info, 'JOC complexity index', d3.jocComplexity);
+          }
+        }
+        off += sz;
+      }
+    } else if (type === 'ac-3'){
+      info.codec = 'ac3'; info.codecClass = 'lossy';
+      info.codecName = 'Dolby Digital (AC-3)';
+      let off = childAt, end = entryOff + entrySize, g = 0;
+      while (off + 8 <= end && g++ < 8){
+        const h = await ch.read(off, 8);
+        const hr = new Reader(h);
+        const sz = hr.u32be(); const ty = hr.ascii(4);
+        if (sz < 8) break;
+        if (ty === 'dac3'){
+          const p = await ch.read(off + 8, Math.min(sz - 8, 8));
+          const d = parseDac3(p);
+          info.sampleRate = d.sr; info.channels = d.channels;
+          info.channelDesc = ACMOD_DESC[d.acmod] + (d.lfeon ? ' + LFE' : '');
+          if (d.bitrate) info.nominalBitrate = d.bitrate;
+        }
+        off += sz;
+      }
+    } else if (type === 'ac-4'){
+      info.codec = 'ac4'; info.codecClass = 'lossy';
+      info.codecName = 'Dolby AC-4';
+      let off = childAt, end = entryOff + entrySize, g = 0;
+      while (off + 8 <= end && g++ < 8){
+        const h = await ch.read(off, 8);
+        const hr = new Reader(h);
+        const sz = hr.u32be(); const ty = hr.ascii(4);
+        if (sz < 8) break;
+        if (ty === 'dac4'){
+          const p = await ch.read(off + 8, Math.min(sz - 8, 8));
+          const d = parseDac4(p);
+          info.sampleRate = d.sr;
+          addTech(info, 'AC-4 substreams', d.nSub);
+        }
+        off += sz;
+      }
+      info.spatial = { type: 'ac4', confirmed: false, label: 'Dolby AC-4 (immersive-capable)' };
+      info.notes.push('AC-4 commonly carries immersive/spatial audio (used by some streaming services).');
+    } else if (type === 'fLaC' || type === 'flac'){
+      info.codec = 'flac'; info.codecClass = 'lossless-comp'; info.lossless = true;
+      info.codecName = 'FLAC (in MP4)';
+      let off = childAt, end = entryOff + entrySize, g = 0;
+      while (off + 8 <= end && g++ < 8){
+        const h = await ch.read(off, 8);
+        const hr = new Reader(h);
+        const sz = hr.u32be(); const ty = hr.ascii(4);
+        if (sz < 8) break;
+        if (ty === 'dfla'){
+          const p = await ch.read(off + 12, 34);        // FullBox hdr + STREAMINFO
+          const si = p.length >= 34 ? p : null;
+          if (si){
+            const sr = (si[10] << 12) | (si[11] << 4) | (si[12] >> 4);
+            const chn = ((si[12] >> 1) & 7) + 1;
+            const bps = (((si[12] & 1) << 4) | (si[13] >> 4)) + 1;
+            info.sampleRate = sr; info.channels = chn; info.bitDepth = bps;
+          }
+        }
+        off += sz;
+      }
+    } else if (type === 'Opus' || type === 'opus'){
+      info.codec = 'opus'; info.codecClass = 'lossy';
+      info.codecName = 'Opus (in MP4)';
+      info.sampleRate = 48000;
+      let off = childAt, end = entryOff + entrySize, g = 0;
+      while (off + 8 <= end && g++ < 8){
+        const h = await ch.read(off, 8);
+        const hr = new Reader(h);
+        const sz = hr.u32be(); const ty = hr.ascii(4);
+        if (sz < 8) break;
+        if (ty === 'dOps'){
+          const p = await ch.read(off + 8, Math.min(sz - 8, 16));
+          if (p.length >= 11){
+            info.channels = p[1];
+            addTech(info, 'Opus pre-skip', (p[2] << 8 | p[3]) + ' samples');
+            const inSr = p[4] | p[5] << 8 | p[6] << 16 | p[7] << 24;
+            if (inSr && inSr !== 48000) addTech(info, 'Original sample rate', fmtHz(inSr));
+          }
+        }
+        off += sz;
+      }
+    } else if (type === 'mlpa'){
+      info.codec = 'truehd'; info.codecClass = 'lossless-comp'; info.lossless = true;
+      info.codecName = 'Dolby TrueHD';
+      info.bitDepth = info.bitDepth || 24;
+    } else if (type === 'mha1' || type === 'mhm1'){
+      info.codec = 'mpegh'; info.codecClass = 'lossy';
+      info.codecName = 'MPEG-H 3D Audio';
+      info.spatial = { type: 'mpegh', confirmed: true, label: 'MPEG-H 3D Audio (immersive)' };
+    } else if (type === 'samr' || type === 'sawb'){
+      info.codec = 'amr'; info.codecClass = 'lossy';
+      info.codecName = 'AMR (speech codec)';
+    } else if (['lpcm','sowt','twos','in24','in32','fl32','fl64','ulaw','alaw'].includes(type)){
+      info.codec = 'pcm'; info.codecClass = 'lossless-pcm'; info.lossless = true;
+      info.bitDepthFloat = ['fl32','fl64'].includes(type);
+      info.codecName = (info.bitDepthFloat ? 'PCM float' : type === 'ulaw' ? 'µ-law' : type === 'alaw' ? 'A-law' : 'PCM') + ' (QuickTime)';
+      info.bitDepth = info.bitDepthFloat ? (type === 'fl64' ? 64 : 32) : sampleSize || null;
+    } else {
+      info.codecName = type + ' (MP4)';
+    }
+    if (info.sampleRate == null && entrySr) info.sampleRate = entrySr;
+    if (info.channels == null && chCount) info.channels = chCount;
+    if (info.channelDesc == null && info.channels) info.channelDesc = ({1:'Mono',2:'Stereo',6:'5.1'})[info.channels] || info.channels + 'ch';
+  }
+}
+const ILST_MAP = { '\u00A9nam':'title', '\u00A9ART':'artist', 'aART':'albumArtist', '\u00A9alb':'album',
+  '\u00A9day':'year', '\u00A9too':'encoder', '\u00A9gen':'genre', '\u00A9wrt':'composer',
+  '\u00A9cmt':'comment', 'desc':'comment', 'purd':'comment' };
+async function parseIlst(ch, start, end, info){
+  let off = start, guard = 0;
+  while (off + 8 <= end && guard++ < 100){
+    const h = await ch.read(off, 8);
+    const r = new Reader(h);
+    const sz = r.u32be(); const nm = r.ascii(4);
+    if (sz < 8) break;
+    const dh = await ch.read(off + 8, 16);
+    const dr = new Reader(dh);
+    const dsz = dr.u32be(); const dty = dr.ascii(4);
+    if (dty === 'data' && dsz >= 16){
+      const cls = dr.u32be();                            // 4-byte type indicator (1=UTF-8, 13=JPEG, 14=PNG, 21/22=int)
+      const payLen = Math.min(dsz - 16, sz - 16);
+      const key = ILST_MAP[nm];
+      if (key === 'encoder' || key){
+        if (cls === 1){
+          const txt = decodeText(await ch.read(off + 24, Math.min(payLen, 4096)), 'utf8').replace(/\0+$/g, '').trim();
+          if (txt) info.tags[key] = txt;
+        } else if ((cls === 13 || cls === 14) && !info.art){
+          info.art = await ch.read(off + 24, payLen);
+          info.artMime = cls === 14 ? 'image/png' : 'image/jpeg';
+        } else if (cls === 21 || cls === 22){
+          const iv = await ch.read(off + 24, Math.min(payLen, 8));
+          if (nm === 'trkn' && iv.length >= 4) info.tags.track = ((iv[2] << 8) | iv[3]) || null;
+        }
+      }
+    }
+    off += sz;
+  }
+}
+/* ========================= quality scoring =========================== */
+const TIER = {
+  low:      { label: 'LOW QUALITY',        color: '#f87171' },
+  below:    { label: 'POOR QUALITY',       color: '#fb923c' },
+  standard: { label: 'OK QUALITY',         color: '#fbbf24' },
+  good:     { label: 'FAIR QUALITY',       color: '#a3e635' },
+  high:     { label: 'GOOD QUALITY',       color: '#4ade80' },
+  veryhigh: { label: 'HIGH QUALITY',       color: '#2dd4bf' },
+  ultra:    { label: 'VERY HIGH QUALITY',  color: '#60a5fa' },
+  max:      { label: 'ULTRA QUALITY',      color: '#a78bfa' },
+  ref:      { label: 'AUDIOPHILE QUALITY',  color: '#f0abfc' },
+};
+/* ladder: <96 low · 96 poor · 128 OK · 192 fair · 256 good · 320 high · 512 very high · 768 ultra */
+const LOSSY_BANDS = [ [768,'max'], [512,'ultra'], [320,'veryhigh'], [256,'high'], [192,'good'], [128,'standard'], [96,'below'], [0,'low'] ];
+const CODEC_EFF = { mp3:1, aac:1.15, vorbis:1.1, opus:1.4, ac3:0.9, ec3:1.0, ac4:1.2, amr:0.35, dts:0.95, mpegh:1.2 };
+function lossyTier(kbps){
+  if (kbps == null) return { key: 'below', ...TIER.below, label: 'UNRATED — NO BITRATE' };
+  for (const [min, key] of LOSSY_BANDS) if (kbps >= min) return { key, ...TIER[key] };
+  return { key: 'low', ...TIER.low };
+}
+function losslessTier(info){
+  const sr = info.sampleRate || 0, bd = info.bitDepth, br = info.audioBitrate || 0;
+  /* v1.2 audiophile bar — lowered per user spec: 24-bit+ lossless at
+     ≥1000 kbps effective bitrate is audiophile (used to need 24/176.4). */
+  const aph = (bd >= 24 || info.bitDepthFloat) && br >= 1000;
+  if (info.codecClass === 'dsd'){
+    const m = (info.sampleRate || 0) / 44100;
+    if (m >= 512) return { key: 'ref', ...TIER.ref, label: 'AUDIOPHILE · DSD512+' };
+    if (m >= 256) return { key: 'ref', ...TIER.ref, label: 'AUDIOPHILE · DSD256' };
+    if (m >= 128) return { key: 'ultra', ...TIER.ultra, label: 'ULTRA HI-RES · DSD128' };
+    return { key: 'veryhigh', ...TIER.veryhigh, label: 'HI-RES · DSD64' };
+  }
+  if (info.spatial && info.lossless) return { key: 'ref', ...TIER.ref, label: 'AUDIOPHILE · LOSSLESS SPATIAL' };
+  if (bd === 32 || info.bitDepthFloat) return sr >= 352800
+    ? { key: 'ref', ...TIER.ref, label: 'AUDIOPHILE · 32-BIT / ' + fmtHz(sr) }
+    : { key: 'ref', ...TIER.ref, label: 'AUDIOPHILE · 32-BIT' + (sr >= 88200 ? ' ' + fmtHz(sr) : '') };
+  if (bd === 24){
+    if (aph || sr >= 176400) return { key: 'ref', ...TIER.ref, label: 'AUDIOPHILE · 24-BIT' + (sr >= 88200 ? ' ' + fmtHz(sr) : '') };
+    return { key: 'ultra', ...TIER.ultra, label: 'ULTRA HI-RES · 24-BIT' + (sr >= 88200 ? ' ' + fmtHz(sr) : '') };
+  }
+  if (bd === 20) return { key: 'ultra', ...TIER.ultra, label: 'HI-RES LOSSLESS · 20-BIT' };
+  if (bd === 16) return (sr === 44100 || sr === 48000)
+    ? { key: 'veryhigh', ...TIER.veryhigh, label: 'CD QUALITY · LOSSLESS 16/44.1' }
+    : { key: 'ultra', ...TIER.ultra, label: 'LOSSLESS PCM · 16-BIT ' + fmtHz(sr) };
+  if (bd && bd <= 8) return { key: 'low', ...TIER.low, label: 'LOW RESOLUTION PCM' };
+  return { key: 'veryhigh', ...TIER.veryhigh, label: 'LOSSLESS' };
+}
+function computeTier(info){
+  let t = info.codecClass === 'lossy' ? lossyTier(info.audioBitrate) : losslessTier(info);
+  if (info.spatial && info.codecClass === 'lossy')
+    t = { ...t, label: t.label + ' · ' + (info.spatial.label.match(/Atmos|AC-4|MPEG-H/) || ['SPATIAL'])[0].toUpperCase() };
+  return t;
+}
+const BR_CURVE = [[0,0],[32,8],[64,20],[96,32],[112,38],[128,45],[160,52],[192,58],[224,62],[256,66],[280,69],[320,74],[384,77],[448,79],[512,81],[640,83],[768,85],[1024,87],[1536,89],[1e9,90]];
+function interpCurve(x){
+  for (let i = 1; i < BR_CURVE.length; i++){
+    if (x <= BR_CURVE[i][0]){
+      const [x0, y0] = BR_CURVE[i-1], [x1, y1] = BR_CURVE[i];
+      return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+    }
+  }
+  return 90;
+}
+function spectralAdj(info){
+  const s = info.spectrum;
+  if (!s || !s.ok || !s.cutoffHz) return 0;
+  const c = s.cutoffHz;               // v1.2: cutoff = brick-wall ceiling freq
+  if (c >= 18500) return 0;
+  if (c >= 16000) return -5;
+  if (c >= 13000) return -11;
+  return -16;
+}
+function computeScore(info){
+  let score, notes = [];
+  if (info.codecClass === 'lossy'){
+    const eff = (info.audioBitrate || 0) * (CODEC_EFF[info.codec] || 1);
+    score = interpCurve(eff);
+    if (info.spatial) score += 3;
+    score += spectralAdj(info);
+    score = clamp(Math.round(score * 10) / 10, 1, 92);
+    if ((CODEC_EFF[info.codec] || 1) !== 1 && info.audioBitrate)
+      notes.push(info.codec === 'opus' ? 'Opus is very efficient — ' + Math.round(info.audioBitrate) + ' kbps Opus ≈ ' + Math.round(eff) + ' kbps MP3 quality.'
+                                        : 'Codec efficiency factored in (' + Math.round(info.audioBitrate) + ' → ≈' + Math.round(eff) + ' kbps MP3-equivalent).');
+  } else if (info.codecClass === 'dsd'){
+    const m = (info.sampleRate || 0) / 44100;
+    score = m >= 512 ? 98 : m >= 256 ? 96 : m >= 128 ? 93 : 88;
+  } else {
+    score = 82;
+    const bd = info.bitDepth, sr = info.sampleRate || 0;
+    if (bd === 20) score += 2;
+    else if (bd === 24) score += 6;
+    else if (bd === 32 || info.bitDepthFloat) score += 7;
+    if (sr >= 705600) score += 11;
+    else if (sr >= 352800) score += 10;
+    else if (sr >= 176400) score += 8;
+    else if (sr >= 88200) score += 5;
+    if (info.spatial) score += 3;
+    // audiophile bonus (v1.2): 24-bit+ lossless pushing ≥1000 kbps
+    if ((bd >= 24 || info.bitDepthFloat) && (info.audioBitrate || 0) >= 1000) score = Math.max(score + 2, 95);
+    // lossy-transcode penalty — v1.2: fires only on an unambiguous brick-wall
+    // ceiling, so naturally dark or quiet masters are no longer misflagged
+    const s = info.spectrum;
+    if (s && s.ok && s.cutoffHz){
+      if (s.cutoffHz < 16500){
+        score -= 20;
+        notes.push('Hard spectral ceiling at ' + fmtHz(s.cutoffHz) + ' — a genuine lossless rip carries energy to 20+ kHz. This file was almost certainly converted from a low-bitrate lossy source.');
+      } else if (s.cutoffHz < 18500){
+        score -= 12;
+        notes.push('Hard spectral ceiling at ' + fmtHz(s.cutoffHz) + ' — typical of a 160–256 kbps lossy source. This file was likely converted from lossy audio.');
+      }
+    }
+    score = clamp(score, 1, 100);
+  }
+  return { score: Math.round(score * 10) / 10, notes };
+}
+function verdictText(info, tier, score){
+  const br = info.audioBitrate, sp = info.spatial;
+  if (sp && sp.type === 'atmos' && sp.confirmed)
+    return 'Dolby Atmos spatial audio confirmed from the bitstream' + (sp.complexity != null ? ' (JOC complexity ' + sp.complexity + ')' : '') + '. Object-based immersive mix' + (info.lossless ? ' in lossless quality.' : ' — bitrate tier: ' + tier.label.toLowerCase() + '.');
+  if (sp) return sp.label + ' — immersive/spatial audio detected.';
+  if (info.drm) return 'This file is DRM-protected; specs are read from the container, but the audio itself is encrypted.';
+  if (info.codecClass === 'lossy'){
+    const c = info.spectrum && info.spectrum.ok && info.spectrum.cutoffHz;
+    if (br != null && br < 128) return 'Below the 128 kbps OK bar — casual listening only. Noticeable smearing and missing highs on decent gear.';
+    if (br != null && br < 192) return 'OK quality (128 kbps class). Fine for earbuds and casual listening; audible losses on good headphones.';
+    if (br != null && br < 256) return 'Fair quality (192 kbps class) — solid for most listening.';
+    if (br != null && br < 320) return 'Good quality (256 kbps class) — near-transparent for most listeners on most gear.';
+    if (br != null && br < 512) return 'High quality (320 kbps class) — transparent for the vast majority of listeners.';
+    if (br != null && br < 768) return 'Very high bitrate lossy — beyond what most ears can distinguish from the source.';
+    return 'Ultra-tier lossy bitrate — the stream itself is the practical ceiling for this codec.';
+  }
+  if (info.codecClass === 'dsd') return 'Direct Stream Digital (1-bit DSD) — audiophile-grade format, higher rate than CD by design.';
+  const bd = info.bitDepth, sr = info.sampleRate;
+  if (bd === 16 && (sr === 44100 || sr === 48000)) return 'Bit-perfect CD-quality lossless — mathematically identical to the source it was ripped from.';
+  if (bd >= 24 || info.bitDepthFloat){
+    const aph = (info.audioBitrate || 0) >= 1000;
+    return (aph ? 'Audiophile-grade hi-res lossless' : 'Hi-res lossless') + ' (' + (info.bitDepthFloat ? '32-bit float' : bd + '-bit') + ' ' + fmtHz(sr) + ') — preserves more dynamic range and bandwidth than CD.';
+  }
+  return 'Lossless audio — no quality was thrown away by encoding.';
+}
+
+/* ======================== spectral analysis ========================== */
+const SPECTRAL_OK = new Set(['mp3','aac','flac','alac','pcm','vorbis','opus']);
+let _sharedCtx = null;   // browsers cap the number of AudioContexts — reuse one
+function getAudioCtx(){
+  if (!_sharedCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try { _sharedCtx = new AC(); } catch (e){ return null; }
+  }
+  return _sharedCtx;
+}
+async function spectralAnalysis(file, info){
+  if (!SPECTRAL_OK.has(info.codec) || info.drm){ 
+    return { ok: false, reason: info.drm ? 'Unavailable — stream is DRM-encrypted.' : 'Unavailable for this codec in the browser (works for MP3/AAC/FLAC/ALAC/WAV/OGG).' };
+  }
+  if (file.size > 160 * 1024 * 1024){
+    return { ok: false, reason: 'File too large for in-browser decoding (' + fmtBytes(file.size) + ' > 160 MB).' };
+  }
+  try {
+    const ab = await file.arrayBuffer();
+    const ctx = getAudioCtx();
+    if (!ctx) return { ok: false, reason: 'Web Audio API unavailable.' };
+    const buf = await Promise.race([
+      new Promise((res, rej) => {
+        let settled = false;
+        const ok = b => { if (!settled){ settled = true; res(b); } };
+        const bad = e => { if (!settled){ settled = true; rej(e || new Error('decode failed')); } };
+        try {
+          const p = ctx.decodeAudioData(ab, ok, bad);
+          if (p && p.then) p.then(ok, bad);
+        } catch (e){ bad(e); }
+      }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('decode timed out')), 45000))
+    ]);
+    if (!buf || !buf.length) return { ok: false, reason: 'Decoder returned no audio.' };
+    const sr = buf.sampleRate, nyq = sr / 2;
+    const chans = [];
+    for (let c = 0; c < Math.min(buf.numberOfChannels, 2); c++) chans.push(buf.getChannelData(c));
+    // peak & clipping scan
+    let peak = 0, clipped = 0;
+    for (const ch of chans){
+      for (let i = 0; i < ch.length; i++){
+        const a = Math.abs(ch[i]);
+        if (a > peak) peak = a;
+        if (a >= 0.9995) clipped++;
+      }
+    }
+    // FFT setup
+    const N = 8192, HALF = N / 2;
+    const winCount = Math.min(28, Math.max(6, Math.floor(buf.length / N)));
+    const total = buf.length;
+    const regionStart = Math.max(0, Math.floor((total - Math.min(total, sr * 60)) / 2));
+    const regionLen = Math.min(total - regionStart, sr * 60);
+    const step = Math.max(N, Math.floor(regionLen / winCount));
+    const acc = new Float64Array(HALF);
+    const hann = new Float64Array(N);
+    for (let i = 0; i < N; i++) hann[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+    const re = new Float64Array(N), im = new Float64Array(N);
+    let used = 0;
+    for (let w = 0; w < winCount; w++){
+      const start = regionStart + w * step;
+      if (start + N > total) break;
+      for (let i = 0; i < N; i++){
+        let s = 0;
+        for (const ch of chans) s += ch[start + i];
+        re[i] = (s / chans.length) * hann[i];
+        im[i] = 0;
+      }
+      fft(re, im);
+      for (let k = 0; k < HALF; k++) acc[k] += re[k]*re[k] + im[k]*im[k];
+      used++;
+    }
+    if (!used) return { ok: false, reason: 'Audio too short for analysis.' };
+    const binHz = sr / N;
+    const db = new Float64Array(HALF);
+    for (let k = 0; k < HALF; k++) db[k] = 10 * Math.log10(acc[k] / used + 1e-20);
+    // smooth (~1/3 octave-ish moving average)
+    const sm = new Float64Array(HALF);
+    for (let k = 0; k < HALF; k++){
+      const w = Math.max(2, Math.floor(k * 0.03));
+      let s = 0, n = 0;
+      for (let j = Math.max(1, k - w); j <= Math.min(HALF - 1, k + w); j++){ s += db[j]; n++; }
+      sm[k] = s / n;
+    }
+    // reference level: max over 500 Hz..5 kHz (context for stats)
+    let ref = -200;
+    for (let k = Math.floor(500 / binHz); k < Math.min(HALF, Math.floor(5000 / binHz)); k++) if (sm[k] > ref) ref = sm[k];
+    // v1.2 cutoff = hard "brick-wall" ceiling. A lossy transcode keeps the
+    // encoder's lowpass: energy holds, then collapses 20–60 dB within a few
+    // hundred Hz and never recovers. Genuine masters roll off gradually, so
+    // we scan for a cliff ~1 kHz wide with no recovery instead of comparing
+    // against a fixed depth below the mid-band (the old test misflagged
+    // quiet/dark masters as fake lossless).
+    const cstep = Math.max(2, Math.round(900 / binHz));
+    let cliffK = 0;
+    const kMin = Math.max(cstep + 2, Math.floor(7000 / binHz));
+    const kMax = Math.min(HALF - 3, Math.round(nyq * 0.97 / binHz));
+    for (let k = kMin; k <= kMax; k++){
+      const lo  = sm[k - cstep];
+      const hi  = sm[Math.min(HALF - 2, k + cstep)];
+      const far = sm[Math.min(HALF - 2, k + 3 * cstep)];
+      if (lo - hi >= 18 && lo - far >= 18){ cliffK = k; break; }
+    }
+    let cutoff = cliffK ? cliffK * binHz + (cstep * binHz) / 2 : 0;   // + half-step: the wall sits between the two probe bins
+    // also 99.5 % energy rolloff
+    let energy = 0;
+    for (let k = 1; k < HALF; k++) energy += acc[k];
+    let cum = 0, roll995 = nyq;
+    for (let k = 1; k < HALF; k++){ cum += acc[k]; if (cum / energy >= 0.995){ roll995 = k * binHz; break; } }
+    // display columns (log frequency 20 Hz..nyq)
+    const COLS = 190;
+    const cols = new Float32Array(COLS);
+    const fMin = 20, fMax = nyq;
+    for (let i = 0; i < COLS; i++){
+      const f0 = fMin * Math.pow(fMax / fMin, i / COLS);
+      const f1 = fMin * Math.pow(fMax / fMin, (i + 1) / COLS);
+      let m = -120;
+      for (let k = Math.max(1, Math.floor(f0 / binHz)); k <= Math.min(HALF - 1, Math.ceil(f1 / binHz)); k++) if (sm[k] > m) m = sm[k];
+      cols[i] = clamp(m, -96, 6);
+    }
+    const out = {
+      ok: true, sr, nyq, cutoffHz: cliffK ? Math.round(Math.min(cutoff, nyq)) : null, rolloffHz: Math.round(roll995),
+      peakDb: peak > 0 ? Math.round(20 * Math.log10(peak) * 10) / 10 : null,
+      clipped, cols, ref,
+      verdictText: spectrumVerdict(info, cutoff)
+    };
+    return out;
+  } catch (e){
+    return { ok: false, reason: 'Browser could not decode this audio (' + (e && e.message ? e.message : 'decode error') + ').' };
+  }
+}
+function spectrumVerdict(info, cutoff){
+  if (!cutoff){
+    // no brick-wall ceiling anywhere — treble fades out naturally
+    return info.codecClass !== 'lossy'
+      ? { level: 'good', text: 'No hard spectral ceiling — treble rolls off gradually, consistent with a genuine lossless source.' }
+      : { level: 'good', text: 'No hard bandwidth ceiling detected in this encode.' };
+  }
+  const c = Math.round(cutoff / 100) / 10;
+  if (info.codecClass !== 'lossy'){
+    if (cutoff >= 20000) return { level: 'info', text: 'Spectrum shelves at ~' + c + ' kHz — right where a 320 kbps transcode would cap, though some masters are band-limited here too.' };
+    if (cutoff >= 18500) return { level: 'info', text: 'Spectrum shelves at ~' + c + ' kHz — could be a 256–320 kbps transcode, though some genuine masters roll off naturally up here.' };
+    if (cutoff >= 16500) return { level: 'warn', text: 'Hard ceiling at ' + c + ' kHz — typical of a ~160–256 kbps lossy source. This file is likely a lossy transcode dressed up as lossless.' };
+    return { level: 'bad', text: 'Hard ceiling at ' + c + ' kHz — clear fingerprint of a low-bitrate lossy source. This "lossless" file is almost certainly fake.' };
+  }
+  if (cutoff >= 18500) return { level: 'good', text: 'Extended bandwidth (' + c + ' kHz) — consistent with a high-bitrate encode.' };
+  if (cutoff >= 16000) return { level: 'warn', text: 'Bandwidth limited to ' + c + ' kHz — typical of ~160–192 kbps lossy encodes.' };
+  if (cutoff >= 13000) return { level: 'warn', text: 'Bandwidth limited to ' + c + ' kHz — typical of ~128–160 kbps encodes; highs are audibly softened.' };
+  return { level: 'bad', text: 'Severely limited bandwidth (' + c + ' kHz) — the classic low-bitrate "muffle" signature.' };
+}
+function fft(re, im){
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++){
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j){ let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  for (let len = 2; len <= n; len <<= 1){
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len){
+      let cwr = 1, cwi = 0;
+      for (let k = 0; k < len / 2; k++){
+        const ur = re[i+k], ui = im[i+k];
+        const xr = re[i+k+len/2] * cwr - im[i+k+len/2] * cwi;
+        const xi = re[i+k+len/2] * cwi + im[i+k+len/2] * cwr;
+        re[i+k] = ur + xr; im[i+k] = ui + xi;
+        re[i+k+len/2] = ur - xr; im[i+k+len/2] = ui - xi;
+        const nwr = cwr * wr - cwi * wi; cwi = cwr * wi + cwi * wr; cwr = nwr;
+      }
+    }
+  }
+}
+/* ============================ app flow =============================== */
+const state = { files: [], active: -1 };
+
+async function dispatchParse(ch, info){
+  const kind = await sniff(ch);
+  const tryOrder = {
+    'flac':    [parseFlac],
+    'mp3-ish': [parseMp3, parseFlac, parseAdts],
+    'adts':    [parseMp3, parseAdts],
+    'ogg':     [parseOgg],
+    'wav':     [parseWav],
+    'aiff':    [parseAiff],
+    'dsf':     [parseDsf],
+    'ac3-raw': [parseRawDolby],
+    'thd-raw': [parseRawTrueHD],
+    'mka':     [parseMka],
+    'mp4':     [parseMp4, parseMka],
+  };
+  const chain = tryOrder[kind];
+  if (!chain){
+    throw new Error('Unrecognized format (magic bytes don\u2019t match any supported audio container). Extension: .' + (info.ext || '?'));
+  }
+  let lastErr = null;
+  for (const fn of chain){
+    try {
+      const cp = { ...info };       // fresh info per attempt
+      Object.assign(info, await fn(ch, cp));
+      return;
+    } catch (e){ lastErr = e; }
+  }
+  throw lastErr || new Error('Parse failed');
+}
+
+async function analyzeFile(file, silent){
+  const ch = new Chunker(file);
+  const info = newInfo(file);
+  await dispatchParse(ch, info);
+  // filename spatial hint (soft signal only)
+  if (!info.spatial && /atmos|spatial|binaural|360/i.test(info.fileName))
+    info.notes.push('Filename mentions Atmos/spatial, but no spatial metadata was found in the stream itself.');
+  if (info.bitrateMode == null && info.codecClass === 'lossy' && info.audioBitrate) info.bitrateMode = 'CBR';
+  if (info.durationSec && info.overallBitrate == null)
+    info.overallBitrate = file.size * 8 / info.durationSec / 1000;
+  info.encoder = info.encoder || info.tags.encoder || null;
+  return info;
+}
+
+function finalizeInfo(info){
+  info.tier = computeTier(info);
+  const sc = computeScore(info);
+  info.score = sc.score; info.scoreNotes = sc.notes;
+  info.verdict = verdictText(info, info.tier, sc.score);
+  return info;
+}
+
+/* ============================== rendering ============================= */
+const SVG = {
+  music: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.6"/><circle cx="17.5" cy="16" r="2.6"/></svg>',
+  gauge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21a9 9 0 119-9" stroke-linecap="round"/></svg>',
+  bits:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="1.6" fill="currentColor"/><circle cx="15" cy="12" r="1.6" fill="currentColor"/><circle cx="7" cy="17" r="1.6" fill="currentColor"/></svg>',
+  wave:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h2l2-6 3 12 3-9 2 4 2-2h4"/></svg>',
+  chan:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  chip:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>',
+  tool:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a5 5 0 00-7 7L3 18v3h3l4.7-4.7a5 5 0 007-7z"/></svg>',
+  info:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>',
+  warn:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 17H2z"/><path d="M12 10v4M12 17.5h.01"/></svg>',
+  bad:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
+  good:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>',
+  atmos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-24 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(24 12 12)"/></svg>',
+  drms:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>',
+  video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>',
+};
+const ZONES = [
+  { max: 40,  color: '#f87171', name: 'Low' },
+  { max: 55,  color: '#fb923c', name: 'Poor' },
+  { max: 65,  color: '#fbbf24', name: 'OK' },
+  { max: 73,  color: '#a3e635', name: 'Fair' },
+  { max: 81,  color: '#4ade80', name: 'Good' },
+  { max: 89,  color: '#2dd4bf', name: 'High' },
+  { max: 96,  color: '#60a5fa', name: 'Very high' },
+  { max: 101, color: '#f0abfc', name: 'Audiophile' },
+];
+function renderResult(info){
+  const res = $('#result');
+  res.hidden = false;
+  $('#errorCard').hidden = true;
+  document.documentElement.style.setProperty('--tier', info.tier.color);
+  document.documentElement.style.setProperty('--tier-soft', hexA(info.tier.color, .14));
+  $('#rgA').setAttribute('stop-color', info.tier.color);
+  $('#rgB').setAttribute('stop-color', shiftHue(info.tier.color, 26));
+  // file header
+  $('#fcName').textContent = info.fileName;
+  $('#fcMeta').textContent = fmtBytes(info.fileSize) + (info.durationSec ? ' · ' + fmtDur(info.durationSec) : '');
+  if (info.art && !info.artURL) info.artURL = bytesToBlobURL(info.art, info.artMime);
+  $('#fcArt').className = 'fc-art' + (info.artURL ? '' : ' note');
+  $('#fcArt').innerHTML = info.artURL
+    ? '<img src="' + info.artURL + '" alt="album art">'
+    : SVG.music;
+  const badges = [];
+  if (info.spatial) badges.push('<span class="badge spatial">' + SVG.atmos + (info.spatial.confirmed ? 'DOLBY ATMOS' : 'SPATIAL?') + '</span>');
+  if (info.lossless) badges.push('<span class="badge lossless">' + SVG.good + 'LOSSLESS</span>');
+  if (info.drm) badges.push('<span class="badge drm">' + SVG.drms + 'DRM</span>');
+  if (info.hasVideo) badges.push('<span class="badge video">' + SVG.video + 'VIDEO</span>');
+  badges.push('<span class="badge codec">' + esc(tileCodec(info)) + '</span>');
+  $('#fcBadges').innerHTML = badges.join('');
+  // score
+  const C = 2 * Math.PI * 63;
+  $('#ringVal').style.strokeDasharray = C.toFixed(1);
+  requestAnimationFrame(() => { $('#ringVal').style.strokeDashoffset = (C * (1 - info.score / 100)).toFixed(1); });
+  $('#ringScore').textContent = Math.round(info.score);
+  $('#tierLabel').textContent = info.tier.label;
+  $('#tierLabel').style.color = info.tier.color;
+  $('#verdictTxt').textContent = info.verdict;
+  renderLadder(info);
+  renderStats(info);
+  renderNotes(info);
+  renderTags(info);
+  renderTech(info);
+  renderSpectrumSection(info);
+}
+function shortCodec(info){
+  const n = info.codecName || info.codec || 'audio';
+  return n.length > 34 ? n.slice(0, 32) + '…' : n;
+}
+/* ultra-short names for the stat tile & badges (fit without ugly wrapping) */
+function tileCodec(info){
+  const sp = info.spatial;
+  switch (info.codec){
+    case 'mp3': return 'MP3';
+    case 'flac': return 'FLAC';
+    case 'alac': return 'ALAC';
+    case 'aac': return (info.codecName || 'AAC').includes('HE') ? 'HE-AAC' : 'AAC';
+    case 'vorbis': return 'Vorbis';
+    case 'opus': return 'Opus';
+    case 'pcm': return info.bitDepthFloat ? 'PCM float' : 'PCM';
+    case 'dsd': return (info.codecName || '').match(/DSD\d+/) ? (info.codecName.match(/DSD\d+/)[0]) : 'DSD';
+    case 'ac3': return 'Dolby Digital';
+    case 'ec3': return 'DD+' + (sp && sp.type === 'atmos' ? ' Atmos' : '');
+    case 'truehd': return 'TrueHD' + (sp && sp.type === 'atmos' ? ' Atmos' : '');
+    case 'ac4': return 'Dolby AC-4';
+    case 'mpegh': return 'MPEG-H';
+    case 'amr': return 'AMR';
+    case 'dts': return 'DTS';
+    default: { const n = info.codecName || info.codec || 'Audio'; return n.length > 16 ? n.slice(0, 15) + '…' : n; }
+  }
+}
+function renderLadder(info){
+  let segs = '';
+  let prev = 0;
+  for (const z of ZONES){
+    segs += '<div class="ladder-seg" style="flex:' + (z.max - prev) + ';background:linear-gradient(180deg,' + hexA(z.color, .75) + ',' + hexA(z.color, .38) + ')"></div>';
+    prev = z.max;
+  }
+  const here = anchorLine(info);
+  $('#ladder').innerHTML =
+    '<div class="ladder-bar">' + segs + '<div class="ladder-mark" id="ladderMark" style="left:0%"></div></div>' +
+    '<div class="ladder-labels"><span>LOW</span><span>POOR</span><span>OK</span><span>FAIR</span><span>GOOD</span><span>HIGH</span><span>V.HIGH</span><span>AUDIOPHILE</span></div>' +
+    '<div class="ladder-here">' + here + '</div>';
+  requestAnimationFrame(() => { const m = $('#ladderMark'); if (m) m.style.left = clamp(info.score, 1, 99.5) + '%'; });
+}
+function anchorLine(info){
+  const base = 'Scores <b>' + Math.round(info.score) + '/100</b> — <b>' + esc(info.tier.label.toLowerCase()) + '</b>.';
+  if (info.codecClass === 'lossy' && info.audioBitrate != null){
+    const b = info.audioBitrate;
+    let rel;
+    if (b < 128) rel = 'below the 128 kbps OK bar';
+    else if (b < 192) rel = 'in the 128-class OK band';
+    else if (b < 256) rel = 'between OK (128) and good (256)';
+    else if (b < 320) rel = 'at/above the 256 kbps good-quality bar';
+    else if (b < 512) rel = 'at/above the 320 kbps high-quality bar';
+    else if (b < 768) rel = 'beyond the 320 bar — very-high territory';
+    else rel = 'at the ultra end of the lossy scale';
+    return base + ' At <b>' + fmtKBps(b) + ' kbps</b> it sits ' + rel + '.';
+  }
+  if (info.codecClass === 'dsd') return base;
+  return base + ' (' + (info.bitDepthFloat ? '32f' : info.bitDepth + '-bit') + ' / ' + fmtHz(info.sampleRate) + ')';
+}
+function statTile(icon, label, value, sub, hero){
+  return '<div class="stat' + (hero ? ' hero' : '') + '"><div class="lb">' + icon + label + '</div>' +
+    '<div class="v">' + value + '</div>' + (sub ? '<div class="s">' + sub + '</div>' : '') + '</div>';
+}
+function renderStats(info){
+  const bd = info.bitDepthFloat ? '32<small>f</small>' : info.codecClass === 'dsd' ? '1<small>bit</small>' : (info.bitDepth != null ? info.bitDepth + '<small>bit</small>' : '—');
+  const bdSub = info.bitDepthFloat ? 'IEEE float' : info.codecClass === 'dsd' ? 'DSD sigma-delta'
+    : info.bitDepth != null ? (info.bitDepth >= 24 ? 'hi-res' : 'CD-depth') : 'lossy — no fixed depth';
+  const g = [];
+  g.push(statTile(SVG.gauge, 'Bitrate', info.audioBitrate != null ? fmtKBps(info.audioBitrate) + '<small> kbps</small>' : '—',
+    [info.bitrateMode, info.nominalBitrate && Math.abs(info.nominalBitrate - info.audioBitrate || 0) > 3 && info.codecClass === 'lossy' ? 'nominal ' + fmtKBps(info.nominalBitrate) : null].filter(Boolean).join(' · '), true));
+  g.push(statTile(SVG.bits, 'Bit depth', bd, bdSub));
+  g.push(statTile(SVG.wave, 'Sample rate', fmtHz(info.sampleRate),
+    info.sampleRate >= 88200 ? 'hi-res' : info.sampleRate >= 44100 ? 'CD-rate or above' : 'below CD rate'));
+  g.push(statTile(SVG.chan, 'Channels', info.channels != null ? info.channels : '—', info.channelDesc || ''));
+  g.push(statTile(SVG.clock, 'Duration', fmtDur(info.durationSec), fmtBytes(info.fileSize)));
+  g.push(statTile(SVG.chip, 'Format', '<span style="font-size:13px">' + esc(tileCodec(info)) + '</span>', info.container || ''));
+  g.push(statTile(SVG.tool, 'Encoder', info.encoder ? '<span style="font-size:12.5px">' + esc(info.encoder.length > 26 ? info.encoder.slice(0, 25) + '…' : info.encoder) + '</span>' : '—',
+    info.tags.track ? 'track ' + info.tags.track : ''));
+  g.push(statTile(SVG.gauge, 'Overall', info.overallBitrate != null ? fmtKBps(info.overallBitrate) + '<small> kbps</small>' : '—',
+    'file incl. metadata'));
+  $('#statsGrid').innerHTML = g.join('');
+}
+function renderNotes(info){
+  const items = [];
+  const push = (level, text) => items.push({ level, text });
+  for (const n of (info.scoreNotes || [])) push('info', n);
+  if (info.spatial && info.spatial.confirmed)
+    push('good', info.spatial.label + (info.spatial.complexity != null ? ' — JOC complexity ' + info.spatial.complexity + ' (objects decoded by an Atmos renderer).' : ' confirmed from the bitstream.'));
+  for (const n of info.notes || []) push('info', n);
+  const s = info.spectrum;
+  if (s && s.ok && s.verdictText) push(s.verdictText.level, s.verdictText.text);
+  if (s && s.ok && s.clipped > 200) push('warn', 'Sample peak hits full scale ' + s.clipped.toLocaleString('en-US') + ' times — this master is clipped/hot.');
+  if (info.drm) push('bad', 'DRM-encrypted audio — playback restricted to authorized apps/devices.');
+  if (info.bitrateMode === 'VBR') push('info', 'Variable bitrate (VBR) — the number shown is the true average.');
+  if (!items.length){ $('#notesCard').hidden = true; return; }
+  $('#notesCard').hidden = false;
+  const icon = { good: SVG.good, warn: SVG.warn, bad: SVG.bad, info: SVG.info };
+  $('#notesList').innerHTML = items.map(i =>
+    '<li><span class="' + i.level + '">' + icon[i.level] + '</span><span>' + i.text + '</span></li>').join('');
+}
+function renderTags(info){
+  const t = info.tags || {};
+  const rows = [];
+  const add = (k, v, big) => { if (v) rows.push('<div class="k">' + k + '</div><div class="val' + (big ? ' big' : '') + '">' + esc(v) + '</div>'); };
+  add('Title', t.title, true); add('Artist', t.artist, true); add('Album', t.album, true);
+  add('Album artist', t.albumArtist); add('Year', t.year); add('Genre', t.genre);
+  add('Composer', t.composer); add('Track', t.track);
+  add('Encoder', info.encoder); add('Comment', t.comment);
+  add('ReplayGain', t.rgTrack);
+  $('#tagsCard').hidden = !rows.length;
+  $('#tagsBody').innerHTML = rows.length
+    ? '<div class="kv">' + rows.join('') + '</div>'
+    : '<div class="tags-empty">No metadata tags found in this file.</div>';
+}
+function renderTech(info){
+  const rows = (info.tech || []).map(([k, v]) => '<b>' + esc(k) + '</b>: ' + esc(v)).join('<br>');
+  const head =
+    'Detected format: ' + esc(info.codecName || '?') + ' · container ' + esc(info.container || '?') + '<br>' +
+    'Lossless: ' + (info.lossless ? 'yes' : 'no (lossy)') +
+    (info.channels ? ' · channels: ' + info.channels : '') +
+    (info.sampleRate ? ' · ' + fmtHz(info.sampleRate) : '') +
+    (info.bitDepth ? ' · ' + info.bitDepth + '-bit' : '') + '<br>';
+  $('#techBody').innerHTML = head + (rows || '—');
+}
+function renderSpectrumSection(info){
+  const body = $('#specBody');
+  const s = info.spectrum;
+  if (!s){
+    body.innerHTML = '<div class="loading"><div class="spinner"></div>Decoding audio &amp; running FFT…</div>';
+    return;
+  }
+  if (!s.ok){
+    body.innerHTML = '<div class="spec-unavailable">' + SVG.info + '<span>' + esc(s.reason || 'Spectral analysis unavailable for this file.') + '</span></div>';
+    return;
+  }
+  const hasCut = s.cutoffHz != null;
+  const cutCol = hasCut && (s.verdictText.level === 'bad' || s.verdictText.level === 'warn') ? '#fbbf24' : 'var(--tier)';
+  body.innerHTML =
+    '<div class="spec-canvas-wrap"><canvas class="spec" id="specCanvas"></canvas>' +
+    (hasCut ? '<div class="spec-cutoff" id="specCutoff" style="left:100%"><span>' + (s.cutoffHz / 1000).toFixed(1) + ' kHz</span></div>' : '') + '</div>' +
+    '<div class="spec-stats">' +
+      '<div class="spec-stat"><div class="k">Ceiling</div><div class="val" style="color:' + cutCol + '">' + (hasCut ? (s.cutoffHz / 1000).toFixed(1) + ' kHz' : 'none') + '</div></div>' +
+      '<div class="spec-stat"><div class="k">99.5% energy</div><div class="val">' + (s.rolloffHz / 1000).toFixed(1) + ' kHz</div></div>' +
+      '<div class="spec-stat"><div class="k">Peak ' + (s.clipped > 200 ? '· ⚠' : '') + '</div><div class="val">' + (s.peakDb != null ? s.peakDb + ' dBFS' : '—') + '</div></div>' +
+    '</div>' +
+    '<div class="spec-note">' + s.verdictText.text + '</div>' +
+    '<div class="spec-note" style="margin-top:6px">Averaged ' + 'FFT (8192-pt, Hann) across the middle of the track. Hard spectral ceilings reveal lossy transcodes.</div>';
+  requestAnimationFrame(() => drawSpectrum(info));
+}
+function drawSpectrum(info){
+  const cv = document.getElementById('specCanvas');
+  if (!cv || !info.spectrum || !info.spectrum.cols) return;
+  const s = info.spectrum;
+  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+  const W = cv.clientWidth || 320, H = 190;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, hexA(info.tier.color, .95));
+  g.addColorStop(.55, hexA(info.tier.color, .45));
+  g.addColorStop(1, hexA(info.tier.color, .10));
+  ctx.clearRect(0, 0, W, H);
+  const COLS = s.cols.length;
+  const fMin = 20, fMax = s.nyq;
+  const xOf = f => (Math.log(f / fMin) / Math.log(fMax / fMin)) * W;
+  const yOf = db => H - ((db + 96) / 102) * H;
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,.07)';
+  ctx.fillStyle = 'rgba(255,255,255,.28)';
+  ctx.font = '9px ui-monospace, monospace';
+  ctx.lineWidth = 1;
+  for (const f of [100, 1000, 10000]){
+    const x = xOf(f);
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    ctx.fillText(f >= 1000 ? (f / 1000) + 'k' : f, x + 3, H - 5);
+  }
+  for (const db of [-20, -40, -60, -80]){
+    const y = yOf(db);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  // spectrum curve
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (let i = 0; i < COLS; i++){
+    const f = fMin * Math.pow(fMax / fMin, (i + 0.5) / COLS);
+    ctx.lineTo(xOf(f), clamp(yOf(s.cols[i]), 2, H - 1));
+  }
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < COLS; i++){
+    const f = fMin * Math.pow(fMax / fMin, (i + 0.5) / COLS);
+    const y = clamp(yOf(s.cols[i]), 2, H - 1);
+    i === 0 ? ctx.moveTo(xOf(f), y) : ctx.lineTo(xOf(f), y);
+  }
+  ctx.strokeStyle = hexA(info.tier.color, .95);
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  // cutoff marker
+  const cut = document.getElementById('specCutoff');
+  if (cut){
+    const f = clamp(s.cutoffHz, fMin, fMax);
+    const pct = clamp(xOf(f) / W * 100, 2, 97);
+    cut.style.left = pct + '%';
+    cut.classList.toggle('flipped', pct > 88);   // keep the label inside the chart
+  }
+}
+function hexA(hex, a){
+  const m = hex.replace('#', '');
+  const r = parseInt(m.slice(0, 2), 16), g = parseInt(m.slice(2, 4), 16), b = parseInt(m.slice(4, 6), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+function shiftHue(hex, deg){
+  const m = hex.replace('#', '');
+  let r = parseInt(m.slice(0, 2), 16) / 255, g = parseInt(m.slice(2, 4), 16) / 255, b = parseInt(m.slice(4, 6), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  let h = 0, s = 0, l = (mx + mn) / 2;
+  if (mx !== mn){
+    const d = mx - mn;
+    s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h /= 6;
+  }
+  h = (h + deg / 360) % 1;
+  const q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  const f = t => { t = (t + 1) % 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < .5) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
+  const to = x => Math.round(x * 255).toString(16).padStart(2, '0');
+  return '#' + to(f(h + 1 / 3)) + to(f(h)) + to(f(h - 1 / 3));
+}
+
+/* ========================= report / actions =========================== */
+function buildReport(info){
+  const L = [];
+  L.push('SonicCheck — Music Quality Report');
+  L.push('File: ' + info.fileName + ' (' + fmtBytes(info.fileSize) + ')');
+  L.push('Format: ' + (info.codecName || '?') + ' · ' + (info.container || '?'));
+  L.push('Bitrate: ' + (info.audioBitrate != null ? fmtKBps(info.audioBitrate) + ' kbps' : '—') +
+    (info.bitrateMode ? ' (' + info.bitrateMode + ')' : '') +
+    ' · Overall: ' + (info.overallBitrate != null ? fmtKBps(info.overallBitrate) + ' kbps' : '—'));
+  L.push((info.bitDepth ? 'Bit depth: ' + (info.bitDepthFloat ? '32-bit float' : info.bitDepth + '-bit') : 'Bit depth: n/a (lossy)') +
+    ' · Sample rate: ' + fmtHz(info.sampleRate) +
+    ' · Channels: ' + (info.channels != null ? info.channels + (info.channelDesc ? ' (' + info.channelDesc + ')' : '') : '—'));
+  L.push('Duration: ' + fmtDur(info.durationSec));
+  if (info.spatial) L.push('Spatial audio: ' + info.spatial.label + (info.spatial.confirmed ? ' (bitstream-confirmed)' : ' (inferred)'));
+  if (info.spectrum && info.spectrum.ok) L.push('Spectral ceiling: ' +
+    (info.spectrum.cutoffHz != null ? (info.spectrum.cutoffHz / 1000).toFixed(1) + ' kHz' : 'none (no brick-wall cutoff)') +
+    ' · 99.5% energy ≤ ' + (info.spectrum.rolloffHz / 1000).toFixed(1) + ' kHz');
+  if (info.encoder) L.push('Encoder: ' + info.encoder);
+  if (info.tags.title || info.tags.artist) L.push('Track: ' + [info.tags.artist, info.tags.title].filter(Boolean).join(' — '));
+  L.push('Quality: ' + info.tier.label + ' · score ' + Math.round(info.score) + '/100');
+  L.push('Analyzed 100% on-device with SonicCheck');
+  return L.join('\n');
+}
+function showError(title, detail, file){
+  $('#result').hidden = true;
+  const el = $('#errorCard');
+  el.hidden = false;
+  el.innerHTML = '<div class="t">' + SVG.bad + esc(title) + '</div><div class="d">' + esc(detail) + '</div>' +
+    (file ? '<div class="d" style="margin-top:6px;opacity:.7">' + esc(file.name) + ' · ' + fmtBytes(file.size) + '</div>' : '');
+}
+
+/* ============================== chips ================================= */
+function renderChips(){
+  const el = $('#chips');
+  if (state.files.length < 2){ el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = state.files.map((f, i) =>
+    '<div class="chip' + (i === state.active ? ' on' : '') + (f._busy ? ' busy' : '') + '" data-i="' + i + '" role="button" tabindex="0">' +
+    '<span class="g" style="color:' + (f.info && f.info.tier ? f.info.tier.color : '#666') + '">' + (f.info && f.info.score != null ? Math.round(f.info.score) : '…') + '</span>' +
+    '<span class="n">' + esc(f.name.length > 26 ? f.name.slice(0, 24) + '…' : f.name) + '</span></div>').join('');
+  el.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => selectChip(+c.dataset.i)));
+}
+function selectChip(i){
+  if (i === state.active || !state.files[i]) return;
+  state.active = i;
+  renderChips();
+  const entry = state.files[i];
+  if (entry.info) renderResult(entry.info);
+  else runOne(entry);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ============================ orchestration =========================== */
+async function handleFiles(fileList){
+  const files = Array.from(fileList).slice(0, 12);
+  state.files = files.map(f => ({ file: f, name: f.name, info: null }));
+  state.active = 0;
+  renderChips();
+  for (const entry of state.files){ entry._busy = true; }
+  await runOne(state.files[0]);
+  // analyze the rest quietly in the background
+  for (const entry of state.files.slice(1)){
+    runOne(entry).then(() => renderChips());
+  }
+}
+async function runOne(entry){
+  try {
+    const info = await analyzeFile(entry.file);
+    finalizeInfo(info);
+    entry.info = info; entry._busy = false;
+    if (state.files[state.active] === entry) renderResult(info);
+    renderChips();
+    // spectral pass (async, updates in place)
+    if (SPECTRAL_OK.has(info.codec) && !info.drm && info.file.size < 160 * 1024 * 1024){
+      const sp = await spectralAnalysis(entry.file, info);
+      info.spectrum = sp;
+      finalizeInfo(info);
+      if (state.files[state.active] === entry) renderResult(info);
+    } else {
+      info.spectrum = await spectralAnalysis(entry.file, info);   // returns the reason
+      if (state.files[state.active] === entry) renderResult(info);
+    }
+  } catch (e){
+    entry._busy = false;
+    if (state.files[state.active] === entry)
+      showError('Couldn\u2019t analyze this file', (e && e.message) || 'Unknown parsing error', entry.file);
+  }
+}
+
+/* ================================ boot ================================ */
+function boot(){
+  if (boot.done) return; boot.done = true;
+  const input = $('#fileInput'), dz = $('#dropzone');
+  dz.addEventListener('click', () => input.click());
+  dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); input.click(); } });
+  input.addEventListener('change', () => { if (input.files.length) handleFiles(input.files); input.value = ''; });
+  ['dragover', 'dragenter'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+  $('#btnNew').addEventListener('click', () => input.click());
+  $('#btnCopy').addEventListener('click', async () => {
+    const cur = state.files[state.active];
+    if (!cur || !cur.info) return;
+    const txt = buildReport(cur.info);
+    try {
+      await navigator.clipboard.writeText(txt);
+      toast('Report copied to clipboard');
+    } catch (e){
+      const ta = document.createElement('textarea');
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('Report copied'); } catch (e2){ toast('Copy failed'); }
+      ta.remove();
+    }
+  });
+  $('#btnShare').addEventListener('click', async () => {
+    const cur = state.files[state.active];
+    if (!cur || !cur.info) return;
+    const txt = buildReport(cur.info);
+    if (navigator.share){
+      try { await navigator.share({ title: 'SonicCheck report', text: txt }); } catch (e){}
+    } else {
+      try { await navigator.clipboard.writeText(txt); toast('Sharing unavailable — report copied instead'); }
+      catch (e){ toast('Sharing unavailable on this browser'); }
+    }
+  });
+  if (navigator.vibrate) { /* haptics on load ok */ }
+}
+document.addEventListener('DOMContentLoaded', boot);
+if (document.readyState !== 'loading') boot();
+
+/* test hooks (also useful for debugging from console) */
+return {
+  analyzeFile, finalizeInfo, buildReport, version: '1.2',
+  _internals: { parseEac3Syncframe, parseAc3Header, parseTrueHDMajorSync, parseDec3, parseDac3,
+    parseEsds, parseASC, parseID3v2, computeTier, computeScore, lossyTier, spectralAnalysis, sniff,
+    parseMp3, parseFlac, parseWav, parseAdts, parseOgg, parseDsf, parseAiff, parseMp4, parseMka,
+    parseRawDolby, parseRawTrueHD, Chunker, newInfo, mp3FrameHeader },
+  _state: state,
+};
+})();
+window.SC = SC;
 </script>
 </body>
 </html>
