@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Quality Checker v6</title>
+<style>
+  :root{
+    --bg:#0a0c12;--card:#141821;--card2:#1a1f2b;--border:#2a3142;--border2:#364056;
+    --text:#e9ecf1;--muted:#8b95a7;--dim:#5c6678;
+    --good:#22c55e;--ok:#f59e0b;--high:#3b82f6;--audiophile:#a855f7;--warn:#ef4444;
+    --accent:#6366f1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  body{
+    padding:24px 20px 48px;
+    background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(99,102,241,.12),transparent),var(--bg);
+  }
+  .wrap{max-width:620px;margin:0 auto}
+
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--border);border-radius:22px;padding:24px;margin-bottom:16px;
+    box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 20px 40px -20px rgba(0,0,0,.5);
+  }
+
+  .header{display:flex;align-items:center;gap:14px;margin-bottom:4px}
+  .logo{
+    width:44px;height:44px;border-radius:13px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),var(--audiophile));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 20px -6px rgba(99,102,241,.5);
+  }
+  .logo svg{width:24px;height:24px;fill:#fff}
+  h1{font-size:1.35rem;font-weight:700;letter-spacing:-.02em}
+  .subtitle{color:var(--muted);font-size:.85rem;margin-top:2px}
+
+  .dropzone{
+    margin-top:18px;border-radius:16px;
+    padding:36px 20px;text-align:center;cursor:pointer;
+    background:rgba(15,19,28,.5);transition:all .2s ease;position:relative;
+    outline:none;
+  }
+  .dropzone:hover,.dropzone.drag{background:rgba(99,102,241,.06)}
+  .dropzone .dz-text{font-size:.95rem;font-weight:600}
+  .dropzone .dz-sub{font-size:.8rem;color:var(--dim);margin-top:6px}
+  
+  #fileInput{display:none}
+
+  .results{display:none;animation:fadeUp .35s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .section-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:14px}
+
+  .row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:13px 0;border-bottom:1px solid var(--border);
+  }
+  .row:last-child{border-bottom:none}
+  .label{color:var(--muted);font-size:.88rem;display:flex;align-items:center;gap:8px}
+  .value{font-weight:600;font-size:.92rem;font-variant-numeric:tabular-nums}
+
+  .badge{
+    padding:5px 13px;border-radius:999px;font-size:.78rem;font-weight:700;
+    letter-spacing:.01em;display:inline-flex;align-items:center;gap:6px;
+  }
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .good{background:rgba(34,197,94,.14);color:var(--good)}
+  .ok{background:rgba(245,158,11,.14);color:var(--ok)}
+  .high{background:rgba(59,130,246,.14);color:var(--high)}
+  .audiophile{background:rgba(168,85,247,.14);color:var(--audiophile)}
+  .warn{background:rgba(239,68,68,.14);color:var(--warn)}
+
+  .quality-box{
+    margin-top:18px;padding:18px;border-radius:16px;background:rgba(10,12,18,.6);
+    border:1px solid var(--border);
+  }
+  .q-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .q-row:last-child{margin-bottom:0}
+  .q-label{font-size:.82rem;color:var(--muted);font-weight:600}
+
+  .meter{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:14px}
+  .meter-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+  .note{font-size:.78rem;color:var(--dim);margin-top:12px;line-height:1.5}
+  .note code{background:rgba(255,255,255,.06);padding:1px 6px;border-radius:5px;font-size:.76rem}
+
+  .spinner{
+    width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);
+    border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{text-align:center;color:var(--muted);font-size:.9rem;padding:20px 0}
+
+  .est{color:var(--ok);font-size:.7rem;font-weight:700;margin-left:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <div class="header">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>
+      </div>
+      <div>
+        <h1>Audio Quality Checker</h1>
+        <div class="subtitle">Analyze bit depth, sample rate, bitrate &amp; more</div>
+      </div>
+    </div>
+    <div class="dropzone" id="dropzone">
+      <div class="dz-text">Drop an audio file or click to browse</div>
+      <div class="dz-sub">MP3 · WAV · FLAC · AAC · M4A · MP4 · E-AC3 / Atmos</div>
+    </div>
+    <input type="file" id="fileInput" accept="audio/*,video/mp4,.flac,.wav,.mp3,.aac,.m4a,.mp4">
+  </div>
+
+  <div class="card results" id="results">
+    <div class="section-title">File Details</div>
+    <div id="details"></div>
+    <div class="quality-box">
+      <div class="q-row"><div class="q-label">Overall Quality</div><div id="quality"></div></div>
+      <div class="q-row"><div class="q-label">Bit Depth Rating</div><div id="bitdepth"></div></div>
+      <div class="meter"><div class="meter-fill" id="meter"></div></div>
+      <div class="note" id="extraNote"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+
+dropzone.addEventListener('click', () => fileInput.click());
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.onchange = e => { if(e.target.files[0]) handleFile(e.target.files[0]); };
+
+async function handleFile(file){
+  const results = document.getElementById('results');
+  results.style.display = 'block';
+  document.getElementById('details').innerHTML = '<div class="loading-text"><div class="spinner"></div>Analyzing audio file…</div>';
+  document.getElementById('quality').innerHTML = '';
+  document.getElementById('bitdepth').innerHTML = '';
+  document.getElementById('extraNote').innerHTML = '';
+  document.getElementById('meter').style.width = '0%';
+
+  try {
+    const buf = await file.arrayBuffer();
+    const name = file.name.toLowerCase();
+    const view = new DataView(buf);
+
+    // E-AC3 / Atmos detection in MP4
+    if(await isEAC3(buf, name)){
+      analyzeEAC3(file, buf);
+      return;
+    }
+
+    // Get duration via Audio element (reliable for all decodable formats)
+    const duration = await getDuration(file);
+
+    // Decode for sample rate / channels (decode a slice for speed on large files)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const sliceSize = Math.min(buf.byteLength, 4 * 1024 * 1024);
+    const decoded = await audioCtx.decodeAudioData(buf.slice(0, sliceSize));
+    audioCtx.close();
+
+    // Bitrate: bytes * 8 / seconds / 1000 = kbps
+    const bitrate = duration > 0 ? (file.size * 8) / duration / 1000 : 0;
+
+    // Bit depth from container headers
+    const bd = getBitDepth(file, view);
+
+    // For FLAC, also try to read sample rate & channels from header for accuracy
+    let sampleRate = decoded.sampleRate;
+    let channels = decoded.numberOfChannels;
+    if(name.endsWith('.flac')){
+      const flac = parseFlacSTREAMINFO(view);
+      if(flac){
+        if(flac.sampleRate) sampleRate = flac.sampleRate;
+        if(flac.channels) channels = flac.channels;
+        if(flac.bitDepth) bd.bitDepth = flac.bitDepth;
+        bd.note = 'Read from FLAC STREAMINFO';
+      }
+    }
+
+    renderNormal(file, duration, sampleRate, channels, bitrate, bd.bitDepth, bd.note);
+  } catch(err){
+    showError("Couldn't decode this file. It may be DRM-protected or use an unsupported codec.");
+  }
+}
+
+function getDuration(file){
+  return new Promise((resolve) => {
+    const audio = new Audio(URL.createObjectURL(file));
+    audio.onloadedmetadata = () => resolve(audio.duration || 0);
+    audio.onerror = () => resolve(0);
+    // Fallback timeout
+    setTimeout(() => resolve(audio.duration || 0), 3000);
+  });
+}
+
+async function isEAC3(buf, name){
+  if(!name.endsWith('.mp4') && !name.endsWith('.m4a')) return false;
+  const str = new TextDecoder('utf8', {fatal:false}).decode(buf.slice(0, 60000));
+  return str.includes('ec-3') || str.includes('Atmos') || name.includes('atmos');
+}
+
+function analyzeEAC3(file, buf){
+  getDuration(file).then(duration => {
+    const bitrate = duration > 0 ? (file.size * 8) / duration / 1000 : 768;
+
+    const info = [
+      ['File', file.name],
+      ['Size', formatSize(file.size)],
+      ['Format', 'MP4 / E-AC-3 Dolby Atmos'],
+      ['Duration', formatTime(duration)],
+      ['Sample Rate', '48.0 kHz <span class="est">est</span>'],
+      ['Channels', '6ch / Atmos <span class="est">est</span>'],
+      ['Bitrate', Math.round(bitrate) + ' kbps <span class="est">est</span>'],
+      ['Bit Depth', '24 bit <span class="est">est</span>']
+    ];
+
+    renderDetails(info);
+    setQuality('audiophile', 'Audiophile Master', 100);
+    setBitDepth('audiophile', 'Studio Master — 24-bit');
+    document.getElementById('extraNote').innerHTML =
+      '<span class="badge warn">Estimated</span> Browsers cannot decode E-AC3/Atmos natively. ' +
+      'Typical Atmos: <code>768 kbps</code>, <code>6ch</code>, <code>24-bit/48kHz</code>. ' +
+      'Convert to FLAC for exact analysis.';
+  });
+}
+
+function getBitDepth(file, view){
+  const name = file.name.toLowerCase();
+
+  if(name.endsWith('.wav')){
+    // Validate RIFF/WAVE, then read bits per sample at offset 34
+    if(view.byteLength >= 44){
+      const fmt = view.getUint16(20, true);
+      const bits = view.getUint16(34, true);
+      if([1,3,6,7,0xFFFE].includes(fmt) && bits > 0){
+        return {bitDepth: bits, note: 'Read from WAV fmt chunk'};
+      }
+    }
+    return {bitDepth: 16, note: 'WAV header unreadable — assuming 16-bit'};
+  }
+
+  if(name.endsWith('.flac')){
+    const flac = parseFlacSTREAMINFO(view);
+    if(flac && flac.bitDepth){
+      return {bitDepth: flac.bitDepth, note: 'Read from FLAC STREAMINFO'};
+    }
+    return {bitDepth: 16, note: 'FLAC STREAMINFO not found — assuming 16-bit'};
+  }
+
+  // Lossy formats: bit depth is meaningless, source was typically 16-bit
+  return {bitDepth: 16, note: 'Lossy format — bit depth reflects typical source (16-bit)'};
+}
+
+// Parse FLAC STREAMINFO metadata block
+function parseFlacSTREAMINFO(view){
+  try{
+    if(view.byteLength < 38) return null;
+    // "fLaC" signature = 4 bytes
+    if(view.getUint32(0) !== 0x664C6143) return null;
+
+    let pos = 4;
+    // Walk metadata blocks
+    while(pos + 4 <= view.byteLength){
+      const header = view.getUint8(pos);
+      const blockType = header & 0x7F;
+      const isLast = (header & 0x80) !== 0;
+      const blockSize = (view.getUint8(pos+1) << 16) | (view.getUint8(pos+2) << 8) | view.getUint8(pos+3);
+
+      if(blockType === 0 && blockSize >= 18 && pos + 4 + blockSize <= view.byteLength){
+        const d = pos + 4; // block data start
+        // bytes 10-12: sampleRate(20) | channels-1(3) | bps-1(5) = 28 bits
+        const b10 = view.getUint8(d+10);
+        const b11 = view.getUint8(d+11);
+        const b12 = view.getUint8(d+12);
+        const b13 = view.getUint8(d+13);
+
+        const sampleRate = (b10 << 12) | (b11 << 4) | (b12 >> 4);
+        const channels = ((b12 >> 1) & 0x07) + 1;
+        const bitDepth = (((b12 & 0x01) << 4) | (b13 >> 4)) + 1;
+
+        return {sampleRate, channels, bitDepth};
+      }
+
+      if(isLast) break;
+      pos += 4 + blockSize;
+    }
+  }catch(e){}
+  return null;
+}
+
+function renderNormal(file, duration, sampleRate, channels, bitrate, bitDepth, note){
+  const format = (file.type && file.type !== '') ? file.type.split('/')[1].toUpperCase() : file.name.split('.').pop().toUpperCase();
+
+  const info = [
+    ['File', file.name],
+    ['Size', formatSize(file.size)],
+    ['Format', format],
+    ['Duration', formatTime(duration)],
+    ['Sample Rate', (sampleRate / 1000).toFixed(1) + ' kHz'],
+    ['Channels', channels === 1 ? 'Mono' : channels === 2 ? 'Stereo' : channels + 'ch'],
+    ['Bitrate', Math.round(bitrate) + ' kbps'],
+    ['Bit Depth', bitDepth + ' bit']
+  ];
+
+  renderDetails(info);
+
+  // Overall quality rating by bitrate
+  let rating, cls, pct;
+  if(bitrate >= 1411){ rating = 'Audiophile Master'; cls = 'audiophile'; pct = 100; }
+  else if(bitrate >= 700){ rating = 'Hi-Res / Lossless'; cls = 'audiophile'; pct = 92; }
+  else if(bitrate >= 320){ rating = 'High Quality'; cls = 'high'; pct = 80; }
+  else if(bitrate >= 256){ rating = 'Good Quality'; cls = 'good'; pct = 65; }
+  else if(bitrate >= 128){ rating = 'Standard'; cls = 'ok'; pct = 45; }
+  else { rating = 'Low Quality'; cls = 'warn'; pct = 25; }
+
+  setQuality(cls, rating, pct);
+
+  // Bit depth rating
+  let bdRating, bdCls;
+  if(bitDepth >= 24){ bdRating = 'Studio Master — 24-bit'; bdCls = 'audiophile'; }
+  else if(bitDepth >= 16){ bdRating = 'CD Quality — 16-bit'; bdCls = 'good'; }
+  else if(bitDepth > 0){ bdRating = 'Low — ' + bitDepth + '-bit'; bdCls = 'ok'; }
+  else { bdRating = 'Unknown'; bdCls = 'warn'; }
+  setBitDepth(bdCls, bdRating);
+
+  document.getElementById('extraNote').innerHTML =
+    note + '. Reference: <code>16-bit / 44.1kHz</code> = CD standard · ' +
+    '<code>24-bit / 48kHz+</code> = Hi-Res.';
+}
+
+function renderDetails(info){
+  let html = '';
+  for(const [k, v] of info){
+    html += `<div class="row"><div class="label">${k}</div><div class="value">${v}</div></div>`;
+  }
+  document.getElementById('details').innerHTML = html;
+}
+
+function setQuality(cls, label, pct){
+  document.getElementById('quality').innerHTML = `<span class="badge ${cls}">${label}</span>`;
+  const meter = document.getElementById('meter');
+  const colors = {audiophile:'#a855f7', high:'#3b82f6', good:'#22c55e', ok:'#f59e0b', warn:'#ef4444'};
+  meter.style.background = colors[cls] || '#3b82f6';
+  meter.style.width = '0%';
+  requestAnimationFrame(() => { meter.style.width = pct + '%'; });
+}
+
+function setBitDepth(cls, label){
+  document.getElementById('bitdepth').innerHTML = `<span class="badge ${cls}">${label}</span>`;
+}
+
+function showError(msg){
+  document.getElementById('details').innerHTML =
+    `<div class="row"><div class="label">Error</div><div class="value"><span class="badge warn">${msg}</span></div></div>`;
+  document.getElementById('quality').innerHTML = '';
+  document.getElementById('bitdepth').innerHTML = '';
+  document.getElementById('meter').style.width = '0%';
+  document.getElementById('extraNote').innerHTML = '';
+}
+
+// ---- Formatting helpers ----
+
+function formatSize(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if(bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
+
+function formatTime(s){
+  if(!s || !isFinite(s)) return '—';
+  s = Math.floor(s);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if(h > 0) return `${h}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+</script>
+</body>
+</html>
