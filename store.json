@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-15T14:56:45.341Z",
+  "updated_at": "2026-09-17T19:29:26.154Z",
   "categories": [
     {
       "id": "developers",
@@ -1068,6 +1068,14 @@
       "featured": true,
       "isNew": true,
       "pinned": true
+    },
+    {
+      "name": "Audio Quality Checker",
+      "rawName": "audio quality check.html",
+      "path": "Audio/Tools/audio quality check.html",
+      "author": "Bluevader 🔷",
+      "description": "Gives you audio file details",
+      "icon": "fa:fa-volume-high"
     }
   ]
 }
