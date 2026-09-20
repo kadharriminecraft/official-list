@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-20T13:06:21.490Z",
+  "updated_at": "2026-09-20T13:08:13.146Z",
   "categories": [
     {
       "id": "developers",
@@ -764,12 +764,6 @@
       "author": "Throk"
     },
     {
-      "name": "Legend Of Zelda, The   Link'S Awakening (USA, Europe) (Rev 2).Gb",
-      "rawName": "Legend of Zelda, The - Link's Awakening (USA, Europe) (Rev 2).gb",
-      "path": "Legend of Zelda, The - Link's Awakening (USA, Europe) (Rev 2).gb",
-      "author": "Throk"
-    },
-    {
       "name": "Feed Tok",
       "rawName": "FeedTok.html",
       "path": "Other/FeedTok.html",
@@ -1108,6 +1102,19 @@
       "featured": true,
       "isNew": true,
       "pinned": true
+    },
+    {
+      "name": "Memes",
+      "rawName": "memes.html",
+      "path": "Fun/memes.html",
+      "author": "Throk"
+    },
+    {
+      "name": "Authenticator App",
+      "rawName": "Authenticator App.html",
+      "path": "Other/Authenticator App.html",
+      "author": "Throk",
+      "icon": "fa:fa-lock-open"
     }
   ]
 }
