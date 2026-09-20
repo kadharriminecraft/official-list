@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-20T13:08:13.146Z",
+  "updated_at": "2026-09-20T13:09:12.156Z",
   "categories": [
     {
       "id": "developers",
@@ -1044,13 +1044,12 @@
       "isNew": true
     },
     {
-      "name": "Relay",
-      "rawName": "Relay.html",
-      "path": "Other/Relay.html",
-      "author": "Bluevader🔷️",
-      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
-      "icon": "🌐",
-      "color": "#101014",
+      "name": "Narrator",
+      "rawName": "Narrator.html",
+      "path": "Fun/Tabletop/Narrator.html",
+      "author": "Throk",
+      "description": "This is a party game that your able to do games like mafia and it will run the game logic and narrate",
+      "icon": "🐺",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -1064,24 +1063,6 @@
       "icon": "fa:fa-volume-high"
     },
     {
-      "name": "File Renamer",
-      "rawName": "Filerenamer",
-      "path": "Tools/Filerenamer",
-      "author": "Bluevader 🔷️",
-      "description": "This is good for renaming songs that have the numbers in front and others",
-      "icon": "🗃",
-      "isNew": true
-    },
-    {
-      "name": "Apple",
-      "rawName": "Apple.html",
-      "path": "Fun/Apple.html",
-      "author": "Bluevader🔷️",
-      "description": "You dont want to use this",
-      "icon": "fa:fa-apple-whole",
-      "isNew": true
-    },
-    {
       "name": "Nexus Ai Pro",
       "rawName": "NexusAiPro.html",
       "path": "Tools/NexusAiPro.html",
@@ -1093,15 +1074,33 @@
       "pinned": true
     },
     {
-      "name": "Narrator",
-      "rawName": "Narrator.html",
-      "path": "Fun/Tabletop/Narrator.html",
-      "author": "Throk",
-      "description": "This is a party game that your able to do games like mafia and it will run the game logic and narrate",
-      "icon": "🐺",
+      "name": "Relay",
+      "rawName": "Relay.html",
+      "path": "Other/Relay.html",
+      "author": "Bluevader🔷️",
+      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
+      "icon": "🌐",
+      "color": "#101014",
       "featured": true,
       "isNew": true,
       "pinned": true
+    },
+    {
+      "name": "File Renamer",
+      "rawName": "Filerenamer",
+      "path": "Tools/Filerenamer",
+      "author": "Bluevader 🔷️",
+      "description": "This is good for renaming songs that have the numbers in front and others",
+      "icon": "🗃",
+      "isNew": true
+    },
+    {
+      "name": "Authenticator App",
+      "rawName": "Authenticator App.html",
+      "path": "Other/Authenticator App.html",
+      "author": "Throk",
+      "icon": "fa:fa-lock-open",
+      "isNew": true
     },
     {
       "name": "Memes",
@@ -1110,11 +1109,13 @@
       "author": "Throk"
     },
     {
-      "name": "Authenticator App",
-      "rawName": "Authenticator App.html",
-      "path": "Other/Authenticator App.html",
-      "author": "Throk",
-      "icon": "fa:fa-lock-open"
+      "name": "Apple",
+      "rawName": "Apple.html",
+      "path": "Fun/Apple.html",
+      "author": "Bluevader🔷️",
+      "description": "You dont want to use this",
+      "icon": "fa:fa-apple-whole",
+      "isNew": true
     }
   ]
 }
