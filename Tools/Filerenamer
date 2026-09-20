@@ -3,189 +3,991 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Batch Music Renamer - Smart Numbers v3</title>
+<title>Music Toolkit — Rename & Album Art</title>
 <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  body { background: #111; color: #eee; margin: 0; padding: 16px; }
-  h1 { font-size: 1.4rem; margin-bottom: 8px; }
-  .card { background: #1c1c1c; padding: 16px; border-radius: 12px; margin-bottom: 16px; }
-  label { display: block; margin: 8px 0 4px; font-weight: 600; }
-  input, select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #222; color: #eee; font-size: 1rem; }
-  button { background: #d32f2f; border: none; font-weight: 700; cursor: pointer; margin-top: 12px; }
-  button.secondary { background: #2a5fd1; }
-  button:disabled { background: #444; cursor: not-allowed; opacity: 0.6; }
-  .preview { max-height: 300px; overflow-y: auto; background: #0a0a0a; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; }
-  .warn { color: #ff9800; font-weight: 700; }
-  .old { color: #4CAF50; } /* Old name green */
-  .new { color: #ffffff; } /* New name white */
-  .arrow { color: #888; }
-  .progress { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 8px; display: none; }
-  .progress-bar { height: 100%; width: 0%; background: #4CAF50; transition: width 0.2s; }
-  #status { text-align: center; margin-top: 8px; font-weight: 600; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f0f0f;
+    color: #e0e0e0;
+    padding: 24px;
+    max-width: 760px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
+
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  label {
+    display: block;
+    margin: 12px 0 6px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #ccc;
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: #222;
+    color: #eee;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { outline: none; border-color: #d32f2f; }
+
+  .btn {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: #d32f2f; color: #fff; }
+  .btn-secondary { background: #2563eb; color: #fff; }
+  .btn:disabled { background: #444; cursor: not-allowed; opacity: 0.5; }
+
+  .toggle-row { display: flex; gap: 12px; margin-bottom: 4px; }
+  .toggle-card {
+    flex: 1;
+    background: #222;
+    border: 2px solid #333;
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
+    user-select: none;
+  }
+  .toggle-card.active { border-color: #d32f2f; background: #2a1515; }
+  .toggle-card .icon { font-size: 1.4rem; }
+  .toggle-card .label { font-weight: 700; font-size: 0.82rem; margin-top: 4px; }
+
+  .hint { font-size: 0.8rem; color: #777; margin-top: 6px; }
+
+  .preview {
+    max-height: 380px;
+    overflow-y: auto;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+  .preview::-webkit-scrollbar { width: 6px; }
+  .preview::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+  .old { color: #7dd87d; }
+  .new { color: #fff; font-weight: 600; }
+  .arrow { color: #666; }
+  .nochange { color: #555; }
+  .warn-text { color: #f59e0b; }
+  .error-text { color: #ef4444; }
+  .success-text { color: #22c55e; }
+  .info-text { color: #60a5fa; }
+
+  .progress {
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #d32f2f, #f44336);
+    transition: width 0.3s;
+  }
+  #status { text-align: center; margin-top: 10px; font-weight: 600; font-size: 0.9rem; }
+
+  .hidden { display: none !important; }
+
+  .file-count {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #0a0a0a;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #7dd87d;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #d32f2f;
+    cursor: pointer;
+  }
+  .checkbox-row label { margin: 0; cursor: pointer; }
+
+  .warning-banner {
+    background: #2a1a00;
+    border: 1px solid #f59e0b33;
+    color: #f59e0b;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  /* Cropper Styles */
+  .cropper-wrapper {
+    width: 320px;
+    height: 320px;
+    margin: 16px auto;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #333;
+    position: relative;
+    background: #000;
+    cursor: grab;
+    touch-action: none;
+  }
+  .cropper-wrapper:active { cursor: grabbing; }
+  #cropperCanvas { display: block; }
+  .cropper-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    background: #222;
+    padding: 8px;
+    border-radius: 8px;
+  }
+  .btn-small {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    width: auto;
+    margin: 0;
+  }
+  .btn-small:hover { background: #444; }
+  #zoomSlider { flex: 1; margin: 0; accent-color: #d32f2f; }
+
+  .cover-preview-container {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: #0a0a0a;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: 1px solid #222;
+  }
+  .cover-preview-container img {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid #333;
+  }
+  .cover-preview-container .info {
+    font-size: 0.85rem;
+    color: #aaa;
+  }
 </style>
 </head>
 <body>
 
-<h1>🎵 Music Renamer - Smart Numbers</h1>
-<p class="warn">⚠️ This will RENAME files in your folder. Can't be undone.</p>
+<h1>🎵 Music Toolkit</h1>
+<p class="subtitle">Rename tracks and embed album art — runs entirely in your browser, nothing uploaded.</p>
 
+<div class="warning-banner">⚠️ Files are renamed and modified in-place. This cannot be undone. Back up your folder first.</div>
+
+<!-- Step 1: Folder -->
 <div class="card">
-  <label>1. Pick Folder with Music</label>
-  <button id="pickFolder" class="secondary">Pick Music Folder</button>
-  <div id="fileCount"></div>
+  <div class="card-title">📁 Step 1 — Pick Music Folder</div>
+  <button class="btn btn-secondary" id="pickFolder">Choose Folder</button>
+  <div id="fileCount" class="file-count hidden"></div>
 </div>
 
+<!-- Step 2: Actions -->
 <div class="card">
-  <label>2. Remove Mode</label>
-  <select id="mode">
-    <option value="track">Remove Leading Track Numbers - 01, 1, 10 - Song</option>
-    <option value="start">Remove X Characters from Start</option>
-    <option value="end">Remove X Characters from End</option>
-  </select>
-  
-  <div id="charOptions">
-    <label>3. How many characters to remove?</label>
-    <input type="number" id="count" value="2" min="1" max="50">
+  <div class="card-title">⚙️ Step 2 — Choose Actions</div>
+  <div class="toggle-row">
+    <div class="toggle-card active" id="toggleRename" data-feature="rename">
+      <div class="icon">✏️</div>
+      <div class="label">Rename Files</div>
+    </div>
+    <div class="toggle-card" id="toggleArt" data-feature="art">
+      <div class="icon">🖼️</div>
+      <div class="label">Add Album Art</div>
+    </div>
   </div>
 
-  <label>Optional: Only remove if it matches this</label>
-  <input type="text" id="match" placeholder="Ex: 01, Track">
-  
-  <button id="previewBtn">Preview Changes</button>
+  <!-- Rename options -->
+  <div id="renameSection">
+    <label>Rename Mode</label>
+    <select id="mode">
+      <option value="track">Remove leading track numbers (01, 1, 10 -, etc.)</option>
+      <option value="start">Remove X characters from start</option>
+      <option value="end">Remove X characters from end</option>
+    </select>
+    <div id="charOptions">
+      <label>Characters to remove</label>
+      <input type="number" id="count" value="2" min="1" max="50">
+    </div>
+    <label>Only rename if name starts with (optional)</label>
+    <input type="text" id="match" placeholder="e.g. 01, Track, [">
+  </div>
+
+  <!-- Art options -->
+  <div id="artSection" class="hidden">
+    <label>Choose & Crop Cover Image</label>
+    <button class="btn btn-secondary" id="pickImage">Select Image</button>
+    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" class="hidden">
+    
+    <div id="cropperContainer" class="hidden">
+      <div class="cropper-wrapper">
+        <canvas id="cropperCanvas" width="320" height="320"></canvas>
+      </div>
+      <div class="cropper-controls">
+        <button class="btn-small" id="zoomOut">−</button>
+        <input type="range" id="zoomSlider" min="0.1" max="5" step="0.01" value="1">
+        <button class="btn-small" id="zoomIn">+</button>
+        <button class="btn-small" id="resetCrop">Reset</button>
+      </div>
+      <div class="hint">Drag to pan, use slider/buttons to zoom. Image is cropped to a perfect 1:1 square to prevent black bars in players.</div>
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="skipExistingArt" checked>
+      <label for="skipExistingArt">Skip files that already have album art</label>
+    </div>
+    <div class="hint">Album art embedding supports MP3 files (ID3v2 tags). Other formats are skipped for art but can still be renamed.</div>
+  </div>
+
+  <button class="btn btn-primary" id="previewBtn">Preview Changes</button>
 </div>
 
-<div class="card" id="previewCard" style="display:none;">
-  <label>4. Preview</label>
-  <div class="preview" id="previewList"></div>
+<!-- Step 3: Preview -->
+<div class="card hidden" id="previewCard">
+  <div class="card-title">👁️ Step 3 — Preview & Confirm</div>
   
-  <button id="runBtn">⚠️ Run and Overwrite Files</button>
-  <div class="progress" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div id="coverPreview" class="cover-preview-container hidden">
+    <img id="coverThumb" src="" alt="Cover preview">
+    <div class="info">
+      <div style="font-weight:700; color:#fff;">Album Art Preview</div>
+      <div>This exact 1:1 crop will be embedded.</div>
+    </div>
+  </div>
+
+  <div class="preview" id="previewList"></div>
+  <div id="summary" class="hint" style="margin-top:10px; font-size:0.85rem;"></div>
+  <button class="btn btn-primary" id="runBtn">⚠️ Apply Changes to Files</button>
+  <div class="progress hidden" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
   <div id="status"></div>
 </div>
 
 <script>
-let dirHandle;
+// ═══════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════
+let dirHandle = null;
 let isRunning = false;
 let previewData = [];
+let imageData = null; // { bytes: Uint8Array, mime: string, url: string }
+let features = { rename: true, art: false };
+let currentObjectUrl = null;
+let coverThumbUrl = null;
 
-function resetUI() {
-  isRunning = false;
-  previewData = [];
-  document.getElementById('runBtn').disabled = false;
-  document.getElementById('runBtn').innerText = "⚠️ Run and Overwrite Files";
-  document.getElementById('progressWrap').style.display = 'none';
-  document.getElementById('progressBar').style.width = '0%';
-  document.getElementById('status').innerText = '';
-  document.getElementById('previewList').innerHTML = '';
-  document.getElementById('previewCard').style.display = 'none';
-}
+const MUSIC_EXTENSIONS = ['.mp3', '.flac', '.m4a', '.wav', '.ogg', '.wma', '.aac', '.opus'];
+const ART_EXTENSIONS = ['.mp3'];
 
-document.getElementById('mode').onchange = (e) => {
-  document.getElementById('charOptions').style.display = e.target.value === 'track' ? 'none' : 'block';
-}
+// ═══════════════════════════════════════════════════
+//  Cropper State & Logic
+// ═══════════════════════════════════════════════════
+const cropperCanvas = document.getElementById('cropperCanvas');
+const cropperCtx = cropperCanvas.getContext('2d');
+const cropperState = {
+  img: null,
+  scale: 1,
+  offsetX: 0,
+  offsetY: 0,
+  canvasSize: 320,
+  dragging: false,
+  lastX: 0,
+  lastY: 0,
+  minScale: 0.1,
+  maxScale: 5
+};
 
-document.getElementById('pickFolder').onclick = async () => {
-  resetUI();
-  try {
-    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-    let count = 0;
-    for await (const entry of dirHandle.values()) if (entry.kind === 'file') count++;
-    document.getElementById('fileCount').innerHTML = `<span class="old">${count} files found</span>`;
-  } catch(e) {
-    document.getElementById('fileCount').innerText = '';
+function drawCropper() {
+  cropperCtx.fillStyle = '#000';
+  cropperCtx.fillRect(0, 0, cropperState.canvasSize, cropperState.canvasSize);
+  if (cropperState.img) {
+    cropperCtx.drawImage(
+      cropperState.img,
+      cropperState.offsetX,
+      cropperState.offsetY,
+      cropperState.img.width * cropperState.scale,
+      cropperState.img.height * cropperState.scale
+    );
   }
 }
 
-function getNewName(oldName, mode, count, match) {
-  const lastDot = oldName.lastIndexOf('.');
-  const name = lastDot > 0 ? oldName.substring(0, lastDot) : oldName;
-  const ext = lastDot > 0 ? oldName.substring(lastDot) : '';
+function fitImageToCanvas() {
+  if (!cropperState.img) return;
+  const scaleW = cropperState.canvasSize / cropperState.img.width;
+  const scaleH = cropperState.canvasSize / cropperState.img.height;
+  cropperState.scale = Math.max(scaleW, scaleH); // Cover the canvas
+  cropperState.offsetX = (cropperState.canvasSize - cropperState.img.width * cropperState.scale) / 2;
+  cropperState.offsetY = (cropperState.canvasSize - cropperState.img.height * cropperState.scale) / 2;
+  document.getElementById('zoomSlider').value = cropperState.scale;
+  drawCropper();
+}
 
-  let newName = name;
+function clampCropper() {
+  if (!cropperState.img) return;
+  const w = cropperState.img.width * cropperState.scale;
+  const h = cropperState.img.height * cropperState.scale;
+  
+  // Prevent zooming out too far
+  const minScaleW = cropperState.canvasSize / cropperState.img.width;
+  const minScaleH = cropperState.canvasSize / cropperState.img.height;
+  cropperState.minScale = Math.min(minScaleW, minScaleH) * 0.5; // allow some zoom out but not infinite
+  
+  if (cropperState.scale < cropperState.minScale) cropperState.scale = cropperState.minScale;
+  if (cropperState.scale > cropperState.maxScale) cropperState.scale = cropperState.maxScale;
+
+  const scaledW = cropperState.img.width * cropperState.scale;
+  const scaledH = cropperState.img.height * cropperState.scale;
+
+  // Prevent panning outside the canvas bounds
+  if (scaledW <= cropperState.canvasSize) {
+    cropperState.offsetX = (cropperState.canvasSize - scaledW) / 2;
+  } else {
+    if (cropperState.offsetX > 0) cropperState.offsetX = 0;
+    if (cropperState.offsetX < cropperState.canvasSize - scaledW) cropperState.offsetX = cropperState.canvasSize - scaledW;
+  }
+
+  if (scaledH <= cropperState.canvasSize) {
+    cropperState.offsetY = (cropperState.canvasSize - scaledH) / 2;
+  } else {
+    if (cropperState.offsetY > 0) cropperState.offsetY = 0;
+    if (cropperState.offsetY < cropperState.canvasSize - scaledH) cropperState.offsetY = cropperState.canvasSize - scaledH;
+  }
+}
+
+// Mouse Events
+cropperCanvas.addEventListener('mousedown', e => {
+  cropperState.dragging = true;
+  cropperState.lastX = e.clientX;
+  cropperState.lastY = e.clientY;
+});
+window.addEventListener('mousemove', e => {
+  if (!cropperState.dragging) return;
+  const dx = e.clientX - cropperState.lastX;
+  const dy = e.clientY - cropperState.lastY;
+  cropperState.offsetX += dx;
+  cropperState.offsetY += dy;
+  cropperState.lastX = e.clientX;
+  cropperState.lastY = e.clientY;
+  clampCropper();
+  drawCropper();
+});
+window.addEventListener('mouseup', () => { cropperState.dragging = false; });
+
+// Touch Events
+cropperCanvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  cropperState.dragging = true;
+  cropperState.lastX = t.clientX;
+  cropperState.lastY = t.clientY;
+}, { passive: false });
+cropperCanvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!cropperState.dragging) return;
+  const t = e.touches[0];
+  const dx = t.clientX - cropperState.lastX;
+  const dy = t.clientY - cropperState.lastY;
+  cropperState.offsetX += dx;
+  cropperState.offsetY += dy;
+  cropperState.lastX = t.clientX;
+  cropperState.lastY = t.clientY;
+  clampCropper();
+  drawCropper();
+}, { passive: false });
+cropperCanvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  cropperState.dragging = false;
+}, { passive: false });
+
+// Zoom Controls
+document.getElementById('zoomSlider').addEventListener('input', e => {
+  if (!cropperState.img) return;
+  const oldScale = cropperState.scale;
+  cropperState.scale = parseFloat(e.target.value);
+  // Zoom relative to center
+  const centerCanvas = cropperState.canvasSize / 2;
+  cropperState.offsetX = centerCanvas - (centerCanvas - cropperState.offsetX) * (cropperState.scale / oldScale);
+  cropperState.offsetY = centerCanvas - (centerCanvas - cropperState.offsetY) * (cropperState.scale / oldScale);
+  clampCropper();
+  drawCropper();
+});
+
+document.getElementById('zoomIn').addEventListener('click', () => {
+  if (!cropperState.img) return;
+  const oldScale = cropperState.scale;
+  cropperState.scale = Math.min(cropperState.maxScale, cropperState.scale * 1.1);
+  document.getElementById('zoomSlider').value = cropperState.scale;
+  const centerCanvas = cropperState.canvasSize / 2;
+  cropperState.offsetX = centerCanvas - (centerCanvas - cropperState.offsetX) * (cropperState.scale / oldScale);
+  cropperState.offsetY = centerCanvas - (centerCanvas - cropperState.offsetY) * (cropperState.scale / oldScale);
+  clampCropper();
+  drawCropper();
+});
+
+document.getElementById('zoomOut').addEventListener('click', () => {
+  if (!cropperState.img) return;
+  const oldScale = cropperState.scale;
+  cropperState.scale = Math.max(cropperState.minScale, cropperState.scale / 1.1);
+  document.getElementById('zoomSlider').value = cropperState.scale;
+  const centerCanvas = cropperState.canvasSize / 2;
+  cropperState.offsetX = centerCanvas - (centerCanvas - cropperState.offsetX) * (cropperState.scale / oldScale);
+  cropperState.offsetY = centerCanvas - (centerCanvas - cropperState.offsetY) * (cropperState.scale / oldScale);
+  clampCropper();
+  drawCropper();
+});
+
+document.getElementById('resetCrop').addEventListener('click', fitImageToCanvas);
+
+// Wheel zoom
+cropperCanvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (!cropperState.img) return;
+  const oldScale = cropperState.scale;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  cropperState.scale = Math.max(cropperState.minScale, Math.min(cropperState.maxScale, cropperState.scale * delta));
+  document.getElementById('zoomSlider').value = cropperState.scale;
+  
+  // Zoom relative to mouse position
+  const rect = cropperCanvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  cropperState.offsetX = mouseX - (mouseX - cropperState.offsetX) * (cropperState.scale / oldScale);
+  cropperState.offsetY = mouseY - (mouseY - cropperState.offsetY) * (cropperState.scale / oldScale);
+  
+  clampCropper();
+  drawCropper();
+}, { passive: false });
+
+// ═══════════════════════════════════════════════════
+//  Utilities
+// ═══════════════════════════════════════════════════
+function concatUint8Arrays(arrays) {
+  const total = arrays.reduce((s, a) => s + a.length, 0);
+  const result = new Uint8Array(total);
+  let offset = 0;
+  for (const a of arrays) { result.set(a, offset); offset += a.length; }
+  return result;
+}
+
+function isMusicFile(name) {
+  const lower = name.toLowerCase();
+  return MUSIC_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
+
+function getExt(name) {
+  const i = name.lastIndexOf('.');
+  return i > 0 ? name.substring(i) : '';
+}
+
+function getBaseName(name) {
+  const i = name.lastIndexOf('.');
+  return i > 0 ? name.substring(0, i) : name;
+}
+
+function getArtExt(name) {
+  const lower = name.toLowerCase();
+  const ext = getExt(lower);
+  return ART_EXTENSIONS.includes(ext) ? ext : null;
+}
+
+// ═══════════════════════════════════════════════════
+//  ID3v2 Tag Parsing & Writing
+// ═══════════════════════════════════════════════════
+function readSynchsafe(view, offset) {
+  return (view.getUint8(offset)     << 21) |
+         (view.getUint8(offset + 1) << 14) |
+         (view.getUint8(offset + 2) <<  7) |
+         (view.getUint8(offset + 3));
+}
+
+function writeSynchsafe(arr, offset, value) {
+  arr[offset]     = (value >> 21) & 0x7F;
+  arr[offset + 1] = (value >> 14) & 0x7F;
+  arr[offset + 2] = (value >>  7) & 0x7F;
+  arr[offset + 3] =  value        & 0x7F;
+}
+
+function parseID3v2(buffer) {
+  if (buffer.byteLength < 10) return null;
+  const view = new DataView(buffer);
+  if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) return null;
+
+  const versionMajor = view.getUint8(3);
+  const flags = view.getUint8(5);
+  const tagSize = readSynchsafe(view, 6);
+  const tagEnd = 10 + tagSize;
+
+  if (tagEnd > buffer.byteLength) return null;
+
+  let offset = 10;
+  if (flags & 0x40) {
+    if (versionMajor === 3) {
+      const extSize = view.getUint32(10);
+      offset = 10 + 4 + extSize;
+    } else if (versionMajor === 4) {
+      const extSize = readSynchsafe(view, 10);
+      offset = 10 + extSize;
+    }
+  }
+
+  let framesEnd = tagEnd;
+  if (flags & 0x10) framesEnd = tagEnd - 10;
+
+  const frames = [];
+  while (offset + 10 <= framesEnd) {
+    const frameId = String.fromCharCode(
+      view.getUint8(offset), view.getUint8(offset + 1),
+      view.getUint8(offset + 2), view.getUint8(offset + 3)
+    );
+    if (frameId.charCodeAt(0) === 0) break;
+
+    let frameSize;
+    if (versionMajor === 4) {
+      frameSize = readSynchsafe(view, offset + 4);
+    } else {
+      frameSize = view.getUint32(offset + 4);
+    }
+
+    if (frameSize <= 0 || offset + 10 + frameSize > framesEnd) break;
+
+    const frameData = new Uint8Array(buffer, offset + 10, frameSize);
+    frames.push({ id: frameId, data: new Uint8Array(frameData) });
+    offset += 10 + frameSize;
+  }
+
+  return { version: versionMajor, frames, tagEnd };
+}
+
+function buildAPICFrame(imageBytes, mimeType) {
+  const enc     = new Uint8Array([0x00]);
+  const mime    = new TextEncoder().encode(mimeType + '\0');
+  const picType = new Uint8Array([0x03]); // Front cover
+  const desc    = new Uint8Array([0x00]);
+  return concatUint8Arrays([enc, mime, picType, desc, imageBytes]);
+}
+
+function buildID3v2Tag(frames) {
+  const parts = [];
+  for (const f of frames) {
+    const id = new Uint8Array(4);
+    for (let i = 0; i < 4; i++) id[i] = f.id.charCodeAt(i);
+    const sz = new Uint8Array(4);
+    new DataView(sz.buffer).setUint32(0, f.data.length);
+    const fl = new Uint8Array(2);
+    parts.push(id, sz, fl, f.data);
+  }
+  const allFrames = concatUint8Arrays(parts);
+
+  const header = new Uint8Array(10);
+  header[0] = 0x49; header[1] = 0x44; header[2] = 0x33;
+  header[3] = 0x03; header[4] = 0x00; header[5] = 0x00;
+  writeSynchsafe(header, 6, allFrames.length);
+
+  return concatUint8Arrays([header, allFrames]);
+}
+
+function embedAlbumArt(fileBuffer, imageBytes, mimeType) {
+  const u8 = new Uint8Array(fileBuffer);
+  const existing = parseID3v2(fileBuffer);
+
+  let keptFrames = [];
+  let audioStart = 0;
+
+  if (existing) {
+    keptFrames = existing.frames.filter(f => f.id !== 'APIC');
+    audioStart = existing.tagEnd;
+  }
+
+  keptFrames.push({ id: 'APIC', data: buildAPICFrame(imageBytes, mimeType) });
+  const newTag = buildID3v2Tag(keptFrames);
+  const audioData = u8.slice(audioStart);
+
+  return concatUint8Arrays([newTag, audioData]);
+}
+
+async function checkHasArt(entry) {
+  const file = await entry.getFile();
+  const headerBuf = await file.slice(0, 10).arrayBuffer();
+  const view = new DataView(headerBuf);
+  if (view.byteLength < 10) return false;
+  if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) return false;
+
+  const tagSize = readSynchsafe(view, 6);
+  if (tagSize <= 0) return false;
+
+  const tagBuf = await file.slice(0, 10 + tagSize).arrayBuffer();
+  const parsed = parseID3v2(tagBuf);
+  if (!parsed) return false;
+  return parsed.frames.some(f => f.id === 'APIC');
+}
+
+// ═══════════════════════════════════════════════════
+//  Image Processing
+// ═══════════════════════════════════════════════════
+async function generateCroppedImageData() {
+  if (!cropperState.img) return null;
+  const targetSize = 800; // High quality 800x800
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = targetSize;
+  offCanvas.height = targetSize;
+  const offCtx = offCanvas.getContext('2d');
+  
+  const ratio = targetSize / cropperState.canvasSize;
+  offCtx.drawImage(
+    cropperState.img,
+    cropperState.offsetX * ratio,
+    cropperState.offsetY * ratio,
+    cropperState.img.width * cropperState.scale * ratio,
+    cropperState.img.height * cropperState.scale * ratio
+  );
+  
+  const blob = await new Promise(res => offCanvas.toBlob(res, 'image/jpeg', 0.92));
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  return { bytes, mime: 'image/jpeg', url: URL.createObjectURL(blob) };
+}
+
+// ═══════════════════════════════════════════════════
+//  Rename Logic
+// ═══════════════════════════════════════════════════
+function getNewName(oldName, mode, count, match) {
+  const base = getBaseName(oldName);
+  const ext = getExt(oldName);
+  let newName = base;
 
   if (mode === 'track') {
-    newName = name.replace(/^\s*\d{1,3}[._\-\s]*/, '');
+    if (!match || base.startsWith(match)) {
+      newName = base.replace(/^\s*\d{1,3}[._\-\s]*/, '');
+    }
   } else if (mode === 'start') {
-    if (!match || name.startsWith(match)) newName = name.substring(count);
+    if (!match || base.startsWith(match)) newName = base.substring(count);
   } else if (mode === 'end') {
-    if (!match || name.endsWith(match)) newName = name.substring(0, name.length - count);
+    if (!match || base.endsWith(match)) newName = base.substring(0, base.length - count);
   }
 
-  if (newName === '') newName = name; 
+  if (!newName.trim()) newName = base;
   return newName + ext;
 }
 
-document.getElementById('previewBtn').onclick = async () => {
-  if (!dirHandle) return alert("Pick a folder first");
-  resetUI();
+// ═══════════════════════════════════════════════════
+//  UI Logic
+// ═══════════════════════════════════════════════════
+function resetPreview() {
+  previewData = [];
+  document.getElementById('previewList').innerHTML = '';
+  document.getElementById('previewCard').classList.add('hidden');
+  document.getElementById('progressWrap').classList.add('hidden');
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('status').innerText = '';
+  document.getElementById('summary').innerText = '';
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').innerText = '⚠️ Apply Changes to Files';
+}
+
+document.getElementById('mode').addEventListener('change', e => {
+  document.getElementById('charOptions').classList.toggle('hidden', e.target.value === 'track');
+});
+document.getElementById('charOptions').classList.add('hidden');
+
+document.querySelectorAll('.toggle-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const feature = card.dataset.feature;
+    features[feature] = !features[feature];
+    card.classList.toggle('active', features[feature]);
+    document.getElementById('renameSection').classList.toggle('hidden', !features.rename);
+    document.getElementById('artSection').classList.toggle('hidden', !features.art);
+    resetPreview();
+  });
+});
+
+document.getElementById('pickFolder').addEventListener('click', async () => {
+  resetPreview();
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    let total = 0, music = 0;
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === 'file') {
+        total++;
+        if (isMusicFile(entry.name)) music++;
+      }
+    }
+    const el = document.getElementById('fileCount');
+    el.classList.remove('hidden');
+    el.innerText = `Found ${music} music file${music !== 1 ? 's' : ''} (${total} total file${total !== 1 ? 's' : ''} in folder)`;
+  } catch (e) { /* silent */ }
+});
+
+document.getElementById('pickImage').addEventListener('click', () => {
+  document.getElementById('imageInput').click();
+});
+
+document.getElementById('imageInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
   
-  const mode = document.getElementById('mode').value;
-  const count = parseInt(document.getElementById('count').value);
-  const match = document.getElementById('match').value;
+  // Revoke previous object URL to prevent memory leak
+  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl = URL.createObjectURL(file);
+  
+  const img = new Image();
+  img.onload = () => {
+    cropperState.img = img;
+    document.getElementById('cropperContainer').classList.remove('hidden');
+    fitImageToCanvas();
+    resetPreview();
+  };
+  img.src = currentObjectUrl;
+});
+
+// ═══════════════════════════════════════════════════
+//  Preview
+// ═══════════════════════════════════════════════════
+document.getElementById('previewBtn').addEventListener('click', async () => {
+  if (!dirHandle) return alert('Please pick a folder first.');
+  if (!features.rename && !features.art) return alert('Enable at least one action (rename or album art).');
+  if (features.art && !cropperState.img) return alert('Please select and crop an image first.');
+
+  resetPreview();
+
+  const mode  = document.getElementById('mode').value;
+  const count = parseInt(document.getElementById('count').value) || 0;
+  const match = document.getElementById('match').value.trim();
+  const skipExisting = document.getElementById('skipExistingArt').checked;
+
+  const status = document.getElementById('status');
+  const previewCard = document.getElementById('previewCard');
+  previewCard.classList.remove('hidden');
+  status.innerText = 'Scanning files…';
+  status.className = 'info-text';
+
+  // Generate the final cropped image data right before preview
+  if (features.art) {
+    imageData = await generateCroppedImageData();
+    if (!imageData) return alert('Error processing image.');
+    
+    // Update cover preview thumbnail
+    const thumb = document.getElementById('coverThumb');
+    if (coverThumbUrl) URL.revokeObjectURL(coverThumbUrl);
+    coverThumbUrl = imageData.url;
+    thumb.src = coverThumbUrl;
+    document.getElementById('coverPreview').classList.remove('hidden');
+  } else {
+    document.getElementById('coverPreview').classList.add('hidden');
+  }
 
   let html = '';
+  let renameCount = 0;
+  let artAddCount = 0;
+  let artReplaceCount = 0;
+  let artSkipCount = 0;
+  let artUnsupportedCount = 0;
+  let noChangeCount = 0;
+
   for await (const entry of dirHandle.values()) {
     if (entry.kind !== 'file') continue;
     const oldName = entry.name;
-    const newName = getNewName(oldName, mode, count, match);
-    previewData.push({oldName, newName});
-    const changed = newName !== oldName;
-    
-    if(changed) {
-      html += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${newName}</span></div>`;
-    } else {
-      html += `<div>${oldName} <span class="arrow">→ no change</span></div>`;
-    }
-  }
-  
-  document.getElementById('previewList').innerHTML = html || 'No files found';
-  document.getElementById('previewCard').style.display = 'block';
-}
+    if (!isMusicFile(oldName)) continue;
 
-document.getElementById('runBtn').onclick = async () => {
+    let newName = oldName;
+    if (features.rename) {
+      newName = getNewName(oldName, mode, count, match);
+    }
+    const renamed = newName !== oldName;
+    if (renamed) renameCount++;
+
+    let artAction = 'none';
+    if (features.art) {
+      const artExt = getArtExt(oldName);
+      if (!artExt) {
+        artAction = 'unsupported';
+        artUnsupportedCount++;
+      } else {
+        const hasArt = await checkHasArt(entry);
+        if (hasArt && skipExisting) {
+          artAction = 'skip';
+          artSkipCount++;
+        } else if (hasArt) {
+          artAction = 'replace';
+          artReplaceCount++;
+        } else {
+          artAction = 'add';
+          artAddCount++;
+        }
+      }
+    }
+
+    const hasChange = renamed || artAction === 'add' || artAction === 'replace';
+
+    let artLabel = '';
+    if (artAction === 'add')         artLabel = ' <span class="info-text">[art: add]</span>';
+    else if (artAction === 'replace') artLabel = ' <span class="warn-text">[art: replace]</span>';
+    else if (artAction === 'skip')    artLabel = ' <span class="nochange">[art: skip]</span>';
+    else if (artAction === 'unsupported') artLabel = ' <span class="nochange">[art: n/a]</span>';
+
+    if (renamed) {
+      html += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${newName}</span>${artLabel}</div>`;
+    } else if (hasChange) {
+      html += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${oldName}</span>${artLabel}</div>`;
+    } else {
+      html += `<div class="nochange">${oldName}${artLabel}</div>`;
+      noChangeCount++;
+    }
+
+    previewData.push({
+      oldName,
+      newName,
+      rename: renamed,
+      applyArt: artAction === 'add' || artAction === 'replace'
+    });
+  }
+
+  document.getElementById('previewList').innerHTML = html || '<div class="nochange">No music files found.</div>';
+
+  let summary = '';
+  if (features.rename) summary += `<span class="success-text">${renameCount}</span> to rename. `;
+  if (features.art) {
+    summary += `<span class="info-text">${artAddCount}</span> to add art, `;
+    summary += `<span class="warn-text">${artReplaceCount}</span> to replace art. `;
+    if (artSkipCount) summary += `<span class="nochange">${artSkipCount}</span> skipped. `;
+    if (artUnsupportedCount) summary += `<span class="nochange">${artUnsupportedCount}</span> unsupported. `;
+  }
+  if (noChangeCount) summary += `<span class="nochange">${noChangeCount}</span> no change. `;
+  document.getElementById('summary').innerHTML = summary;
+
+  status.innerText = '';
+  status.className = '';
+
+  if (previewData.filter(p => p.rename || p.applyArt).length === 0) {
+    status.innerText = 'Nothing to change — adjust your settings and try again.';
+    status.className = 'warn-text';
+    document.getElementById('runBtn').disabled = true;
+  }
+});
+
+// ═══════════════════════════════════════════════════
+//  Run — Apply Changes
+// ═══════════════════════════════════════════════════
+document.getElementById('runBtn').addEventListener('click', async () => {
   if (isRunning) return;
-  if (!confirm("This will PERMANENTLY rename files. Continue?")) return;
-  
+  const toProcess = previewData.filter(p => p.rename || p.applyArt);
+  if (toProcess.length === 0) return;
+
+  if (!confirm(`This will modify ${toProcess.length} file${toProcess.length !== 1 ? 's' : ''} in your folder. This cannot be undone. Continue?`)) return;
+
   isRunning = true;
   const btn = document.getElementById('runBtn');
   btn.disabled = true;
-  btn.innerText = "Running...";
-  document.getElementById('progressWrap').style.display = 'block';
-  document.getElementById('status').innerText = "Working...";
+  btn.innerText = 'Working…';
+  document.getElementById('progressWrap').classList.remove('hidden');
+  const status = document.getElementById('status');
+  status.innerText = 'Starting…';
+  status.className = 'info-text';
 
   let done = 0;
   let log = '';
-  const toRename = previewData.filter(p => p.oldName !== p.newName);
-  const total = toRename.length;
+  let errors = 0;
+  const total = toProcess.length;
 
-  if (total === 0) {
-    document.getElementById('status').innerText = "Nothing to rename";
-    btn.innerText = "Finished";
-    return;
-  }
-
-  for (const {oldName, newName} of toRename) {
+  for (const item of toProcess) {
+    const { oldName, newName, rename, applyArt } = item;
     try {
       const fileHandle = await dirHandle.getFileHandle(oldName);
       const file = await fileHandle.getFile();
-      const newFileHandle = await dirHandle.getFileHandle(newName, { create: true });
-      const writable = await newFileHandle.createWritable();
-      await writable.write(file);
-      await writable.close();
-      await dirHandle.removeEntry(oldName);
-      log += `<div class="new">RENAMED: ${oldName} → ${newName}</div>`;
-    } catch(e) {
-      log += `<div style="color:red">ERROR: ${oldName} - ${e.message}</div>`;
+
+      let contentToWrite;
+      if (applyArt) {
+        const buf = await file.arrayBuffer();
+        contentToWrite = embedAlbumArt(buf, imageData.bytes, imageData.mime);
+      } else {
+        contentToWrite = file;
+      }
+
+      if (rename) {
+        const newHandle = await dirHandle.getFileHandle(newName, { create: true });
+        const writable = await newHandle.createWritable();
+        await writable.write(contentToWrite);
+        await writable.close();
+        await dirHandle.removeEntry(oldName);
+        log += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${newName}</span>${applyArt ? ' <span class="info-text">[art]</span>' : ''}</div>`;
+      } else {
+        const writable = await fileHandle.createWritable();
+        await writable.write(contentToWrite);
+        await writable.close();
+        log += `<div><span class="new">${oldName}</span> <span class="info-text">[art updated]</span></div>`;
+      }
+    } catch (e) {
+      errors++;
+      log += `<div class="error-text">ERROR: ${oldName} — ${e.message}</div>`;
     }
+
     done++;
-    document.getElementById('progressBar').style.width = (done/total*100) + '%';
-    document.getElementById('status').innerText = `Renaming ${done} of ${total}...`;
+    document.getElementById('progressBar').style.width = (done / total * 100) + '%';
+    status.innerText = `Processing ${done} of ${total}…`;
+    // Yield to UI to prevent freezing
+    await new Promise(r => setTimeout(r, 0));
   }
 
   document.getElementById('previewList').innerHTML = log;
-  document.getElementById('status').innerText = "Done! You can pick a new folder now.";
-  btn.innerText = "Finished";
-};
+  if (errors > 0) {
+    status.innerText = `Done — ${total - errors} succeeded, ${errors} error${errors !== 1 ? 's' : ''}.`;
+    status.className = 'warn-text';
+  } else {
+    status.innerText = `✓ Done — ${total} file${total !== 1 ? 's' : ''} processed successfully.`;
+    status.className = 'success-text';
+  }
+  btn.innerText = 'Finished';
+  isRunning = false;
+});
 </script>
 </body>
 </html>
