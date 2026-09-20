@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-20T13:01:07.965Z",
+  "updated_at": "2026-09-20T13:06:21.490Z",
   "categories": [
     {
       "id": "developers",
@@ -101,7 +101,6 @@
       "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
       "iconColor": "#ffffff",
       "featured": true,
-      "isNew": true,
       "pinned": true
     },
     {
@@ -115,8 +114,6 @@
       "tags": [
         "audio-lyrics"
       ],
-      "featured": true,
-      "isNew": true,
       "pinned": true
     },
     {
@@ -206,7 +203,6 @@
       "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
       "iconColor": "#f97316",
       "featured": true,
-      "isNew": true,
       "pinned": true
     },
     {
@@ -891,10 +887,7 @@
       "description": "🚨OPEN METHOD HAS TO BE IFRAME TO WORK🚨",
       "icon": "fa:fa-play",
       "color": "#101014",
-      "iconColor": "#e11d48",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
+      "iconColor": "#e11d48"
     },
     {
       "name": "Nes<->Txt",
@@ -902,8 +895,7 @@
       "path": "Tools/nes<->txt.html",
       "author": "Bluevader",
       "description": "Not needed but cool concept for the nes emulator files",
-      "icon": "📠",
-      "isNew": true
+      "icon": "📠"
     },
     {
       "name": "Git Hub Updated",
@@ -1027,7 +1019,6 @@
       "tags": [
         "jesus"
       ],
-      "featured": true,
       "pinned": true
     },
     {
@@ -1100,7 +1091,20 @@
       "name": "Nexus Ai Pro",
       "rawName": "NexusAiPro.html",
       "path": "Tools/NexusAiPro.html",
+      "author": "Bluevader 🔷️",
+      "description": "This is a advanced AI app that uses a Openrouter API key. This app is built for coding and general use",
       "icon": "🌌",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
+      "name": "Narrator",
+      "rawName": "Narrator.html",
+      "path": "Fun/Tabletop/Narrator.html",
+      "author": "Throk",
+      "description": "This is a party game that your able to do games like mafia and it will run the game logic and narrate",
+      "icon": "🐺",
       "featured": true,
       "isNew": true,
       "pinned": true
