@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-20T00:52:53.521Z",
+  "updated_at": "2026-09-20T13:01:07.965Z",
   "categories": [
     {
       "id": "developers",
@@ -828,7 +828,8 @@
       "name": "Simple Prompt Aid",
       "rawName": "Simple Prompt Aid.html",
       "path": "Tools/Simple Prompt Aid.html",
-      "author": "Throk"
+      "author": "Buell",
+      "description": "Helps create prompts for Ai to have better results"
     },
     {
       "name": "Spinner Wheel",
@@ -1094,6 +1095,15 @@
       "description": "You dont want to use this",
       "icon": "fa:fa-apple-whole",
       "isNew": true
+    },
+    {
+      "name": "Nexus Ai Pro",
+      "rawName": "NexusAiPro.html",
+      "path": "Tools/NexusAiPro.html",
+      "icon": "🌌",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
     }
   ]
 }
