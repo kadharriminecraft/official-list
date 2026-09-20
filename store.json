@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-17T19:29:26.154Z",
+  "updated_at": "2026-09-20T00:45:06.309Z",
   "categories": [
     {
       "id": "developers",
@@ -1076,6 +1076,15 @@
       "author": "Bluevader 🔷",
       "description": "Gives you audio file details",
       "icon": "fa:fa-volume-high"
+    },
+    {
+      "name": "File Renamer",
+      "rawName": "Filerenamer",
+      "path": "Tools/Filerenamer",
+      "author": "Bluevader 🔷️",
+      "description": "This is good for renaming songs that have the numbers in front and others",
+      "icon": "🗃",
+      "isNew": true
     }
   ]
 }
