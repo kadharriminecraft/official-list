@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APPLE OBBY OF DOOM 🍎</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Comic Neue', cursive;
+    background: linear-gradient(45deg, #00ff00, #ff00ff, #00ffff, #ffff00, #ff8800);
+    background-size: 400% 400%;
+    animation: rainbowShift 3s infinite linear;
+    overflow-x: hidden;
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><text y='26' font-size='28'>🍎</text></svg>") 16 16, auto;
+  }
+
+  @keyframes rainbowShift {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 400% 50%; }
+  }
+
+  @keyframes spinApple {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.5); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  @keyframes wobble {
+    0%,100% { transform: skew(0deg); }
+    25% { transform: skew(15deg); }
+    75% { transform: skew(-15deg); }
+  }
+
+  @keyframes bounceRandom {
+    0% { top: 10%; left: 10%; }
+    25% { top: 80%; left: 70%; }
+    50% { top: 30%; left: 90%; }
+    75% { top: 60%; left: 20%; }
+    100% { top: 10%; left: 10%; }
+  }
+
+  @keyframes glitch {
+    0%,100% { transform: translate(0,0); }
+    20% { transform: translate(-5px, 3px); }
+    40% { transform: translate(5px, -3px); }
+    60% { transform: translate(-3px, -5px); }
+    80% { transform: translate(3px, 5px); }
+  }
+
+  #header {
+    text-align: center;
+    font-family: 'Bangers', cursive;
+    font-size: 5vw;
+    color: #fff;
+    text-shadow: 4px 4px 0 #000, -2px -2px 0 #ff0000, 2px -2px 0 #00ff00, -2px 2px 0 #0000ff;
+    padding: 20px;
+    animation: wobble 0.5s infinite;
+    z-index: 100;
+    position: relative;
+  }
+
+  #header span {
+    display: inline-block;
+    animation: spinApple 1s infinite;
+  }
+
+  .floating-apple {
+    position: fixed;
+    font-size: 40px;
+    animation: bounceRandom 8s infinite ease-in-out, spinApple 2s infinite;
+    z-index: 50;
+    pointer-events: none;
+    filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.5));
+  }
+
+  .roblox-char {
+    position: relative;
+    width: 120px;
+    height: 200px;
+    margin: 0 auto;
+    animation: glitch 0.3s infinite;
+  }
+
+  .roblox-head {
+    width: 80px;
+    height: 80px;
+    background: #ffd700;
+    border: 4px solid #000;
+    border-radius: 8px;
+    position: absolute;
+    top: 0;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+
+  .roblox-torso {
+    width: 80px;
+    height: 60px;
+    background: #00ccff;
+    border: 4px solid #000;
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+  }
+
+  .roblox-arm {
+    width: 25px;
+    height: 60px;
+    background: #ffd700;
+    border: 4px solid #000;
+    position: absolute;
+    top: 80px;
+    animation: wobble 0.2s infinite;
+  }
+
+  .roblox-arm.left { left: -10px; }
+  .roblox-arm.right { left: 95px; }
+
+  .roblox-leg {
+    width: 35px;
+    height: 55px;
+    background: #0044ff;
+    border: 4px solid #000;
+    position: absolute;
+    top: 140px;
+  }
+
+  .roblox-leg.left { left: 25px; }
+  .roblox-leg.right { left: 60px; }
+
+  .stage {
+    background: repeating-linear-gradient(90deg, #ff00ff 0 20px, #00ff00 20px 40px, #ffff00 40px 60px);
+    border: 8px dashed #000;
+    padding: 30px;
+    margin: 20px;
+    text-align: center;
+    animation: wobble 1s infinite;
+  }
+
+  .apple-button {
+    background: radial-gradient(circle at 30% 30%, #ff4444, #aa0000);
+    color: #fff;
+    font-family: 'Bangers', cursive;
+    font-size: 24px;
+    border: 4px solid #000;
+    padding: 15px 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    margin: 10px;
+    display: inline-block;
+    box-shadow: 5px 5px 0 #000;
+    transition: transform 0.1s;
+  }
+
+  .apple-button:hover {
+    transform: scale(1.3) rotate(20deg);
+  }
+
+  .apple-button:active {
+    transform: scale(0.5) rotate(-360deg);
+  }
+
+  #apple-counter {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #000;
+    color: #00ff00;
+    font-family: 'Bangers', cursive;
+    font-size: 30px;
+    padding: 10px 20px;
+    border: 4px solid #00ff00;
+    z-index: 200;
+  }
+
+  #weird-text {
+    font-size: 3vw;
+    color: #fff;
+    text-shadow: 3px 3px 0 #000;
+    text-align: center;
+    padding: 20px;
+    animation: glitch 0.4s infinite;
+  }
+
+  .kill-brick {
+    background: repeating-linear-gradient(0deg, #ff0000 0 10px, #000 10px 20px);
+    height: 30px;
+    margin: 10px 0;
+    border: 4px solid #fff;
+    text-align: center;
+    color: #fff;
+    font-family: 'Bangers', cursive;
+    font-size: 20px;
+    line-height: 30px;
+    animation: wobble 0.3s infinite;
+  }
+
+  .apple-rain {
+    position: fixed;
+    top: -50px;
+    font-size: 30px;
+    animation: appleFall linear infinite;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  @keyframes appleFall {
+    0% { top: -50px; transform: rotate(0deg); }
+    100% { top: 110vh; transform: rotate(720deg); }
+  }
+
+  #marquee {
+    background: #000;
+    color: #ffff00;
+    font-family: 'Bangers', cursive;
+    font-size: 24px;
+    padding: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    border: 4px solid #ffff00;
+  }
+
+  #marquee span {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marqueeScroll 10s linear infinite;
+  }
+
+  @keyframes marqueeScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+
+  #secret {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    z-index: 1;
+  }
+
+  .ding {
+    position: fixed;
+    pointer-events: none;
+    font-size: 60px;
+    animation: dingPop 1s forwards;
+    z-index: 300;
+  }
+
+  @keyframes dingPop {
+    0% { transform: scale(0) rotate(0deg); opacity: 1; }
+    100% { transform: scale(3) rotate(360deg); opacity: 0; }
+  }
+
+  #ouch {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Bangers', cursive;
+    font-size: 15vw;
+    color: #ff0000;
+    text-shadow: 5px 5px 0 #000;
+    display: none;
+    z-index: 500;
+    animation: glitch 0.1s infinite;
+  }
+</style>
+</head>
+<body>
+
+<div id="apple-counter">🍎 APPLES: 0</div>
+
+<h1 id="header">
+  <span>🍎</span> APPLE OBBY OF DOOM <span>🍎</span> OOF <span>🍎</span>
+</h1>
+
+<div id="marquee">
+  <span>🍎 WELCOME TO APPLE OBBY 🍎 JUMP ON THE APPLES 🍎 AVOID KILL BRICKS 🍎 EAT APPLES 🍎 BE APPLE 🍎 OOF OOF OOF 🍎 ROBUX NOT INCLUDED 🍎 </span>
+</div>
+
+<div class="stage">
+  <div class="roblox-char">
+    <div class="roblox-head">😀</div>
+    <div class="roblox-arm left">🍎</div>
+    <div class="roblox-torso">🍎</div>
+    <div class="roblox-arm right">🍎</div>
+    <div class="roblox-leg left"></div>
+    <div class="roblox-leg right"></div>
+  </div>
+  <p style="font-family:'Bangers';font-size:30px;color:#fff;text-shadow:3px 3px 0 #000;margin-top:10px;">
+    THIS IS YOU. YOU ARE APPLE NOW.
+  </p>
+</div>
+
+<div id="weird-text">
+  🍎🍎🍎 CLICK THE APPLES TO GET APPLES 🍎🍎🍎<br>
+  BUT DON'T TOUCH THE KILL BRICKS OR YOU WILL OOF 🍎
+</div>
+
+<div class="stage">
+  <button class="apple-button" onclick="collectApple(this)">🍎 EAT</button>
+  <button class="apple-button" onclick="collectApple(this)">🍎 YUM</button>
+  <button class="apple-button" onclick="collectApple(this)">🍎 NOM</button>
+  <button class="apple-button" onclick="collectApple(this)">🍎 CRUNCH</button>
+  <button class="apple-button" onclick="collectApple(this)">🍎 MUNCH</button>
+  <button class="apple-button" onclick="collectApple(this)">🍎 DEVOUR</button>
+  <button class="apple-button" onclick="collectApple(this)">🍎 SLURP</button>
+  <button class="apple-button" onclick="collectApple(this)">🍎 CHOMP</button>
+</div>
+
+<div class="stage">
+  <h2 style="font-family:'Bangers';font-size:40px;color:#fff;text-shadow:3px 3px 0 #000;">⚠️ KILL BRICK ZONE ⚠️</h2>
+  <div class="kill-brick" onclick="oof()">OOF OOF OOF OOF OOF</div>
+  <div class="kill-brick" onclick="oof()">🍎 DANGER 🍎 DANGER 🍎</div>
+  <div class="kill-brick" onclick="oof()">DON'T STEP HERE BRO</div>
+  <div class="kill-brick" onclick="oof()">LAVA LAVA LAVA 🍎🔥</div>
+  <div class="kill-brick" onclick="oof()">YOU WILL OOF</div>
+</div>
+
+<div class="stage">
+  <h2 style="font-family:'Bangers';font-size:35px;color:#fff;text-shadow:3px 3px 0 #000;">🍎 APPLE FACTS 🍎</h2>
+  <p style="font-size:20px;color:#fff;text-shadow:2px 2px 0 #000;">
+    🍎 Apples are apples.<br>
+    🍎 Roblox was made of apples in 2004.<br>
+    🍎 If you eat 999 apples you become Apple God.<br>
+    🍐 Wait that's a pear. Never mind.<br>
+    🍎 The moon is made of apples. Trust me bro.<br>
+    🍎 OOF is the sound an apple makes when it dies.<br>
+    🍎 You are 60% apple. Don't look it up.<br>
+    🍎 There are no apples in Roblox. That's why it's sad.<br>
+    🍎 APPLE APPLE APPLE APPLE APPLE APPLE APPLE APPLE
+  </p>
+</div>
+
+<div class="stage">
+  <h2 style="font-family:'Bangers';font-size:35px;color:#fff;text-shadow:3px 3px 0 #000;">🎲 RANDOM APPLE GENERATOR 🎲</h2>
+  <button class="apple-button" onclick="randomApple()">🍎 SUMMON APPLE 🍎</button>
+  <p id="apple-output" style="font-size:25px;color:#fff;text-shadow:2px 2px 0 #000;margin-top:15px;"></p>
+</div>
+
+<div id="ouch">OOOOOOOF 🍎</div>
+
+<div id="secret">you found the secret apple. congratulations. there is no reward. only apple.</div>
+
+<script>
+  let appleCount = 0;
+  const counter = document.getElementById('apple-counter');
+  const appleEmojis = ['🍎','🍏','🍐','🟢','🔴','🟡','🍌','🤡','💀','🦷','👁️','🧠','🦴','🥩','🍕','🍎','🍎','🍎'];
+
+  // Floating apples
+  for (let i = 0; i < 15; i++) {
+    const apple = document.createElement('div');
+    apple.className = 'floating-apple';
+    apple.textContent = appleEmojis[Math.floor(Math.random() * appleEmojis.length)];
+    apple.style.animationDuration = (3 + Math.random() * 8) + 's, ' + (1 + Math.random() * 3) + 's';
+    apple.style.animationDelay = Math.random() * 5 + 's';
+    document.body.appendChild(apple);
+  }
+
+  // Apple rain
+  function spawnAppleRain() {
+    const apple = document.createElement('div');
+    apple.className = 'apple-rain';
+    apple.textContent = appleEmojis[Math.floor(Math.random() * appleEmojis.length)];
+    apple.style.left = Math.random() * 100 + 'vw';
+    apple.style.animationDuration = (2 + Math.random() * 4) + 's';
+    document.body.appendChild(apple);
+    setTimeout(() => apple.remove(), 6000);
+  }
+  setInterval(spawnAppleRain, 200);
+
+  function collectApple(btn) {
+    appleCount++;
+    counter.textContent = '🍎 APPLES: ' + appleCount;
+
+    // Ding animation
+    const ding = document.createElement('div');
+    ding.className = 'ding';
+    ding.textContent = '🍎+1';
+    ding.style.left = (Math.random() * window.innerWidth) + 'px';
+    ding.style.top = (Math.random() * window.innerHeight) + 'px';
+    document.body.appendChild(ding);
+    setTimeout(() => ding.remove(), 1000);
+
+    // Random quips
+    const quips = ['OOF!','YUM!','CRUNCH!','APPLE GET!','+1 APPLE!','DELICIOUS!','YOU ARE APPLE!','MMMM!','BECOME APPLE!'];
+    btn.textContent = '🍎 ' + quips[Math.floor(Math.random() * quips.length)];
+
+    if (appleCount === 10) {
+      alert('🍎 ACHIEVEMENT: 10 APPLES! You are 10% more apple now. 🍎');
+    }
+    if (appleCount === 50) {
+      alert('🍎 ACHIEVEMENT: 50 APPLES! You are basically an apple tree. 🍎');
+    }
+    if (appleCount === 100) {
+      alert('🍎 ACHIEVEMENT: 100 APPLES! You have transcended. You ARE the apple. 🍎');
+      document.body.style.animationDuration = '0.5s';
+    }
+    if (appleCount === 999) {
+      alert('🍎 APPLE GOD MODE UNLOCKED. There is nothing beyond this. Only apple. 🍎');
+    }
+  }
+
+  function oof() {
+    const ouch = document.getElementById('ouch');
+    ouch.style.display = 'block';
+    ouch.textContent = ['OOOOOOOF 🍎','OUCH! 🍎','YOU DIED! 🍎','OOF! 🍎','APPLE ERROR 404 🍎'][Math.floor(Math.random()*5)];
+    document.body.style.filter = 'hue-rotate(180deg)';
+    setTimeout(() => {
+      ouch.style.display = 'none';
+      document.body.style.filter = '';
+    }, 1000);
+    appleCount = Math.max(0, appleCount - 5);
+    counter.textContent = '🍎 APPLES: ' + appleCount;
+  }
+
+  function randomApple() {
+    const output = document.getElementById('apple-output');
+    const things = [
+      '🍎 You summoned a GRAVITY APPLE. It falls up.',
+      '🍏 You summoned a GHOST APPLE. It haunts your fridge.',
+      '🍐 You summoned a PEAR. This is not an apple. You failed.',
+      '🍎 You summoned a TIME APPLE. It is yesterday now.',
+      '🍎 You summoned a LOUD APPLE. It screams.',
+      '🍎 You summoned a WET APPLE. It is soaked. Why.',
+      '🍎 You summoned a SQUARE APPLE. Geometry is broken.',
+      '🍎 You summoned an APPLE THAT KNOWS YOUR SECRETS.',
+      '🍎 You summoned an APPLE FROM THE FUTURE. It is also an apple.',
+      '🤡 You summoned a CLOWN APPLE. Honk honk.',
+      '💀 You summoned a DEAD APPLE. RIP.',
+      '🍎 You summoned an APPLE INSIDE AN APPLE INSIDE AN APPLE.',
+      '🍎 You summoned NOTHING. But it tastes like apple.',
+      '🍎 You summoned an APPLE THAT IS YOU. Hello.',
+      '🍎 You summoned a ROBUX APPLE. It is worth 0 Robux.'
+    ];
+    output.textContent = things[Math.floor(Math.random() * things.length)];
+    output.style.transform = 'rotate(' + (Math.random() * 20 - 10) + 'deg)';
+  }
+
+  // Konami-ish: press A for apple explosion
+  document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'a') {
+      for (let i = 0; i < 30; i++) {
+        setTimeout(spawnAppleRain, i * 50);
+      }
+    }
+    if (e.key.toLowerCase() === 'o') {
+      oof();
+    }
+  });
+
+  // Random title flicker
+  const titles = [
+    '🍎 APPLE OBBY OF DOOM 🍎',
+    '🍎 OOF OOF OOF 🍎',
+    '🍎 APPLE APPLE APPLE 🍎',
+    '🍎 YES 🍎',
+    '🍎 BE APPLE 🍎',
+    '🍎 100% APPLE 🍎',
+    '🍎 OOF.exe 🍎'
+  ];
+  setInterval(() => {
+    document.title = titles[Math.floor(Math.random() * titles.length)];
+  }, 2000);
+
+  // Random background direction change
+  setInterval(() => {
+    document.body.style.animationDirection = Math.random() > 0.5 ? 'reverse' : 'normal';
+  }, 5000);
+</script>
+
+</body>
+</html>
