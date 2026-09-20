@@ -3,991 +3,358 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Music Toolkit — Rename & Album Art</title>
+<title>Music Toolkit</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0f0f0f;
-    color: #e0e0e0;
-    padding: 24px;
-    max-width: 760px;
-    margin: 0 auto;
-    line-height: 1.5;
-  }
-  h1 { font-size: 1.5rem; margin-bottom: 4px; }
-  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
-
-  .card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  }
-  .card-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  label {
-    display: block;
-    margin: 12px 0 6px;
-    font-weight: 600;
-    font-size: 0.88rem;
-    color: #ccc;
-  }
-  input[type="text"], input[type="number"], select {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    background: #222;
-    color: #eee;
-    font-size: 0.95rem;
-    transition: border-color 0.2s;
-  }
-  input:focus, select:focus { outline: none; border-color: #d32f2f; }
-
-  .btn {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    margin-top: 12px;
-    transition: opacity 0.2s, transform 0.1s;
-  }
-  .btn:active { transform: scale(0.98); }
-  .btn-primary { background: #d32f2f; color: #fff; }
-  .btn-secondary { background: #2563eb; color: #fff; }
-  .btn:disabled { background: #444; cursor: not-allowed; opacity: 0.5; }
-
-  .toggle-row { display: flex; gap: 12px; margin-bottom: 4px; }
-  .toggle-card {
-    flex: 1;
-    background: #222;
-    border: 2px solid #333;
-    border-radius: 10px;
-    padding: 14px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    text-align: center;
-    user-select: none;
-  }
-  .toggle-card.active { border-color: #d32f2f; background: #2a1515; }
-  .toggle-card .icon { font-size: 1.4rem; }
-  .toggle-card .label { font-weight: 700; font-size: 0.82rem; margin-top: 4px; }
-
-  .hint { font-size: 0.8rem; color: #777; margin-top: 6px; }
-
-  .preview {
-    max-height: 380px;
-    overflow-y: auto;
-    background: #0a0a0a;
-    border: 1px solid #222;
-    padding: 12px;
-    border-radius: 8px;
-    font-family: 'SF Mono', Monaco, Consolas, monospace;
-    font-size: 0.82rem;
-    line-height: 1.7;
-  }
-  .preview::-webkit-scrollbar { width: 6px; }
-  .preview::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-
-  .old { color: #7dd87d; }
-  .new { color: #fff; font-weight: 600; }
-  .arrow { color: #666; }
-  .nochange { color: #555; }
-  .warn-text { color: #f59e0b; }
-  .error-text { color: #ef4444; }
-  .success-text { color: #22c55e; }
-  .info-text { color: #60a5fa; }
-
-  .progress {
-    height: 6px;
-    background: #333;
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 12px;
-  }
-  .progress-bar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #d32f2f, #f44336);
-    transition: width 0.3s;
-  }
-  #status { text-align: center; margin-top: 10px; font-weight: 600; font-size: 0.9rem; }
-
-  .hidden { display: none !important; }
-
-  .file-count {
-    margin-top: 10px;
-    padding: 8px 12px;
-    background: #0a0a0a;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    color: #7dd87d;
-  }
-
-  .checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 10px 0;
-  }
-  .checkbox-row input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #d32f2f;
-    cursor: pointer;
-  }
-  .checkbox-row label { margin: 0; cursor: pointer; }
-
-  .warning-banner {
-    background: #2a1a00;
-    border: 1px solid #f59e0b33;
-    color: #f59e0b;
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    margin-bottom: 16px;
-    font-weight: 600;
-  }
-
-  /* Cropper Styles */
-  .cropper-wrapper {
-    width: 320px;
-    height: 320px;
-    margin: 16px auto;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 2px solid #333;
-    position: relative;
-    background: #000;
-    cursor: grab;
-    touch-action: none;
-  }
-  .cropper-wrapper:active { cursor: grabbing; }
-  #cropperCanvas { display: block; }
-  .cropper-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    background: #222;
-    padding: 8px;
-    border-radius: 8px;
-  }
-  .btn-small {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid #333;
-    background: #333;
-    color: #fff;
-    cursor: pointer;
-    font-weight: 700;
-    width: auto;
-    margin: 0;
-  }
-  .btn-small:hover { background: #444; }
-  #zoomSlider { flex: 1; margin: 0; accent-color: #d32f2f; }
-
-  .cover-preview-container {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    background: #0a0a0a;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    border: 1px solid #222;
-  }
-  .cover-preview-container img {
-    width: 80px;
-    height: 80px;
-    border-radius: 6px;
-    object-fit: cover;
-    border: 1px solid #333;
-  }
-  .cover-preview-container .info {
-    font-size: 0.85rem;
-    color: #aaa;
-  }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f0f0f;color:#e0e0e0;padding:24px;max-width:760px;margin:0 auto;line-height:1.5}
+h1{font-size:1.5rem;margin-bottom:4px}
+.sub{color:#888;font-size:.9rem;margin-bottom:20px}
+.card{background:#1a1a1a;border:1px solid #2a2a2a;padding:20px;border-radius:12px;margin-bottom:16px}
+.ct{font-size:1.05rem;font-weight:700;margin-bottom:14px}
+label{display:block;margin:12px 0 6px;font-weight:600;font-size:.88rem;color:#ccc}
+input[type=text],input[type=number],select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #333;background:#222;color:#eee;font-size:.95rem}
+input:focus,select:focus{outline:none;border-color:#d32f2f}
+.btn{width:100%;padding:12px 16px;border-radius:8px;border:none;font-weight:700;font-size:.95rem;cursor:pointer;margin-top:12px;transition:opacity .2s,transform .1s}
+.btn:active{transform:scale(.98)}
+.btn-p{background:#d32f2f;color:#fff}
+.btn-s{background:#2563eb;color:#fff}
+.btn-d{background:#444;color:#fff}
+.btn:disabled{background:#444;cursor:not-allowed;opacity:.5}
+.sr{display:flex;gap:12px}
+.sr .btn{margin-top:0}
+.tr{display:flex;gap:12px;margin-bottom:4px}
+.tc{flex:1;background:#222;border:2px solid #333;border-radius:10px;padding:14px;cursor:pointer;transition:.2s;text-align:center;user-select:none}
+.tc.active{border-color:#d32f2f;background:#2a1515}
+.tc .ic{font-size:1.4rem}
+.tc .lb{font-weight:700;font-size:.82rem;margin-top:4px}
+.hint{font-size:.8rem;color:#777;margin-top:6px}
+.pv{max-height:380px;overflow-y:auto;background:#0a0a0a;border:1px solid #222;border-radius:8px}
+.pv::-webkit-scrollbar{width:6px}
+.pv::-webkit-scrollbar-thumb{background:#444;border-radius:3px}
+.pi{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #222}
+.pi:last-child{border-bottom:none}
+.pi-ic{font-size:1.2rem}
+.pi-d{flex:1;min-width:0}
+.pi-n{font-weight:600;color:#fff;font-size:.9rem;word-break:break-all}
+.pi-m{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pi-m span{font-size:.72rem;padding:3px 8px;border-radius:4px;background:#222}
+.m-r{color:#888}.m-a{color:#60a5fa}.m-ar{color:#c084fc}.m-s{color:#555}.m-w{color:#f59e0b}
+.nc{color:#555}.wt{color:#f59e0b}.et{color:#ef4444}.st{color:#22c55e}.it{color:#60a5fa}
+.prog{height:6px;background:#333;border-radius:3px;overflow:hidden;margin-top:12px}
+.pb{height:100%;width:0;background:linear-gradient(90deg,#d32f2f,#f44336);transition:width .3s}
+#status{text-align:center;margin-top:10px;font-weight:600;font-size:.9rem}
+.hidden{display:none!important}
+.fc{margin-top:10px;padding:8px 12px;background:#0a0a0a;border-radius:6px;font-size:.85rem;color:#7dd87d;display:flex;justify-content:space-between;align-items:center}
+.cr{display:flex;align-items:center;gap:8px;margin:10px 0}
+.cr input[type=checkbox]{width:18px;height:18px;accent-color:#d32f2f;cursor:pointer}
+.cr label{margin:0;cursor:pointer}
+.wb{background:#2a1a00;border:1px solid #f59e0b33;color:#f59e0b;padding:10px 14px;border-radius:8px;font-size:.85rem;margin-bottom:16px;font-weight:600}
+.cw{width:320px;height:320px;margin:16px auto;border-radius:12px;overflow:hidden;border:2px solid #333;background:#000;cursor:grab;touch-action:none}
+.cw:active{cursor:grabbing}
+#cc{display:block}
+.cc{display:flex;align-items:center;gap:8px;margin-bottom:10px;background:#222;padding:8px;border-radius:8px}
+.bs{padding:6px 12px;border-radius:6px;border:1px solid #333;background:#333;color:#fff;cursor:pointer;font-weight:700;width:auto;margin:0}
+.bs:hover{background:#444}
+#zs{flex:1;margin:0;accent-color:#d32f2f}
+.cpc{display:flex;gap:16px;align-items:center;background:#0a0a0a;padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid #222}
+.cpc img{width:80px;height:80px;border-radius:6px;object-fit:cover;border:1px solid #333}
+.cpc .info{font-size:.85rem;color:#aaa}
+.sd{border-top:1px solid #333;margin:16px 0;padding-top:4px}
+.drop-zone{border:2px dashed #333;border-radius:12px;padding:20px;text-align:center;color:#777;margin-top:12px;transition:.2s}
+.drop-zone.dragover{border-color:#d32f2f;background:#2a1515;color:#fff}
 </style>
 </head>
 <body>
-
 <h1>🎵 Music Toolkit</h1>
-<p class="subtitle">Rename tracks and embed album art — runs entirely in your browser, nothing uploaded.</p>
+<p class="sub">Rename tracks, embed album art, and set artist tags — runs entirely in your browser.</p>
+<div class="wb">⚠️ Files are modified in-place. This cannot be undone. Back up first.</div>
 
-<div class="warning-banner">⚠️ Files are renamed and modified in-place. This cannot be undone. Back up your folder first.</div>
-
-<!-- Step 1: Folder -->
 <div class="card">
-  <div class="card-title">📁 Step 1 — Pick Music Folder</div>
-  <button class="btn btn-secondary" id="pickFolder">Choose Folder</button>
-  <div id="fileCount" class="file-count hidden"></div>
+<div class="ct">📁 Step 1 — Pick Music Folder or Files</div>
+<div class="sr">
+<button class="btn btn-s" id="pickFolder">Choose Folder</button>
+<button class="btn btn-s" id="pickFiles">Select Files</button>
+<button class="btn btn-d" id="clearFiles">Clear List</button>
+</div>
+<div id="fileCount" class="fc hidden"></div>
+<div class="drop-zone" id="dropZone">Or drag & drop music files here</div>
 </div>
 
-<!-- Step 2: Actions -->
 <div class="card">
-  <div class="card-title">⚙️ Step 2 — Choose Actions</div>
-  <div class="toggle-row">
-    <div class="toggle-card active" id="toggleRename" data-feature="rename">
-      <div class="icon">✏️</div>
-      <div class="label">Rename Files</div>
-    </div>
-    <div class="toggle-card" id="toggleArt" data-feature="art">
-      <div class="icon">🖼️</div>
-      <div class="label">Add Album Art</div>
-    </div>
-  </div>
-
-  <!-- Rename options -->
-  <div id="renameSection">
-    <label>Rename Mode</label>
-    <select id="mode">
-      <option value="track">Remove leading track numbers (01, 1, 10 -, etc.)</option>
-      <option value="start">Remove X characters from start</option>
-      <option value="end">Remove X characters from end</option>
-    </select>
-    <div id="charOptions">
-      <label>Characters to remove</label>
-      <input type="number" id="count" value="2" min="1" max="50">
-    </div>
-    <label>Only rename if name starts with (optional)</label>
-    <input type="text" id="match" placeholder="e.g. 01, Track, [">
-  </div>
-
-  <!-- Art options -->
-  <div id="artSection" class="hidden">
-    <label>Choose & Crop Cover Image</label>
-    <button class="btn btn-secondary" id="pickImage">Select Image</button>
-    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" class="hidden">
-    
-    <div id="cropperContainer" class="hidden">
-      <div class="cropper-wrapper">
-        <canvas id="cropperCanvas" width="320" height="320"></canvas>
-      </div>
-      <div class="cropper-controls">
-        <button class="btn-small" id="zoomOut">−</button>
-        <input type="range" id="zoomSlider" min="0.1" max="5" step="0.01" value="1">
-        <button class="btn-small" id="zoomIn">+</button>
-        <button class="btn-small" id="resetCrop">Reset</button>
-      </div>
-      <div class="hint">Drag to pan, use slider/buttons to zoom. Image is cropped to a perfect 1:1 square to prevent black bars in players.</div>
-    </div>
-
-    <div class="checkbox-row">
-      <input type="checkbox" id="skipExistingArt" checked>
-      <label for="skipExistingArt">Skip files that already have album art</label>
-    </div>
-    <div class="hint">Album art embedding supports MP3 files (ID3v2 tags). Other formats are skipped for art but can still be renamed.</div>
-  </div>
-
-  <button class="btn btn-primary" id="previewBtn">Preview Changes</button>
+<div class="ct">⚙️ Step 2 — Choose Actions</div>
+<div class="tr">
+<div class="tc active" id="tRename" data-f="rename"><div class="ic">✏️</div><div class="lb">Rename Files</div></div>
+<div class="tc" id="tArt" data-f="art"><div class="ic">🖼️</div><div class="lb">Add Album Art</div></div>
+<div class="tc" id="tArtist" data-f="artist"><div class="ic">🎤</div><div class="lb">Set Artist</div></div>
+</div>
+<div id="renameSection">
+<label>Rename Mode</label>
+<select id="mode">
+<option value="track">Remove leading track numbers</option>
+<option value="start">Remove X characters from start</option>
+<option value="end">Remove X characters from end</option>
+</select>
+<div id="charOptions" class="hidden">
+<label>Characters to remove</label>
+<input type="number" id="count" value="2" min="1" max="50">
+</div>
+<label>Only rename if name starts with (optional)</label>
+<input type="text" id="match" placeholder="e.g. 01, Track, [">
+</div>
+<div id="artSection" class="hidden">
+<div class="sd"></div>
+<label>Choose & Crop Cover Image</label>
+<button class="btn btn-s" id="pickImage">Select Image</button>
+<input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" class="hidden">
+<div id="cropperContainer" class="hidden">
+<div class="cw"><canvas id="cc" width="320" height="320"></canvas></div>
+<div class="cc">
+<button class="bs" id="zOut">−</button>
+<input type="range" id="zs" min="0.1" max="5" step="0.01" value="1">
+<button class="bs" id="zIn">+</button>
+<button class="bs" id="zReset">Reset</button>
+</div>
+<div class="hint">Drag to pan, slider/buttons to zoom. Cropped to 1:1 square.</div>
+</div>
+<div class="cr"><input type="checkbox" id="skipArt" checked><label for="skipArt">Skip files that already have album art</label></div>
+<div class="hint">Art embedding supports MP3 (ID3v2). Other formats skipped for art.</div>
+</div>
+<div id="artistSection" class="hidden">
+<div class="sd"></div>
+<label>Artist Name</label>
+<input type="text" id="artistName" placeholder="e.g. The Beatles">
+<div class="cr"><input type="checkbox" id="skipArtist"><label for="skipArtist">Skip files that already have an artist tag</label></div>
+<div class="hint">Artist tag supports MP3 (ID3v2 TPE1). UTF-16 encoded.</div>
+</div>
+<button class="btn btn-p" id="previewBtn" disabled>Preview Changes</button>
 </div>
 
-<!-- Step 3: Preview -->
 <div class="card hidden" id="previewCard">
-  <div class="card-title">👁️ Step 3 — Preview & Confirm</div>
-  
-  <div id="coverPreview" class="cover-preview-container hidden">
-    <img id="coverThumb" src="" alt="Cover preview">
-    <div class="info">
-      <div style="font-weight:700; color:#fff;">Album Art Preview</div>
-      <div>This exact 1:1 crop will be embedded.</div>
-    </div>
-  </div>
-
-  <div class="preview" id="previewList"></div>
-  <div id="summary" class="hint" style="margin-top:10px; font-size:0.85rem;"></div>
-  <button class="btn btn-primary" id="runBtn">⚠️ Apply Changes to Files</button>
-  <div class="progress hidden" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
-  <div id="status"></div>
+<div class="ct">👁️ Step 3 — Preview & Confirm</div>
+<div id="coverPreview" class="cpc hidden">
+<img id="coverThumb" src="" alt="Cover">
+<div class="info"><div style="font-weight:700;color:#fff">Album Art Preview</div><div>This 1:1 crop will be embedded.</div></div>
+</div>
+<div class="pv" id="previewList"></div>
+<div id="summary" class="hint" style="margin-top:10px;font-size:.85rem"></div>
+<button class="btn btn-p" id="runBtn" disabled>⚠️ Apply Changes to Files</button>
+<div class="prog hidden" id="progWrap"><div class="pb" id="progBar"></div></div>
+<div id="status"></div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════
-//  State
-// ═══════════════════════════════════════════════════
-let dirHandle = null;
-let isRunning = false;
-let previewData = [];
-let imageData = null; // { bytes: Uint8Array, mime: string, url: string }
-let features = { rename: true, art: false };
-let currentObjectUrl = null;
-let coverThumbUrl = null;
+let dirHandle=null,fileHandles=[],sourceType=null,isRunning=false,isScanning=false,previewData=[],imageData=null;
+let features={rename:true,art:false,artist:false};
+let currentObjectUrl=null,coverThumbUrl=null;
+const MUSIC_EXT=['.mp3','.flac','.m4a','.wav','.ogg','.wma','.aac','.opus'];
+const TAG_EXT=['.mp3'];
 
-const MUSIC_EXTENSIONS = ['.mp3', '.flac', '.m4a', '.wav', '.ogg', '.wma', '.aac', '.opus'];
-const ART_EXTENSIONS = ['.mp3'];
+// Cropper
+const cc=document.getElementById('cc'),cctx=cc.getContext('2d');
+const cs={img:null,scale:1,ox:0,oy:0,size:320,drag:false,lx:0,ly:0,min:0.1,max:5};
 
-// ═══════════════════════════════════════════════════
-//  Cropper State & Logic
-// ═══════════════════════════════════════════════════
-const cropperCanvas = document.getElementById('cropperCanvas');
-const cropperCtx = cropperCanvas.getContext('2d');
-const cropperState = {
-  img: null,
-  scale: 1,
-  offsetX: 0,
-  offsetY: 0,
-  canvasSize: 320,
-  dragging: false,
-  lastX: 0,
-  lastY: 0,
-  minScale: 0.1,
-  maxScale: 5
-};
+function drawC(){cctx.fillStyle='#000';cctx.fillRect(0,0,cs.size,cs.size);if(cs.img)cctx.drawImage(cs.img,cs.ox,cs.oy,cs.img.width*cs.scale,cs.img.height*cs.scale)}
+function fitC(){if(!cs.img)return;cs.scale=Math.max(cs.size/cs.img.width,cs.size/cs.img.height);cs.ox=(cs.size-cs.img.width*cs.scale)/2;cs.oy=(cs.size-cs.img.height*cs.scale)/2;document.getElementById('zs').value=cs.scale;drawC()}
+function clampC(){if(!cs.img)return;cs.min=Math.min(cs.size/cs.img.width,cs.size/cs.img.height)*0.5;cs.scale=Math.max(cs.min,Math.min(cs.max,cs.scale));const w=cs.img.width*cs.scale,h=cs.img.height*cs.scale;if(w<=cs.size)cs.ox=(cs.size-w)/2;else{cs.ox=Math.min(0,Math.max(cs.size-w,cs.ox))}if(h<=cs.size)cs.oy=(cs.size-h)/2;else{cs.oy=Math.min(0,Math.max(cs.size-h,cs.oy))}}
 
-function drawCropper() {
-  cropperCtx.fillStyle = '#000';
-  cropperCtx.fillRect(0, 0, cropperState.canvasSize, cropperState.canvasSize);
-  if (cropperState.img) {
-    cropperCtx.drawImage(
-      cropperState.img,
-      cropperState.offsetX,
-      cropperState.offsetY,
-      cropperState.img.width * cropperState.scale,
-      cropperState.img.height * cropperState.scale
-    );
-  }
-}
+cc.addEventListener('mousedown',e=>{cs.drag=true;cs.lx=e.clientX;cs.ly=e.clientY});
+window.addEventListener('mousemove',e=>{if(!cs.drag)return;cs.ox+=e.clientX-cs.lx;cs.oy+=e.clientY-cs.ly;cs.lx=e.clientX;cs.ly=e.clientY;clampC();drawC()});
+window.addEventListener('mouseup',()=>cs.drag=false);
+cc.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];cs.drag=true;cs.lx=t.clientX;cs.ly=t.clientY},{passive:false});
+cc.addEventListener('touchmove',e=>{e.preventDefault();if(!cs.drag)return;const t=e.touches[0];cs.ox+=t.clientX-cs.lx;cs.oy+=t.clientY-cs.ly;cs.lx=t.clientX;cs.ly=t.clientY;clampC();drawC()},{passive:false});
+cc.addEventListener('touchend',e=>{e.preventDefault();cs.drag=false},{passive:false});
 
-function fitImageToCanvas() {
-  if (!cropperState.img) return;
-  const scaleW = cropperState.canvasSize / cropperState.img.width;
-  const scaleH = cropperState.canvasSize / cropperState.img.height;
-  cropperState.scale = Math.max(scaleW, scaleH); // Cover the canvas
-  cropperState.offsetX = (cropperState.canvasSize - cropperState.img.width * cropperState.scale) / 2;
-  cropperState.offsetY = (cropperState.canvasSize - cropperState.img.height * cropperState.scale) / 2;
-  document.getElementById('zoomSlider').value = cropperState.scale;
-  drawCropper();
-}
+function zoomTo(newS){if(!cs.img)return;const o=cs.scale;cs.scale=newS;const c=cs.size/2;cs.ox=c-(c-cs.ox)*(cs.scale/o);cs.oy=c-(c-cs.oy)*(cs.scale/o);clampC();document.getElementById('zs').value=cs.scale;drawC()}
+document.getElementById('zs').addEventListener('input',e=>zoomTo(parseFloat(e.target.value)));
+document.getElementById('zIn').addEventListener('click',()=>zoomTo(Math.min(cs.max,cs.scale*1.1)));
+document.getElementById('zOut').addEventListener('click',()=>zoomTo(Math.max(cs.min,cs.scale/1.1)));
+document.getElementById('zReset').addEventListener('click',fitC);
+cc.addEventListener('wheel',e=>{e.preventDefault();zoomTo(cs.scale*(e.deltaY>0?0.9:1.1))},{passive:false});
 
-function clampCropper() {
-  if (!cropperState.img) return;
-  const w = cropperState.img.width * cropperState.scale;
-  const h = cropperState.img.height * cropperState.scale;
-  
-  // Prevent zooming out too far
-  const minScaleW = cropperState.canvasSize / cropperState.img.width;
-  const minScaleH = cropperState.canvasSize / cropperState.img.height;
-  cropperState.minScale = Math.min(minScaleW, minScaleH) * 0.5; // allow some zoom out but not infinite
-  
-  if (cropperState.scale < cropperState.minScale) cropperState.scale = cropperState.minScale;
-  if (cropperState.scale > cropperState.maxScale) cropperState.scale = cropperState.maxScale;
+// Utils
+function concatA(arrs){const t=arrs.reduce((s,a)=>s+a.length,0);const r=new Uint8Array(t);let o=0;for(const a of arrs){r.set(a,o);o+=a.length}return r}
+function isMusic(n){const l=n.toLowerCase();return MUSIC_EXT.some(e=>l.endsWith(e))}
+function getExt(n){const i=n.lastIndexOf('.');return i>0?n.substring(i):''}
+function getBase(n){const i=n.lastIndexOf('.');return i>0?n.substring(0,i):n}
+function canTag(n){const l=n.toLowerCase();return TAG_EXT.some(e=>l.endsWith(e))}
+function enc16(s){const b=new Uint8Array(s.length*2);for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);b[i*2]=c&0xFF;b[i*2+1]=(c>>8)&0xFF}return b}
 
-  const scaledW = cropperState.img.width * cropperState.scale;
-  const scaledH = cropperState.img.height * cropperState.scale;
+// ID3v2
+function readSS(v,o){return(v.getUint8(o)<<21)|(v.getUint8(o+1)<<14)|(v.getUint8(o+2)<<7)|v.getUint8(o+3)}
+function writeSS(a,o,v){a[o]=(v>>21)&0x7F;a[o+1]=(v>>14)&0x7F;a[o+2]=(v>>7)&0x7F;a[o+3]=v&0x7F}
 
-  // Prevent panning outside the canvas bounds
-  if (scaledW <= cropperState.canvasSize) {
-    cropperState.offsetX = (cropperState.canvasSize - scaledW) / 2;
-  } else {
-    if (cropperState.offsetX > 0) cropperState.offsetX = 0;
-    if (cropperState.offsetX < cropperState.canvasSize - scaledW) cropperState.offsetX = cropperState.canvasSize - scaledW;
-  }
+function parseID3(buf){
+if(buf.byteLength<10)return null;const v=new DataView(buf);
+if(v.getUint8(0)!==0x49||v.getUint8(1)!==0x44||v.getUint8(2)!==0x33)return null;
+const ver=v.getUint8(3),flags=v.getUint8(5),sz=readSS(v,6),end=10+sz;
+if(end>buf.byteLength)return null;
+let off=10;if(flags&0x40){if(ver===3){off=10+4+v.getUint32(10)}else if(ver===4){off=10+readSS(v,10)}}
+let fe=end;if(flags&0x10)fe=end-10;
+const frames=[];while(off+10<=fe){
+const id=String.fromCharCode(v.getUint8(off),v.getUint8(off+1),v.getUint8(off+2),v.getUint8(off+3));
+if(id.charCodeAt(0)===0)break;
+let fs=ver===4?readSS(v,off+4):v.getUint32(off+4);
+if(fs<=0||off+10+fs>fe)break;
+frames.push({id,data:new Uint8Array(buf,off+10,fs).slice()});off+=10+fs}
+return{version:ver,frames,tagEnd:end}}
 
-  if (scaledH <= cropperState.canvasSize) {
-    cropperState.offsetY = (cropperState.canvasSize - scaledH) / 2;
-  } else {
-    if (cropperState.offsetY > 0) cropperState.offsetY = 0;
-    if (cropperState.offsetY < cropperState.canvasSize - scaledH) cropperState.offsetY = cropperState.canvasSize - scaledH;
-  }
-}
+function buildAPIC(bytes,mime){return concatA([new Uint8Array([0]),new TextEncoder().encode(mime+'\0'),new Uint8Array([3]),new Uint8Array([0]),bytes])}
+function buildTPE1(artist){return concatA([new Uint8Array([1]),new Uint8Array([0xFF,0xFE]),enc16(artist),new Uint8Array([0,0])])}
 
-// Mouse Events
-cropperCanvas.addEventListener('mousedown', e => {
-  cropperState.dragging = true;
-  cropperState.lastX = e.clientX;
-  cropperState.lastY = e.clientY;
-});
-window.addEventListener('mousemove', e => {
-  if (!cropperState.dragging) return;
-  const dx = e.clientX - cropperState.lastX;
-  const dy = e.clientY - cropperState.lastY;
-  cropperState.offsetX += dx;
-  cropperState.offsetY += dy;
-  cropperState.lastX = e.clientX;
-  cropperState.lastY = e.clientY;
-  clampCropper();
-  drawCropper();
-});
-window.addEventListener('mouseup', () => { cropperState.dragging = false; });
+function buildTag(frames){
+const parts=[];for(const f of frames){const id=new Uint8Array(4);for(let i=0;i<4;i++)id[i]=f.id.charCodeAt(i);const sz=new Uint8Array(4);new DataView(sz.buffer).setUint32(0,f.data.length);parts.push(id,sz,new Uint8Array(2),f.data)}
+const af=concatA(parts);const h=new Uint8Array(10);h[0]=0x49;h[1]=0x44;h[2]=0x33;h[3]=3;h[4]=0;h[5]=0;writeSS(h,6,af.length);return concatA([h,af])}
 
-// Touch Events
-cropperCanvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  const t = e.touches[0];
-  cropperState.dragging = true;
-  cropperState.lastX = t.clientX;
-  cropperState.lastY = t.clientY;
-}, { passive: false });
-cropperCanvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  if (!cropperState.dragging) return;
-  const t = e.touches[0];
-  const dx = t.clientX - cropperState.lastX;
-  const dy = t.clientY - cropperState.lastY;
-  cropperState.offsetX += dx;
-  cropperState.offsetY += dy;
-  cropperState.lastX = t.clientX;
-  cropperState.lastY = t.clientY;
-  clampCropper();
-  drawCropper();
-}, { passive: false });
-cropperCanvas.addEventListener('touchend', e => {
-  e.preventDefault();
-  cropperState.dragging = false;
-}, { passive: false });
+function modifyTags(buf,mods){
+const u8=new Uint8Array(buf);const ex=parseID3(buf);let kf=[],as=0;
+if(ex){const rm=[];if(mods.artist!==null)rm.push('TPE1');if(mods.artBytes!==null)rm.push('APIC');kf=ex.frames.filter(f=>!rm.includes(f.id));as=ex.tagEnd}
+if(mods.artist!==null)kf.push({id:'TPE1',data:buildTPE1(mods.artist)});
+if(mods.artBytes!==null)kf.push({id:'APIC',data:buildAPIC(mods.artBytes,mods.artMime)});
+return concatA([buildTag(kf),u8.slice(as)])}
 
-// Zoom Controls
-document.getElementById('zoomSlider').addEventListener('input', e => {
-  if (!cropperState.img) return;
-  const oldScale = cropperState.scale;
-  cropperState.scale = parseFloat(e.target.value);
-  // Zoom relative to center
-  const centerCanvas = cropperState.canvasSize / 2;
-  cropperState.offsetX = centerCanvas - (centerCanvas - cropperState.offsetX) * (cropperState.scale / oldScale);
-  cropperState.offsetY = centerCanvas - (centerCanvas - cropperState.offsetY) * (cropperState.scale / oldScale);
-  clampCropper();
-  drawCropper();
+async function checkTags(handle){
+const file=await handle.getFile();const hb=await file.slice(0,10).arrayBuffer();const v=new DataView(hb);
+if(v.byteLength<10||v.getUint8(0)!==0x49||v.getUint8(1)!==0x44||v.getUint8(2)!==0x33)return{hasArt:false,hasArtist:false};
+const sz=readSS(v,6);if(sz<=0)return{hasArt:false,hasArtist:false};
+const tb=await file.slice(0,10+sz).arrayBuffer();const p=parseID3(tb);if(!p)return{hasArt:false,hasArtist:false};
+return{hasArt:p.frames.some(f=>f.id==='APIC'),hasArtist:p.frames.some(f=>f.id==='TPE1')}}
+
+async function genCrop(){
+if(!cs.img)return null;const ts=800;const oc=document.createElement('canvas');oc.width=ts;oc.height=ts;const ctx=oc.getContext('2d');
+const r=ts/cs.size;ctx.drawImage(cs.img,cs.ox*r,cs.oy*r,cs.img.width*cs.scale*r,cs.img.height*cs.scale*r);
+const blob=await new Promise(res=>oc.toBlob(res,'image/jpeg',0.92));const bytes=new Uint8Array(await blob.arrayBuffer());
+return{bytes,mime:'image/jpeg',url:URL.createObjectURL(blob)}}
+
+// UI
+function resetPreview(){previewData=[];document.getElementById('previewList').innerHTML='';document.getElementById('previewCard').classList.add('hidden');document.getElementById('progWrap').classList.add('hidden');document.getElementById('progBar').style.width='0%';document.getElementById('status').innerText='';document.getElementById('summary').innerText='';document.getElementById('runBtn').disabled=true;document.getElementById('runBtn').innerText='⚠️ Apply Changes to Files'}
+function setScanning(v){isScanning=v;document.getElementById('previewBtn').disabled=v||fileHandles.length===0;document.getElementById('pickFolder').disabled=v;document.getElementById('pickFiles').disabled=v;document.querySelectorAll('.tc').forEach(c=>c.style.pointerEvents=v?'none':'auto')}
+function updateFileCount(){const el=document.getElementById('fileCount');if(fileHandles.length>0){el.classList.remove('hidden');el.innerText=`${fileHandles.length} music file${fileHandles.length!==1?'s':''} selected (Click again to add more)`}else{el.classList.add('hidden')}}
+
+document.getElementById('mode').addEventListener('change',e=>document.getElementById('charOptions').classList.toggle('hidden',e.target.value==='track'));
+
+document.querySelectorAll('.tc').forEach(c=>{c.addEventListener('click',()=>{const f=c.dataset.f;features[f]=!features[f];c.classList.toggle('active',features[f]);document.getElementById('renameSection').classList.toggle('hidden',!features.rename);document.getElementById('artSection').classList.toggle('hidden',!features.art);document.getElementById('artistSection').classList.toggle('hidden',!features.artist);resetPreview()})});
+
+document.getElementById('pickFolder').addEventListener('click',async()=>{
+resetPreview();setScanning(true);try{
+dirHandle=await window.showDirectoryPicker({mode:'readwrite'});fileHandles=[];sourceType='folder';
+let total=0,music=0;const handles=[];
+for await(const entry of dirHandle.values()){if(entry.kind==='file'){total++;if(isMusic(entry.name)){music++;handles.push(entry)}}}
+fileHandles=handles;updateFileCount();
+}catch(e){}setScanning(false)});
+
+document.getElementById('pickFiles').addEventListener('click',async()=>{
+if(sourceType!=='files'){fileHandles=[];sourceType='files';dirHandle=null}
+resetPreview();setScanning(true);try{
+const files=await window.showOpenFilePicker({multiple:true,types:[{description:'Music',accept:{'audio/*':MUSIC_EXT}}]});
+fileHandles.push(...files);updateFileCount();
+}catch(e){}setScanning(false)});
+
+document.getElementById('clearFiles').addEventListener('click',()=>{
+fileHandles=[];dirHandle=null;sourceType=null;updateFileCount();resetPreview();
 });
 
-document.getElementById('zoomIn').addEventListener('click', () => {
-  if (!cropperState.img) return;
-  const oldScale = cropperState.scale;
-  cropperState.scale = Math.min(cropperState.maxScale, cropperState.scale * 1.1);
-  document.getElementById('zoomSlider').value = cropperState.scale;
-  const centerCanvas = cropperState.canvasSize / 2;
-  cropperState.offsetX = centerCanvas - (centerCanvas - cropperState.offsetX) * (cropperState.scale / oldScale);
-  cropperState.offsetY = centerCanvas - (centerCanvas - cropperState.offsetY) * (cropperState.scale / oldScale);
-  clampCropper();
-  drawCropper();
+// Drag & Drop
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',async e=>{
+e.preventDefault();dz.classList.remove('dragover');
+if(sourceType!=='files'){fileHandles=[];sourceType='files';dirHandle=null}
+resetPreview();setScanning(true);
+if(e.dataTransfer.items){const items=[...e.dataTransfer.items];const handles=[];for(const item of items){if(item.kind==='file'){try{const h=await item.getAsFileSystemHandle();if(h&&h.kind==='file'&&isMusic(h.name))handles.push(h)}catch(err){}}}
+fileHandles.push(...handles);updateFileCount();}
+setScanning(false);
 });
 
-document.getElementById('zoomOut').addEventListener('click', () => {
-  if (!cropperState.img) return;
-  const oldScale = cropperState.scale;
-  cropperState.scale = Math.max(cropperState.minScale, cropperState.scale / 1.1);
-  document.getElementById('zoomSlider').value = cropperState.scale;
-  const centerCanvas = cropperState.canvasSize / 2;
-  cropperState.offsetX = centerCanvas - (centerCanvas - cropperState.offsetX) * (cropperState.scale / oldScale);
-  cropperState.offsetY = centerCanvas - (centerCanvas - cropperState.offsetY) * (cropperState.scale / oldScale);
-  clampCropper();
-  drawCropper();
-});
-
-document.getElementById('resetCrop').addEventListener('click', fitImageToCanvas);
-
-// Wheel zoom
-cropperCanvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  if (!cropperState.img) return;
-  const oldScale = cropperState.scale;
-  const delta = e.deltaY > 0 ? 0.9 : 1.1;
-  cropperState.scale = Math.max(cropperState.minScale, Math.min(cropperState.maxScale, cropperState.scale * delta));
-  document.getElementById('zoomSlider').value = cropperState.scale;
-  
-  // Zoom relative to mouse position
-  const rect = cropperCanvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-  cropperState.offsetX = mouseX - (mouseX - cropperState.offsetX) * (cropperState.scale / oldScale);
-  cropperState.offsetY = mouseY - (mouseY - cropperState.offsetY) * (cropperState.scale / oldScale);
-  
-  clampCropper();
-  drawCropper();
-}, { passive: false });
-
-// ═══════════════════════════════════════════════════
-//  Utilities
-// ═══════════════════════════════════════════════════
-function concatUint8Arrays(arrays) {
-  const total = arrays.reduce((s, a) => s + a.length, 0);
-  const result = new Uint8Array(total);
-  let offset = 0;
-  for (const a of arrays) { result.set(a, offset); offset += a.length; }
-  return result;
-}
-
-function isMusicFile(name) {
-  const lower = name.toLowerCase();
-  return MUSIC_EXTENSIONS.some(ext => lower.endsWith(ext));
-}
-
-function getExt(name) {
-  const i = name.lastIndexOf('.');
-  return i > 0 ? name.substring(i) : '';
-}
-
-function getBaseName(name) {
-  const i = name.lastIndexOf('.');
-  return i > 0 ? name.substring(0, i) : name;
-}
-
-function getArtExt(name) {
-  const lower = name.toLowerCase();
-  const ext = getExt(lower);
-  return ART_EXTENSIONS.includes(ext) ? ext : null;
-}
-
-// ═══════════════════════════════════════════════════
-//  ID3v2 Tag Parsing & Writing
-// ═══════════════════════════════════════════════════
-function readSynchsafe(view, offset) {
-  return (view.getUint8(offset)     << 21) |
-         (view.getUint8(offset + 1) << 14) |
-         (view.getUint8(offset + 2) <<  7) |
-         (view.getUint8(offset + 3));
-}
-
-function writeSynchsafe(arr, offset, value) {
-  arr[offset]     = (value >> 21) & 0x7F;
-  arr[offset + 1] = (value >> 14) & 0x7F;
-  arr[offset + 2] = (value >>  7) & 0x7F;
-  arr[offset + 3] =  value        & 0x7F;
-}
-
-function parseID3v2(buffer) {
-  if (buffer.byteLength < 10) return null;
-  const view = new DataView(buffer);
-  if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) return null;
-
-  const versionMajor = view.getUint8(3);
-  const flags = view.getUint8(5);
-  const tagSize = readSynchsafe(view, 6);
-  const tagEnd = 10 + tagSize;
-
-  if (tagEnd > buffer.byteLength) return null;
-
-  let offset = 10;
-  if (flags & 0x40) {
-    if (versionMajor === 3) {
-      const extSize = view.getUint32(10);
-      offset = 10 + 4 + extSize;
-    } else if (versionMajor === 4) {
-      const extSize = readSynchsafe(view, 10);
-      offset = 10 + extSize;
-    }
-  }
-
-  let framesEnd = tagEnd;
-  if (flags & 0x10) framesEnd = tagEnd - 10;
-
-  const frames = [];
-  while (offset + 10 <= framesEnd) {
-    const frameId = String.fromCharCode(
-      view.getUint8(offset), view.getUint8(offset + 1),
-      view.getUint8(offset + 2), view.getUint8(offset + 3)
-    );
-    if (frameId.charCodeAt(0) === 0) break;
-
-    let frameSize;
-    if (versionMajor === 4) {
-      frameSize = readSynchsafe(view, offset + 4);
-    } else {
-      frameSize = view.getUint32(offset + 4);
-    }
-
-    if (frameSize <= 0 || offset + 10 + frameSize > framesEnd) break;
-
-    const frameData = new Uint8Array(buffer, offset + 10, frameSize);
-    frames.push({ id: frameId, data: new Uint8Array(frameData) });
-    offset += 10 + frameSize;
-  }
-
-  return { version: versionMajor, frames, tagEnd };
-}
-
-function buildAPICFrame(imageBytes, mimeType) {
-  const enc     = new Uint8Array([0x00]);
-  const mime    = new TextEncoder().encode(mimeType + '\0');
-  const picType = new Uint8Array([0x03]); // Front cover
-  const desc    = new Uint8Array([0x00]);
-  return concatUint8Arrays([enc, mime, picType, desc, imageBytes]);
-}
-
-function buildID3v2Tag(frames) {
-  const parts = [];
-  for (const f of frames) {
-    const id = new Uint8Array(4);
-    for (let i = 0; i < 4; i++) id[i] = f.id.charCodeAt(i);
-    const sz = new Uint8Array(4);
-    new DataView(sz.buffer).setUint32(0, f.data.length);
-    const fl = new Uint8Array(2);
-    parts.push(id, sz, fl, f.data);
-  }
-  const allFrames = concatUint8Arrays(parts);
-
-  const header = new Uint8Array(10);
-  header[0] = 0x49; header[1] = 0x44; header[2] = 0x33;
-  header[3] = 0x03; header[4] = 0x00; header[5] = 0x00;
-  writeSynchsafe(header, 6, allFrames.length);
-
-  return concatUint8Arrays([header, allFrames]);
-}
-
-function embedAlbumArt(fileBuffer, imageBytes, mimeType) {
-  const u8 = new Uint8Array(fileBuffer);
-  const existing = parseID3v2(fileBuffer);
-
-  let keptFrames = [];
-  let audioStart = 0;
-
-  if (existing) {
-    keptFrames = existing.frames.filter(f => f.id !== 'APIC');
-    audioStart = existing.tagEnd;
-  }
-
-  keptFrames.push({ id: 'APIC', data: buildAPICFrame(imageBytes, mimeType) });
-  const newTag = buildID3v2Tag(keptFrames);
-  const audioData = u8.slice(audioStart);
-
-  return concatUint8Arrays([newTag, audioData]);
-}
-
-async function checkHasArt(entry) {
-  const file = await entry.getFile();
-  const headerBuf = await file.slice(0, 10).arrayBuffer();
-  const view = new DataView(headerBuf);
-  if (view.byteLength < 10) return false;
-  if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) return false;
-
-  const tagSize = readSynchsafe(view, 6);
-  if (tagSize <= 0) return false;
-
-  const tagBuf = await file.slice(0, 10 + tagSize).arrayBuffer();
-  const parsed = parseID3v2(tagBuf);
-  if (!parsed) return false;
-  return parsed.frames.some(f => f.id === 'APIC');
-}
-
-// ═══════════════════════════════════════════════════
-//  Image Processing
-// ═══════════════════════════════════════════════════
-async function generateCroppedImageData() {
-  if (!cropperState.img) return null;
-  const targetSize = 800; // High quality 800x800
-  const offCanvas = document.createElement('canvas');
-  offCanvas.width = targetSize;
-  offCanvas.height = targetSize;
-  const offCtx = offCanvas.getContext('2d');
-  
-  const ratio = targetSize / cropperState.canvasSize;
-  offCtx.drawImage(
-    cropperState.img,
-    cropperState.offsetX * ratio,
-    cropperState.offsetY * ratio,
-    cropperState.img.width * cropperState.scale * ratio,
-    cropperState.img.height * cropperState.scale * ratio
-  );
-  
-  const blob = await new Promise(res => offCanvas.toBlob(res, 'image/jpeg', 0.92));
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  return { bytes, mime: 'image/jpeg', url: URL.createObjectURL(blob) };
-}
-
-// ═══════════════════════════════════════════════════
-//  Rename Logic
-// ═══════════════════════════════════════════════════
-function getNewName(oldName, mode, count, match) {
-  const base = getBaseName(oldName);
-  const ext = getExt(oldName);
-  let newName = base;
-
-  if (mode === 'track') {
-    if (!match || base.startsWith(match)) {
-      newName = base.replace(/^\s*\d{1,3}[._\-\s]*/, '');
-    }
-  } else if (mode === 'start') {
-    if (!match || base.startsWith(match)) newName = base.substring(count);
-  } else if (mode === 'end') {
-    if (!match || base.endsWith(match)) newName = base.substring(0, base.length - count);
-  }
-
-  if (!newName.trim()) newName = base;
-  return newName + ext;
-}
-
-// ═══════════════════════════════════════════════════
-//  UI Logic
-// ═══════════════════════════════════════════════════
-function resetPreview() {
-  previewData = [];
-  document.getElementById('previewList').innerHTML = '';
-  document.getElementById('previewCard').classList.add('hidden');
-  document.getElementById('progressWrap').classList.add('hidden');
-  document.getElementById('progressBar').style.width = '0%';
-  document.getElementById('status').innerText = '';
-  document.getElementById('summary').innerText = '';
-  document.getElementById('runBtn').disabled = false;
-  document.getElementById('runBtn').innerText = '⚠️ Apply Changes to Files';
-}
-
-document.getElementById('mode').addEventListener('change', e => {
-  document.getElementById('charOptions').classList.toggle('hidden', e.target.value === 'track');
-});
-document.getElementById('charOptions').classList.add('hidden');
-
-document.querySelectorAll('.toggle-card').forEach(card => {
-  card.addEventListener('click', () => {
-    const feature = card.dataset.feature;
-    features[feature] = !features[feature];
-    card.classList.toggle('active', features[feature]);
-    document.getElementById('renameSection').classList.toggle('hidden', !features.rename);
-    document.getElementById('artSection').classList.toggle('hidden', !features.art);
-    resetPreview();
-  });
-});
-
-document.getElementById('pickFolder').addEventListener('click', async () => {
-  resetPreview();
-  try {
-    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-    let total = 0, music = 0;
-    for await (const entry of dirHandle.values()) {
-      if (entry.kind === 'file') {
-        total++;
-        if (isMusicFile(entry.name)) music++;
-      }
-    }
-    const el = document.getElementById('fileCount');
-    el.classList.remove('hidden');
-    el.innerText = `Found ${music} music file${music !== 1 ? 's' : ''} (${total} total file${total !== 1 ? 's' : ''} in folder)`;
-  } catch (e) { /* silent */ }
-});
-
-document.getElementById('pickImage').addEventListener('click', () => {
-  document.getElementById('imageInput').click();
-});
-
-document.getElementById('imageInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  
-  // Revoke previous object URL to prevent memory leak
-  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-  currentObjectUrl = URL.createObjectURL(file);
-  
-  const img = new Image();
-  img.onload = () => {
-    cropperState.img = img;
-    document.getElementById('cropperContainer').classList.remove('hidden');
-    fitImageToCanvas();
-    resetPreview();
-  };
-  img.src = currentObjectUrl;
-});
-
-// ═══════════════════════════════════════════════════
-//  Preview
-// ═══════════════════════════════════════════════════
-document.getElementById('previewBtn').addEventListener('click', async () => {
-  if (!dirHandle) return alert('Please pick a folder first.');
-  if (!features.rename && !features.art) return alert('Enable at least one action (rename or album art).');
-  if (features.art && !cropperState.img) return alert('Please select and crop an image first.');
-
-  resetPreview();
-
-  const mode  = document.getElementById('mode').value;
-  const count = parseInt(document.getElementById('count').value) || 0;
-  const match = document.getElementById('match').value.trim();
-  const skipExisting = document.getElementById('skipExistingArt').checked;
-
-  const status = document.getElementById('status');
-  const previewCard = document.getElementById('previewCard');
-  previewCard.classList.remove('hidden');
-  status.innerText = 'Scanning files…';
-  status.className = 'info-text';
-
-  // Generate the final cropped image data right before preview
-  if (features.art) {
-    imageData = await generateCroppedImageData();
-    if (!imageData) return alert('Error processing image.');
-    
-    // Update cover preview thumbnail
-    const thumb = document.getElementById('coverThumb');
-    if (coverThumbUrl) URL.revokeObjectURL(coverThumbUrl);
-    coverThumbUrl = imageData.url;
-    thumb.src = coverThumbUrl;
-    document.getElementById('coverPreview').classList.remove('hidden');
-  } else {
-    document.getElementById('coverPreview').classList.add('hidden');
-  }
-
-  let html = '';
-  let renameCount = 0;
-  let artAddCount = 0;
-  let artReplaceCount = 0;
-  let artSkipCount = 0;
-  let artUnsupportedCount = 0;
-  let noChangeCount = 0;
-
-  for await (const entry of dirHandle.values()) {
-    if (entry.kind !== 'file') continue;
-    const oldName = entry.name;
-    if (!isMusicFile(oldName)) continue;
-
-    let newName = oldName;
-    if (features.rename) {
-      newName = getNewName(oldName, mode, count, match);
-    }
-    const renamed = newName !== oldName;
-    if (renamed) renameCount++;
-
-    let artAction = 'none';
-    if (features.art) {
-      const artExt = getArtExt(oldName);
-      if (!artExt) {
-        artAction = 'unsupported';
-        artUnsupportedCount++;
-      } else {
-        const hasArt = await checkHasArt(entry);
-        if (hasArt && skipExisting) {
-          artAction = 'skip';
-          artSkipCount++;
-        } else if (hasArt) {
-          artAction = 'replace';
-          artReplaceCount++;
-        } else {
-          artAction = 'add';
-          artAddCount++;
-        }
-      }
-    }
-
-    const hasChange = renamed || artAction === 'add' || artAction === 'replace';
-
-    let artLabel = '';
-    if (artAction === 'add')         artLabel = ' <span class="info-text">[art: add]</span>';
-    else if (artAction === 'replace') artLabel = ' <span class="warn-text">[art: replace]</span>';
-    else if (artAction === 'skip')    artLabel = ' <span class="nochange">[art: skip]</span>';
-    else if (artAction === 'unsupported') artLabel = ' <span class="nochange">[art: n/a]</span>';
-
-    if (renamed) {
-      html += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${newName}</span>${artLabel}</div>`;
-    } else if (hasChange) {
-      html += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${oldName}</span>${artLabel}</div>`;
-    } else {
-      html += `<div class="nochange">${oldName}${artLabel}</div>`;
-      noChangeCount++;
-    }
-
-    previewData.push({
-      oldName,
-      newName,
-      rename: renamed,
-      applyArt: artAction === 'add' || artAction === 'replace'
-    });
-  }
-
-  document.getElementById('previewList').innerHTML = html || '<div class="nochange">No music files found.</div>';
-
-  let summary = '';
-  if (features.rename) summary += `<span class="success-text">${renameCount}</span> to rename. `;
-  if (features.art) {
-    summary += `<span class="info-text">${artAddCount}</span> to add art, `;
-    summary += `<span class="warn-text">${artReplaceCount}</span> to replace art. `;
-    if (artSkipCount) summary += `<span class="nochange">${artSkipCount}</span> skipped. `;
-    if (artUnsupportedCount) summary += `<span class="nochange">${artUnsupportedCount}</span> unsupported. `;
-  }
-  if (noChangeCount) summary += `<span class="nochange">${noChangeCount}</span> no change. `;
-  document.getElementById('summary').innerHTML = summary;
-
-  status.innerText = '';
-  status.className = '';
-
-  if (previewData.filter(p => p.rename || p.applyArt).length === 0) {
-    status.innerText = 'Nothing to change — adjust your settings and try again.';
-    status.className = 'warn-text';
-    document.getElementById('runBtn').disabled = true;
-  }
-});
-
-// ═══════════════════════════════════════════════════
-//  Run — Apply Changes
-// ═══════════════════════════════════════════════════
-document.getElementById('runBtn').addEventListener('click', async () => {
-  if (isRunning) return;
-  const toProcess = previewData.filter(p => p.rename || p.applyArt);
-  if (toProcess.length === 0) return;
-
-  if (!confirm(`This will modify ${toProcess.length} file${toProcess.length !== 1 ? 's' : ''} in your folder. This cannot be undone. Continue?`)) return;
-
-  isRunning = true;
-  const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.innerText = 'Working…';
-  document.getElementById('progressWrap').classList.remove('hidden');
-  const status = document.getElementById('status');
-  status.innerText = 'Starting…';
-  status.className = 'info-text';
-
-  let done = 0;
-  let log = '';
-  let errors = 0;
-  const total = toProcess.length;
-
-  for (const item of toProcess) {
-    const { oldName, newName, rename, applyArt } = item;
-    try {
-      const fileHandle = await dirHandle.getFileHandle(oldName);
-      const file = await fileHandle.getFile();
-
-      let contentToWrite;
-      if (applyArt) {
-        const buf = await file.arrayBuffer();
-        contentToWrite = embedAlbumArt(buf, imageData.bytes, imageData.mime);
-      } else {
-        contentToWrite = file;
-      }
-
-      if (rename) {
-        const newHandle = await dirHandle.getFileHandle(newName, { create: true });
-        const writable = await newHandle.createWritable();
-        await writable.write(contentToWrite);
-        await writable.close();
-        await dirHandle.removeEntry(oldName);
-        log += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${newName}</span>${applyArt ? ' <span class="info-text">[art]</span>' : ''}</div>`;
-      } else {
-        const writable = await fileHandle.createWritable();
-        await writable.write(contentToWrite);
-        await writable.close();
-        log += `<div><span class="new">${oldName}</span> <span class="info-text">[art updated]</span></div>`;
-      }
-    } catch (e) {
-      errors++;
-      log += `<div class="error-text">ERROR: ${oldName} — ${e.message}</div>`;
-    }
-
-    done++;
-    document.getElementById('progressBar').style.width = (done / total * 100) + '%';
-    status.innerText = `Processing ${done} of ${total}…`;
-    // Yield to UI to prevent freezing
-    await new Promise(r => setTimeout(r, 0));
-  }
-
-  document.getElementById('previewList').innerHTML = log;
-  if (errors > 0) {
-    status.innerText = `Done — ${total - errors} succeeded, ${errors} error${errors !== 1 ? 's' : ''}.`;
-    status.className = 'warn-text';
-  } else {
-    status.innerText = `✓ Done — ${total} file${total !== 1 ? 's' : ''} processed successfully.`;
-    status.className = 'success-text';
-  }
-  btn.innerText = 'Finished';
-  isRunning = false;
-});
+document.getElementById('pickImage').addEventListener('click',()=>document.getElementById('imageInput').click());
+document.getElementById('imageInput').addEventListener('change',async(e)=>{
+const file=e.target.files[0];if(!file)return;
+if(currentObjectUrl)URL.revokeObjectURL(currentObjectUrl);currentObjectUrl=URL.createObjectURL(file);
+const img=new Image();img.onload=()=>{cs.img=img;document.getElementById('cropperContainer').classList.remove('hidden');fitC();resetPreview()};img.src=currentObjectUrl});
+
+function getNewName(oldName,mode,count,match){
+const base=getBase(oldName),ext=getExt(oldName);let newName=base;
+if(mode==='track'){if(!match||base.startsWith(match))newName=base.replace(/^\s*\d{1,3}[._\-\s]*/,'')}
+else if(mode==='start'){if(!match||base.startsWith(match))newName=base.substring(count)}
+else if(mode==='end'){if(!match||base.endsWith(match))newName=base.substring(0,base.length-count)}
+if(!newName.trim())newName=base;return newName+ext}
+
+document.getElementById('previewBtn').addEventListener('click',async()=>{
+if(isScanning)return;if(fileHandles.length===0)return alert('Pick a folder or files first.');
+if(!features.rename&&!features.art&&!features.artist)return alert('Enable at least one action.');
+if(features.art&&!cs.img)return alert('Select and crop an image first.');
+if(features.artist&&!document.getElementById('artistName').value.trim())return alert('Enter an artist name.');
+resetPreview();setScanning(true);
+
+const mode=document.getElementById('mode').value,count=parseInt(document.getElementById('count').value)||0,match=document.getElementById('match').value.trim();
+const skipArt=document.getElementById('skipArt').checked,skipArtist=document.getElementById('skipArtist').checked,artistName=document.getElementById('artistName').value.trim();
+const status=document.getElementById('status');document.getElementById('previewCard').classList.remove('hidden');
+status.innerText='Scanning files…';status.className='it';
+
+if(features.art){imageData=await genCrop();if(!imageData){setScanning(false);return alert('Error processing image.')};if(coverThumbUrl)URL.revokeObjectURL(coverThumbUrl);coverThumbUrl=imageData.url;document.getElementById('coverThumb').src=coverThumbUrl;document.getElementById('coverPreview').classList.remove('hidden')}
+else document.getElementById('coverPreview').classList.add('hidden');
+
+let html='',rc=0,ac=0,arc=0,asc=0,auc=0,asc2=0,arc2=0,asc3=0,auc2=0,ncc=0;
+for(const handle of fileHandles){
+const oldName=handle.name;if(!isMusic(oldName))continue;
+let newName=oldName;if(features.rename)newName=getNewName(oldName,mode,count,match);
+const renamed=newName!==oldName;if(renamed)rc++;
+let ti={hasArt:false,hasArtist:false};const ct=canTag(oldName);
+if((features.art||features.artist)&&ct)ti=await checkTags(handle);
+let aa='none';if(features.art){if(!ct){aa='unsup';auc++}else if(ti.hasArt&&skipArt){aa='skip';asc++}else if(ti.hasArt){aa='replace';arc++}else{aa='add';ac++}}
+let arA='none';if(features.artist){if(!ct){arA='unsup';auc2++}else if(ti.hasArtist&&skipArtist){arA='skip';asc2++}else if(ti.hasArtist){arA='replace';arc2++}else{arA='set';asc3++}}
+const hasChange=renamed||aa==='add'||aa==='replace'||arA==='set'||arA==='replace';
+let labels='';
+if(aa==='add')labels+=' <span class="m-a">🖼️ art:add</span>';else if(aa==='replace')labels+=' <span class="m-w">🖼️ art:replace</span>';else if(aa==='skip')labels+=' <span class="m-s">🖼️ art:skip</span>';else if(aa==='unsup')labels+=' <span class="m-s">🖼️ art:n/a</span>';
+if(arA==='set')labels+=` <span class="m-ar">🎤 "${artistName}"</span>`;else if(arA==='replace')labels+=` <span class="m-w">🎤 replace→"${artistName}"</span>`;else if(arA==='skip')labels+=' <span class="m-s">🎤 skip</span>';else if(arA==='unsup')labels+=' <span class="m-s">🎤 n/a</span>';
+const icon=hasChange?'🎵':'⏭️';const cls=hasChange?'':'nc';
+if(renamed)html+=`<div class="pi ${cls}"><div class="pi-ic">${icon}</div><div class="pi-d"><div class="pi-n">${newName}</div><div class="pi-m"><span class="m-r">was: ${oldName}</span>${labels}</div></div></div>`;
+else if(hasChange)html+=`<div class="pi ${cls}"><div class="pi-ic">${icon}</div><div class="pi-d"><div class="pi-n">${oldName}</div><div class="pi-m">${labels}</div></div></div>`;
+else{html+=`<div class="pi nc"><div class="pi-ic">⏭️</div><div class="pi-d"><div class="pi-n" style="color:#555">${oldName}</div><div class="pi-m">${labels}</div></div></div>`;ncc++}
+previewData.push({oldName,newName,rename:renamed,applyArt:aa==='add'||aa==='replace',applyArtist:arA==='set'||arA==='replace',artistName,handle})}
+
+document.getElementById('previewList').innerHTML=html||'<div class="pi nc"><div class="pi-d">No music files found.</div></div>';
+let sum='';if(features.rename)sum+=`<span class="st">${rc}</span> rename. `;
+if(features.art){sum+=`<span class="it">${ac}</span> add art, <span class="wt">${arc}</span> replace. `;if(asc)sum+=`<span class="nc">${asc}</span> skip. `;if(auc)sum+=`<span class="nc">${auc}</span> n/a. `}
+if(features.artist){sum+=`<span style="color:#c084fc">${asc3}</span> set, <span class="wt">${arc2}</span> replace. `;if(asc2)sum+=`<span class="nc">${asc2}</span> skip. `;if(auc2)sum+=`<span class="nc">${auc2}</span> n/a. `}
+if(ncc)sum+=`<span class="nc">${ncc}</span> no change. `;
+document.getElementById('summary').innerHTML=sum;
+status.innerText='';status.className='';
+const toProc=previewData.filter(p=>p.rename||p.applyArt||p.applyArtist);
+if(toProc.length===0){status.innerText='Nothing to change.';status.className='wt';document.getElementById('runBtn').disabled=true}
+else document.getElementById('runBtn').disabled=false;
+setScanning(false)});
+
+document.getElementById('runBtn').addEventListener('click',async()=>{
+if(isRunning)return;const toProc=previewData.filter(p=>p.rename||p.applyArt||p.applyArtist);if(toProc.length===0)return;
+if(!confirm(`Modify ${toProc.length} file${toProc.length!==1?'s':''}? This cannot be undone.`))return;
+isRunning=true;const btn=document.getElementById('runBtn');btn.disabled=true;btn.innerText='Working…';
+document.getElementById('progWrap').classList.remove('hidden');const status=document.getElementById('status');
+status.innerText='Starting…';status.className='it';
+let done=0,log='',errors=0;const total=toProc.length;
+
+for(const item of toProc){
+const{oldName,newName,rename,applyArt,applyArtist,artistName,handle}=item;
+try{
+const file=await handle.getFile();let content;
+if(applyArt||applyArtist){const buf=await file.arrayBuffer();content=modifyTags(buf,{artist:applyArtist?artistName:null,artBytes:applyArt?imageData.bytes:null,artMime:applyArt?imageData.mime:null})}
+else content=file;
+let lb='';if(applyArt)lb+=' <span class="it">[art]</span>';if(applyArtist)lb+=` <span style="color:#c084fc">[artist:${artistName}]</span>`;
+if(rename){
+let newHandle;if(sourceType==='folder'){newHandle=await dirHandle.getFileHandle(newName,{create:true})}else{newHandle=handle;await handle.move(newName)}
+const w=await newHandle.createWritable();await w.write(content);await w.close();
+if(sourceType==='folder')await dirHandle.removeEntry(oldName);
+log+=`<div class="pi"><div class="pi-ic">✅</div><div class="pi-d"><div class="pi-n">${newName}</div><div class="pi-m"><span class="m-r">was: ${oldName}</span>${lb}</div></div></div>`;
+}else{
+const w=await handle.createWritable();await w.write(content);await w.close();
+log+=`<div class="pi"><div class="pi-ic">✅</div><div class="pi-d"><div class="pi-n">${oldName}</div><div class="pi-m">${lb}</div></div></div>`}
+}catch(e){errors++;log+=`<div class="pi"><div class="pi-ic">❌</div><div class="pi-d"><div class="pi-n" style="color:#ef4444">${oldName}</div><div class="pi-m"><span class="et">${e.message}</span></div></div></div>`}
+done++;document.getElementById('progBar').style.width=(done/total*100)+'%';status.innerText=`Processing ${done} of ${total}…`;await new Promise(r=>setTimeout(r,0))}
+
+document.getElementById('previewList').innerHTML=log;
+if(errors>0){status.innerText=`Done — ${total-errors} ok, ${errors} error${errors!==1?'s':''}.`;status.className='wt'}
+else{status.innerText=`✓ Done — ${total} file${total!==1?'s':''} processed.`;status.className='st'}
+btn.innerText='Finished';isRunning=false});
 </script>
 </body>
 </html>
