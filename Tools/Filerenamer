@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batch Music Renamer - Smart Numbers v3</title>
+<style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  body { background: #111; color: #eee; margin: 0; padding: 16px; }
+  h1 { font-size: 1.4rem; margin-bottom: 8px; }
+  .card { background: #1c1c1c; padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+  label { display: block; margin: 8px 0 4px; font-weight: 600; }
+  input, select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #222; color: #eee; font-size: 1rem; }
+  button { background: #d32f2f; border: none; font-weight: 700; cursor: pointer; margin-top: 12px; }
+  button.secondary { background: #2a5fd1; }
+  button:disabled { background: #444; cursor: not-allowed; opacity: 0.6; }
+  .preview { max-height: 300px; overflow-y: auto; background: #0a0a0a; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; }
+  .warn { color: #ff9800; font-weight: 700; }
+  .old { color: #4CAF50; } /* Old name green */
+  .new { color: #ffffff; } /* New name white */
+  .arrow { color: #888; }
+  .progress { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 8px; display: none; }
+  .progress-bar { height: 100%; width: 0%; background: #4CAF50; transition: width 0.2s; }
+  #status { text-align: center; margin-top: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>🎵 Music Renamer - Smart Numbers</h1>
+<p class="warn">⚠️ This will RENAME files in your folder. Can't be undone.</p>
+
+<div class="card">
+  <label>1. Pick Folder with Music</label>
+  <button id="pickFolder" class="secondary">Pick Music Folder</button>
+  <div id="fileCount"></div>
+</div>
+
+<div class="card">
+  <label>2. Remove Mode</label>
+  <select id="mode">
+    <option value="track">Remove Leading Track Numbers - 01, 1, 10 - Song</option>
+    <option value="start">Remove X Characters from Start</option>
+    <option value="end">Remove X Characters from End</option>
+  </select>
+  
+  <div id="charOptions">
+    <label>3. How many characters to remove?</label>
+    <input type="number" id="count" value="2" min="1" max="50">
+  </div>
+
+  <label>Optional: Only remove if it matches this</label>
+  <input type="text" id="match" placeholder="Ex: 01, Track">
+  
+  <button id="previewBtn">Preview Changes</button>
+</div>
+
+<div class="card" id="previewCard" style="display:none;">
+  <label>4. Preview</label>
+  <div class="preview" id="previewList"></div>
+  
+  <button id="runBtn">⚠️ Run and Overwrite Files</button>
+  <div class="progress" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div id="status"></div>
+</div>
+
+<script>
+let dirHandle;
+let isRunning = false;
+let previewData = [];
+
+function resetUI() {
+  isRunning = false;
+  previewData = [];
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').innerText = "⚠️ Run and Overwrite Files";
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('status').innerText = '';
+  document.getElementById('previewList').innerHTML = '';
+  document.getElementById('previewCard').style.display = 'none';
+}
+
+document.getElementById('mode').onchange = (e) => {
+  document.getElementById('charOptions').style.display = e.target.value === 'track' ? 'none' : 'block';
+}
+
+document.getElementById('pickFolder').onclick = async () => {
+  resetUI();
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    let count = 0;
+    for await (const entry of dirHandle.values()) if (entry.kind === 'file') count++;
+    document.getElementById('fileCount').innerHTML = `<span class="old">${count} files found</span>`;
+  } catch(e) {
+    document.getElementById('fileCount').innerText = '';
+  }
+}
+
+function getNewName(oldName, mode, count, match) {
+  const lastDot = oldName.lastIndexOf('.');
+  const name = lastDot > 0 ? oldName.substring(0, lastDot) : oldName;
+  const ext = lastDot > 0 ? oldName.substring(lastDot) : '';
+
+  let newName = name;
+
+  if (mode === 'track') {
+    newName = name.replace(/^\s*\d{1,3}[._\-\s]*/, '');
+  } else if (mode === 'start') {
+    if (!match || name.startsWith(match)) newName = name.substring(count);
+  } else if (mode === 'end') {
+    if (!match || name.endsWith(match)) newName = name.substring(0, name.length - count);
+  }
+
+  if (newName === '') newName = name; 
+  return newName + ext;
+}
+
+document.getElementById('previewBtn').onclick = async () => {
+  if (!dirHandle) return alert("Pick a folder first");
+  resetUI();
+  
+  const mode = document.getElementById('mode').value;
+  const count = parseInt(document.getElementById('count').value);
+  const match = document.getElementById('match').value;
+
+  let html = '';
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind !== 'file') continue;
+    const oldName = entry.name;
+    const newName = getNewName(oldName, mode, count, match);
+    previewData.push({oldName, newName});
+    const changed = newName !== oldName;
+    
+    if(changed) {
+      html += `<div><span class="old">${oldName}</span> <span class="arrow">→</span> <span class="new">${newName}</span></div>`;
+    } else {
+      html += `<div>${oldName} <span class="arrow">→ no change</span></div>`;
+    }
+  }
+  
+  document.getElementById('previewList').innerHTML = html || 'No files found';
+  document.getElementById('previewCard').style.display = 'block';
+}
+
+document.getElementById('runBtn').onclick = async () => {
+  if (isRunning) return;
+  if (!confirm("This will PERMANENTLY rename files. Continue?")) return;
+  
+  isRunning = true;
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.innerText = "Running...";
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('status').innerText = "Working...";
+
+  let done = 0;
+  let log = '';
+  const toRename = previewData.filter(p => p.oldName !== p.newName);
+  const total = toRename.length;
+
+  if (total === 0) {
+    document.getElementById('status').innerText = "Nothing to rename";
+    btn.innerText = "Finished";
+    return;
+  }
+
+  for (const {oldName, newName} of toRename) {
+    try {
+      const fileHandle = await dirHandle.getFileHandle(oldName);
+      const file = await fileHandle.getFile();
+      const newFileHandle = await dirHandle.getFileHandle(newName, { create: true });
+      const writable = await newFileHandle.createWritable();
+      await writable.write(file);
+      await writable.close();
+      await dirHandle.removeEntry(oldName);
+      log += `<div class="new">RENAMED: ${oldName} → ${newName}</div>`;
+    } catch(e) {
+      log += `<div style="color:red">ERROR: ${oldName} - ${e.message}</div>`;
+    }
+    done++;
+    document.getElementById('progressBar').style.width = (done/total*100) + '%';
+    document.getElementById('status').innerText = `Renaming ${done} of ${total}...`;
+  }
+
+  document.getElementById('previewList').innerHTML = log;
+  document.getElementById('status').innerText = "Done! You can pick a new folder now.";
+  btn.innerText = "Finished";
+};
+</script>
+</body>
+</html>
