@@ -1,0 +1,3494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Baseplate — v6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; overflow:hidden; background:#000; }
+  body { font-family:'Nunito Sans', sans-serif; user-select:none; -webkit-user-select:none; }
+  canvas { display:block; touch-action:none; }
+
+  /* ---------- chat (below the menu button, collapsible — the button
+     stays put and the chat gets the whole width to itself) ---------- */
+  #chat { position:fixed; top:58px; left:12px; width:320px; max-width:calc(100vw - 24px); z-index:20;
+    background:rgba(13,17,23,0.45); backdrop-filter:blur(8px);
+    border-radius:9px; overflow:hidden; color:#fff; font-size:12px; }
+  #chat-head { display:flex; align-items:center; justify-content:space-between; gap:14px;
+    min-height:36px; padding:0 10px; cursor:pointer; color:rgba(255,255,255,0.65);
+    font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; }
+  #chat.collapsed { width:auto; }
+  #chat-head svg { width:13px; height:13px; transition:transform .2s; }
+  #chat.collapsed #chat-head svg { transform:rotate(-90deg); }
+  #chat-messages { padding:2px 10px 5px; max-height:108px; overflow-y:auto;
+    display:flex; flex-direction:column; gap:2px; scrollbar-width:none; }
+  #chat-messages::-webkit-scrollbar { display:none; }
+  #chat.collapsed #chat-messages, #chat.collapsed #chat-input { display:none; }
+  .cmsg { line-height:1.35; text-shadow:0 1px 2px rgba(0,0,0,.5); word-break:break-word; transition:opacity .8s; }
+  .cmsg.faded { opacity:0; }
+  .cname { color:#01A2FF; font-weight:800; }
+  .cname.admin { color:#f5c542; }
+  .csys { color:#b9c7d1; }
+  .cerr { color:#ff7a70; }
+  #chat-input { width:100%; border:none; outline:none; background:transparent; color:#fff;
+    padding:6px 10px 7px; font:inherit; border-top:1px solid rgba(255,255,255,0.1); }
+  #chat-input::placeholder { color:rgba(255,255,255,0.4); }
+
+  /* ---------- player HUD (top-right) ---------- */
+  #playerhud { position:fixed; top:14px; right:14px; z-index:20; text-align:right; }
+  #playerhud .pname { color:#fff; font-weight:800; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,.6); margin-bottom:5px; }
+  #playerhud .pname.admin { color:#f5c542; }
+  .hbar { width:172px; height:12px; background:rgba(13,17,23,0.5); backdrop-filter:blur(6px); border-radius:6px; overflow:hidden; }
+  #hfill { height:100%; width:100%; background:#5dbb52; border-radius:6px; }
+
+  /* ---------- nametag ---------- */
+  #nametag { position:fixed; z-index:10; transform:translate(-50%,-100%); text-align:center; pointer-events:none; }
+  #nametag .dn { color:#fff; font-weight:800; font-size:15px; text-shadow:0 1px 3px rgba(0,0,0,.65); }
+  #nametag .un { color:rgba(255,255,255,0.78); font-size:11px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.65); }
+
+  /* ---------- hotbar ---------- */
+  #hotbar { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:7px; z-index:20; }
+  .slot { width:54px; height:54px; border-radius:11px; position:relative; cursor:pointer;
+    background:rgba(13,17,23,0.45); backdrop-filter:blur(8px);
+    border:2px solid rgba(255,255,255,0.14); color:#fff;
+    display:none; opacity:0.55;
+    transition:border-color .15s, background .15s, opacity .15s; }
+  .slot svg { width:24px; height:24px; }
+  .slot .num { position:absolute; top:2px; left:6px; font-size:10px; font-weight:700; color:rgba(255,255,255,0.5); }
+  .slot.filled { display:flex; align-items:center; justify-content:center; opacity:1; }
+  .slot:hover { border-color:rgba(255,255,255,0.45); }
+  .slot.active { border-color:#fff; background:rgba(255,255,255,0.16); opacity:1; }
+  @media (max-width:640px){ .slot { width:40px; height:40px; border-radius:9px; } .slot svg{ width:18px; height:18px; } }
+
+  /* ---------- interaction prompt ---------- */
+  #prompt { position:fixed; bottom:96px; left:50%; transform:translateX(-50%) translateY(8px);
+    z-index:20; display:flex; align-items:center; gap:9px;
+    background:rgba(13,17,23,0.55); backdrop-filter:blur(8px);
+    color:#fff; font-weight:700; font-size:14px;
+    padding:9px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.14);
+    opacity:0; pointer-events:none; transition:opacity .15s, transform .15s; cursor:pointer; }
+  #prompt.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  #prompt .key { background:#fff; color:#111; border-radius:5px; padding:1px 8px; font-size:12px; font-weight:800; }
+
+  /* ---------- emote menu ---------- */
+  #emote-fab { position:fixed; right:22px; bottom:22px; z-index:20; width:54px; height:54px; border-radius:14px;
+    background:rgba(13,17,23,0.45); backdrop-filter:blur(8px); border:2px solid rgba(255,255,255,0.16);
+    color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  #emote-fab:hover { border-color:rgba(255,255,255,0.5); }
+  #emote-fab svg { width:26px; height:26px; }
+  #emote-menu { position:fixed; right:22px; bottom:88px; z-index:21; display:none; flex-direction:column; gap:6px; }
+  #emote-menu.open { display:flex; }
+  .emote-row { display:flex; align-items:center; gap:10px; padding:10px 16px; min-width:150px;
+    background:rgba(13,17,23,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.14);
+    color:#fff; font:inherit; font-weight:700; font-size:14px; border-radius:10px; cursor:pointer; text-align:left; }
+  .emote-row:hover { background:rgba(255,255,255,0.12); }
+  .emote-row svg { width:18px; height:18px; }
+  body.touch #emote-fab { bottom:216px; }
+  body.touch #emote-menu { bottom:282px; }
+
+  /* ---------- hint ---------- */
+  #hint { position:fixed; bottom:92px; left:50%; transform:translateX(-50%); z-index:19;
+    color:rgba(255,255,255,0.9); font-size:13px; font-weight:600; text-align:center;
+    background:rgba(13,17,23,0.4); backdrop-filter:blur(6px);
+    padding:7px 15px; border-radius:8px; pointer-events:none; transition:opacity 1.2s; }
+
+  /* ---------- fps counter ---------- */
+  #fps { position:fixed; left:10px; bottom:7px; z-index:50; font-size:11px; font-weight:800;
+    color:rgba(255,255,255,0.55); text-shadow:0 1px 2px rgba(0,0,0,.6); pointer-events:none; letter-spacing:.5px; }
+
+  /* ---------- touch controls ---------- */
+  #joy { position:fixed; left:24px; bottom:104px; width:118px; height:118px; border-radius:50%;
+    background:rgba(13,17,23,0.35); border:2px solid rgba(255,255,255,0.22);
+    z-index:30; display:none; touch-action:none; }
+  #knob { position:absolute; left:50%; top:50%; width:52px; height:52px; border-radius:50%;
+    background:rgba(255,255,255,0.35); transform:translate(-50%,-50%); pointer-events:none; }
+  #jumpbtn { position:fixed; right:28px; bottom:118px; width:76px; height:76px; border-radius:50%;
+    background:rgba(13,17,23,0.35); border:2px solid rgba(255,255,255,0.25); color:#fff;
+    z-index:30; display:none; align-items:center; justify-content:center; touch-action:none; }
+  #jumpbtn svg { width:30px; height:30px; }
+  #jumpbtn.pressed { background:rgba(255,255,255,0.2); }
+  body.touch #joy { display:block; }
+  body.touch #jumpbtn { display:flex; }
+  body.touch #hint { display:none; }
+
+  /* landscape phones: controls sit in the bottom corners like
+     Roblox, clear of the (smaller, centered) hotbar */
+  @media (orientation: landscape) {
+    body.touch #joy { left:20px; bottom:26px; }
+    body.touch #jumpbtn { right:22px; bottom:28px; }
+    body.touch #emote-fab { bottom:118px; }
+    body.touch #emote-menu { bottom:184px; }
+    body.touch .slot { width:42px; height:42px; border-radius:9px; }
+    body.touch .slot svg { width:19px; height:19px; }
+    body.touch #hotbar { bottom:12px; }
+  }
+
+  /* portrait phones: the chat shrinks + reflows so it can never overlap
+     the name / health bar in the top-right corner */
+  @media (orientation: portrait) and (max-width:620px) {
+    #chat { left:12px; top:58px; width:auto; max-width:calc(100vw - 150px); min-width:132px; font-size:11.5px; }
+    #chat-messages { max-height:min(84px, 16vh); }
+    #playerhud { top:10px; right:10px; }
+    #playerhud .pname { font-size:12px; margin-bottom:4px; }
+    .hbar { width:118px; height:10px; }
+  }
+
+  /* ---------- menu button (top-left) + game menu (§14) ---------- */
+  #menu-fab { position:fixed; top:12px; left:12px; z-index:24; width:36px; height:36px; border-radius:11px;
+    background:rgba(13,17,23,0.45); backdrop-filter:blur(8px);
+    border:2px solid rgba(255,255,255,0.16); color:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  #menu-fab:hover { border-color:rgba(255,255,255,0.5); }
+  #menu-fab svg { width:18px; height:18px; }
+
+  #menu-overlay { position:fixed; inset:0; z-index:60; display:none;
+    background:rgba(8,10,14,0.62); backdrop-filter:blur(3px);
+    align-items:center; justify-content:center; }
+  #menu-overlay.open { display:flex; }
+  #menu { width:min(720px, calc(100vw - 20px)); height:min(530px, calc(100vh - 20px));
+    background:#1d2129; border:1px solid rgba(255,255,255,0.09); border-radius:16px;
+    display:flex; flex-direction:column; overflow:hidden; box-shadow:0 18px 60px rgba(0,0,0,0.5); color:#fff; font-size:13px; }
+  /* tabs run along the TOP (Roblox-style) — the body keeps the full
+     width for sliders and segmented controls */
+  #menu-rail { display:flex; flex-direction:row; align-items:center; gap:4px;
+    background:rgba(13,17,23,0.55); padding:10px 12px;
+    border-bottom:1px solid rgba(255,255,255,0.07); }
+  .rail-title { font-weight:800; font-size:15px; padding:0 10px 0 2px; letter-spacing:.3px; }
+  .mtab { display:flex; align-items:center; gap:8px; padding:9px 13px; border-radius:9px; cursor:pointer;
+    color:rgba(255,255,255,0.72); font:inherit; font-weight:700; text-align:left;
+    border:none; background:transparent; width:auto; }
+  .mtab svg { width:17px; height:17px; flex-shrink:0; }
+  .mtab:hover { background:rgba(255,255,255,0.07); color:#fff; }
+  .mtab.active { background:rgba(255,255,255,0.13); color:#fff; }
+  .rail-spacer { flex:1; }
+  #menu-body { flex:1; overflow-y:auto; padding:16px 18px 20px; }
+  .mtabpane { display:none; }
+  .mtabpane.active { display:block; }
+  .msection { font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase;
+    color:rgba(255,255,255,0.42); margin:18px 0 2px; }
+  .mtabpane .msection:first-child { margin-top:0; }
+  .mrow { display:flex; flex-direction:column; gap:8px; padding:12px 0;
+    border-bottom:1px solid rgba(255,255,255,0.05); }
+  .mrow:last-child { border-bottom:none; }
+  .mrow-top { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .mlabel { font-weight:700; font-size:13px; }
+  .msub { font-size:11px; color:rgba(255,255,255,0.5); font-weight:600; margin-top:-3px; }
+  .mval { font-weight:800; font-size:12px; color:#01A2FF; white-space:nowrap; cursor:pointer;
+    padding:3px 8px; border-radius:6px; border:1px solid transparent; }
+  .mval:hover { border-color:rgba(1,162,255,0.55); background:rgba(1,162,255,0.12); }
+  .mval-in { width:64px; background:rgba(255,255,255,0.1); border:1px solid #01A2FF; border-radius:6px;
+    color:#fff; font:inherit; font-weight:800; font-size:12px; padding:2px 6px; outline:none; text-align:right; }
+  /* custom slider — relative dragging (taps NEVER jump the value),
+     −/+ steppers with hold-to-repeat, keyboard, and click-the-value
+     to type an exact number. Vertical swipes scroll the panel. */
+  .sld { display:flex; align-items:center; gap:10px; }
+  .sld:focus { outline:none; }
+  .sld:focus-visible .sthumb { box-shadow:0 0 0 3px rgba(1,162,255,0.45), 0 1px 5px rgba(0,0,0,0.45); }
+  .sbtn { width:36px; height:36px; flex-shrink:0; border-radius:10px; font-size:17px; line-height:1;
+    border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#fff;
+    font:inherit; font-weight:800; cursor:pointer; touch-action:none; }
+  .sbtn:hover { background:rgba(255,255,255,0.14); }
+  .sbtn:active { background:rgba(1,162,255,0.35); }
+  .strack { position:relative; flex:1; height:38px; cursor:ew-resize; touch-action:pan-y; }
+  .strack::before { content:''; position:absolute; left:0; right:0; top:50%; height:6px; margin-top:-3px;
+    border-radius:3px; background:rgba(255,255,255,0.15); }
+  .sfill { position:absolute; left:0; top:50%; height:6px; margin-top:-3px; border-radius:3px;
+    background:#01A2FF; pointer-events:none; max-width:100%; }
+  .sthumb { position:absolute; top:50%; width:24px; height:24px; border-radius:50%; background:#fff;
+    transform:translate(-50%,-50%); box-shadow:0 1px 5px rgba(0,0,0,0.45); pointer-events:none; }
+  .tgl { position:relative; width:42px; height:24px; border-radius:12px; background:rgba(255,255,255,0.14);
+    cursor:pointer; transition:background .15s; border:none; flex-shrink:0; }
+  .tgl::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%;
+    background:#fff; transition:left .15s; }
+  .tgl.on { background:#01A2FF; }
+  .tgl.on::after { left:21px; }
+  .seg { display:flex; gap:4px; }
+  .seg button { flex:1; padding:7px 0; border-radius:8px; border:1px solid rgba(255,255,255,0.12);
+    background:transparent; color:rgba(255,255,255,0.7); font:inherit; font-weight:800; cursor:pointer; font-size:12px; }
+  .seg button:hover { background:rgba(255,255,255,0.07); }
+  .seg button.on { background:#01A2FF; border-color:#01A2FF; color:#fff; }
+  .btnrow { display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 4px; }
+  .abtn { padding:9px 14px; border-radius:9px; border:1px solid rgba(255,255,255,0.14);
+    background:rgba(255,255,255,0.08); color:#fff; font:inherit; font-weight:700; cursor:pointer; font-size:12px; }
+  .abtn:hover { background:rgba(255,255,255,0.16); }
+  .abtn.danger { border-color:rgba(255,110,100,0.45); color:#ff9a90; }
+  .crow { display:flex; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);
+    color:rgba(255,255,255,0.85); font-weight:600; font-size:12.5px; }
+  .crow:last-child { border-bottom:none; }
+  .kbd { display:inline-block; background:rgba(255,255,255,0.92); color:#111; border-radius:5px;
+    padding:2px 8px; font-size:11px; font-weight:800; margin-right:10px; min-width:34px; text-align:center; }
+  @media (max-width:560px) {
+    .rail-title { display:none; }
+    .mtab span { display:none; }
+    .mtab { padding:10px 12px; }
+  }
+
+  /* ---------- first person ---------- */
+  #fp-cross { position:fixed; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px;
+    border-radius:50%; background:rgba(255,255,255,0.9); box-shadow:0 0 5px rgba(0,0,0,0.6);
+    z-index:35; display:none; pointer-events:none; }
+  #fp-hint { position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:36; display:none;
+    background:rgba(13,17,23,0.55); backdrop-filter:blur(8px); color:#fff; font-size:12px; font-weight:700;
+    padding:8px 14px; border-radius:9px; border:1px solid rgba(255,255,255,0.14); pointer-events:none; }
+
+  /* ---------- damage vignette ---------- */
+  #hurtfx { position:fixed; inset:0; z-index:40; pointer-events:none; opacity:0;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(180,20,10,0.55) 100%);
+    transition:opacity .45s; }
+
+  /* ---------- multiplayer online chip (top-left, right of the
+     menu button — the spot the chat used to occupy) ---------- */
+  #mp-chip { position:fixed; top:19px; left:58px; z-index:22; display:flex; align-items:center; gap:7px;
+    padding:5px 11px; border-radius:99px; pointer-events:none;
+    background:rgba(13,17,23,0.45); backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,0.14); color:#fff; font-size:11px; font-weight:800; letter-spacing:.3px; }
+  #mp-chip .dot { width:7px; height:7px; border-radius:50%; background:#9aa4ae; flex:none; }
+  #mp-chip.on .dot { background:#62d76b; }
+  #mp-chip.err .dot { background:#ff7a70; }
+
+  /* ---------- remote player nametags (projected like #nametag) ---------- */
+  .remote-tag { position:fixed; z-index:10; transform:translate(-50%,-100%); text-align:center; pointer-events:none; }
+  .remote-tag .dn { color:#fff; font-weight:800; font-size:13px; text-shadow:0 1px 3px rgba(0,0,0,.65); }
+  .remote-tag .dn.admin { color:#f5c542; }
+  .remote-tag .un { color:rgba(255,255,255,0.78); font-size:10.5px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.65); }
+  #nametag .dn.admin { color:#f5c542; }
+
+  /* ---------- username modal (first load / change username) ---------- */
+  #user-modal { position:fixed; inset:0; z-index:70; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(8,10,14,0.74); backdrop-filter:blur(4px); }
+  #user-modal.open { display:flex; }
+  #user-modal .card { width:min(380px, calc(100vw - 40px)); background:#1d2129;
+    border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:28px 26px 24px;
+    color:#fff; box-shadow:0 18px 60px rgba(0,0,0,0.55); }
+  #user-modal h1 { font-size:21px; margin-bottom:6px; }
+  #user-modal p { font-size:12.5px; color:rgba(255,255,255,0.55); font-weight:600; margin-bottom:16px; line-height:1.5; }
+  #user-name-in { width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16);
+    border-radius:9px; padding:11px 13px; color:#fff; font:inherit; font-size:14px; font-weight:700; outline:none; }
+  #user-name-in:focus { border-color:#01A2FF; }
+  #user-modal .err { color:#ff7a70; font-size:12px; font-weight:700; min-height:16px; margin:7px 2px 2px; }
+  #user-modal .play { width:100%; margin-top:8px; padding:12px; border:none; border-radius:10px;
+    background:#01A2FF; color:#fff; font:inherit; font-size:14px; font-weight:800; cursor:pointer; }
+  #user-modal .play:hover { background:#33b4ff; }
+  @keyframes shakex { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  #user-modal .card.shake { animation:shakex .3s; }
+
+  /* ---------- admin unlock pane ---------- */
+  .lockwrap { text-align:center; padding:36px 8px 30px; }
+  .lockwrap svg.lucide { width:36px; height:36px; color:rgba(255,255,255,0.4); margin-bottom:10px; }
+  .lockwrap .lt { font-weight:800; font-size:16px; margin-bottom:4px; }
+  .lockwrap .ls { font-size:12px; color:rgba(255,255,255,0.5); font-weight:600; margin-bottom:18px; line-height:1.5; }
+  .code-in { width:200px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16);
+    border-radius:9px; padding:10px 12px; color:#fff; font:inherit; font-size:13px; font-weight:700;
+    outline:none; text-align:center; }
+  .code-in:focus { border-color:#01A2FF; }
+  .lockerr { color:#ff7a70; font-size:12px; font-weight:700; min-height:16px; margin:10px 0 6px; }
+  .adminbadge { display:flex; align-items:center; justify-content:center; gap:7px; margin:0 0 16px; padding:8px 13px;
+    border-radius:99px; background:rgba(245,197,66,0.12); border:1px solid rgba(245,197,66,0.4);
+    color:#f5c542; font-size:12px; font-weight:800; }
+  .crown { display:inline-block; width:12px; height:12px; margin-right:4px; vertical-align:-1px; }
+</style>
+</head>
+<body>
+
+<div id="chat">
+  <div id="chat-head"><span>Chat</span><i data-lucide="chevron-down"></i></div>
+  <div id="chat-messages"></div>
+  <input id="chat-input" placeholder='Click here or press "/" to chat' maxlength="120" autocomplete="off">
+</div>
+
+<div id="menu-fab" title="Menu (Esc)"><i data-lucide="menu"></i></div>
+
+<div id="mp-chip"><span class="dot"></span><span id="mp-chip-txt">offline</span></div>
+
+<div id="user-modal">
+  <div class="card">
+    <h1>Welcome to Baseplate</h1>
+    <p>Pick a username — this is what other players in the world will see.
+       You only do this once; the game remembers you every time after that.</p>
+    <input id="user-name-in" maxlength="20" placeholder="Username" autocomplete="off" spellcheck="false">
+    <div class="err" id="user-name-err"></div>
+    <button class="play" id="user-play-btn">Play</button>
+  </div>
+</div>
+
+<div id="menu-overlay">
+  <div id="menu">
+    <div id="menu-rail">
+      <div class="rail-title">Baseplate</div>
+      <button class="mtab active" data-tab="settings"><i data-lucide="settings"></i><span>Settings</span></button>
+      <button class="mtab" data-tab="controls"><i data-lucide="keyboard"></i><span>Controls</span></button>
+      <button class="mtab" data-tab="admin"><i data-lucide="shield"></i><span>Admin</span></button>
+      <div class="rail-spacer"></div>
+      <button class="mtab" id="menu-close"><i data-lucide="x"></i><span>Close</span></button>
+    </div>
+    <div id="menu-body">
+      <div class="mtabpane active" data-tab="settings"><div id="settings-list"></div></div>
+      <div class="mtabpane" data-tab="controls">
+        <div class="crow"><span class="kbd">W A S D</span>Move</div>
+        <div class="crow"><span class="kbd">Shift</span>Run</div>
+        <div class="crow"><span class="kbd">Space</span>Jump · hop up ladders · hop off rides · fly up</div>
+        <div class="crow"><span class="kbd">C / Ctrl</span>Fly down (in fly mode)</div>
+        <div class="crow"><span class="kbd">E</span>Interact</div>
+        <div class="crow"><span class="kbd">Click</span>Use equipped tool</div>
+        <div class="crow"><span class="kbd">1 – 9</span>Hotbar slots</div>
+        <div class="crow"><span class="kbd">/</span>Open chat · Enter to send</div>
+        <div class="crow"><span class="kbd">Esc / M</span>Open this menu</div>
+        <div class="crow"><span class="kbd">Drag</span>Rotate camera</div>
+        <div class="crow"><span class="kbd">Scroll</span>Zoom camera</div>
+        <div class="crow"><span class="kbd">Zoom max</span>First person (mouse look)</div>
+        <div class="crow"><span class="kbd">/e dance</span>Emotes: wave · dance · sit · salute</div>
+      </div>
+      <div class="mtabpane" data-tab="admin"><div id="admin-list"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="playerhud">
+  <div class="pname">Builderman</div>
+  <div class="hbar"><div id="hfill"></div></div>
+</div>
+
+<div id="nametag"><div class="dn">Builderman</div><div class="un">@builderman</div></div>
+
+<div id="hotbar"></div>
+<div id="prompt"></div>
+<div id="hint"></div>
+<div id="fps"></div>
+
+<div id="emote-fab"><i data-lucide="smile"></i></div>
+<div id="emote-menu"></div>
+
+<div id="joy"><div id="knob"></div></div>
+<div id="jumpbtn"><i data-lucide="chevron-up"></i></div>
+
+<div id="hurtfx"></div>
+
+<div id="fp-cross"></div>
+<div id="fp-hint">Click to look around &middot; scroll out to leave first person</div>
+
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+/* =====================================================================
+   BASEPLATE — a Roblox-style game template in one HTML file
+   =====================================================================
+   PURPOSE: upload this file to an AI and ask it to build a game on
+   top of it. Every system is small, isolated and documented inline.
+
+   CONTENTS (search for the "§" markers):
+     §1  Core         renderer, lights, sky
+     §1.5 Config      V — every tunable in one object (Admin edits it)
+     §2  Helpers      CACHED materials/geometries (perf!), mesh builders
+     §3  Physics      AABB world, collide-and-slide, auto-step
+     §4  Camera       Roblox-style cam: drag-orbit, zoom, occlusion
+     §5  Character    classic R6 player rig (noob colors + tool anchor)
+     §6  Animation    channel-based poses with crossfade blending
+     §7  UI           chat (collapsible), hotbar, prompt, emotes, fps
+     §8  Inventory    items, equipping tools, sword swing / apple eat
+     §9  Interactions proximity prompt system
+     §10 World        baseplate, bricks, trees, watchtower + LADDER,
+                      house (door/lamp/chest/chair), zombie button
+     §10.5 Rides      tree swing + rocket merry-go-round
+                      (plain serializable state — multiplayer-ready)
+     §11 Zombies      enemy builder, AI, combat, death
+     §12 Controller   player input, movement, climbing, sitting
+     §12.5 Multiplayer Cloudflare worker relay + remote player rigs
+     §13 Main loop    (exception-guarded: a bug can never freeze it)
+     §14 Menu/Admin   Roblox-style menu, live variables, day/night
+
+   QUICK API — the building blocks for a new game:
+     World.addBox(cx,cy,cz,w,h,d)        register a solid AABB collider
+     solid(w,h,d,mat,x,y,z)              mesh + collider (axis aligned!)
+     box(w,h,d,mat,x,y,z,ry,parent)      decorative mesh only
+     brick(w,h,d,color,x,y,z)            studded solid (classic look)
+     addInteractable({x,y,z,radius,label,action,enabled?})
+     Inventory.give('sword' | 'apple')   put an item in the hotbar
+     spawnZombie(x, z)                   spawn an enemy (max 6)
+     damageZombie(z, n) / hurtPlayer(n, kbx, kbz)
+     triggerEmote('dance')               play an emote
+     addChat(name, text)                print to chat (players only —
+                                        system events are muted, §7)
+     cam                                 {yaw,pitch,zoom} live camera state
+     player                              {x,y,z,vx,vy,vz,...} live state
+     V                                   every game variable (menu → Admin)
+     USERNAME / isAdmin                  your identity (§12.5)
+     MP                                  multiplayer client — remote
+                                        players + chat relay (§12.5)
+
+   PERFORMANCE NOTES (read before adding lots of objects):
+     - All BoxGeometries and materials are CACHED and shared. Never
+       create materials per-mesh; use mat(color, roughness) or
+       studMats(color) — they dedupe for you.
+     - Studded tops are done with UV scaling on cached geometry, NOT
+       texture clones (each clone costs a full GPU texture upload).
+     - The main loop is try/catch-guarded: a runtime error logs to
+       console + chat but rendering/camera keep running.
+
+   KNOWN LIMITS (fine for most games, extend if needed):
+     - Colliders are axis-aligned boxes only (no rotated/sloped solids).
+     - Zombies walk in straight lines (no pathfinding).
+     - Multiplayer is a relay, not a server: every player simulates
+       their own local world — only players + chat are shared (§12.5).
+===================================================================== */
+
+/* ================================================================
+   §1 CORE — renderer / scene / lights / sky
+================================================================ */
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.02;
+document.body.appendChild(renderer.domElement);
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xd8e7f3, 60, 200);
+
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 500);
+camera.position.set(0, 6, -14);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+/* sky */
+const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { top: { value: new THREE.Color(0x5c9fd6) }, bottom: { value: new THREE.Color(0xd8e7f3) } },
+    vertexShader: `varying vec3 vP; void main(){ vP=position;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader: `varying vec3 vP; uniform vec3 top,bottom;
+      void main(){ float h=clamp(normalize(vP).y,0.0,1.0);
+      gl_FragColor=vec4(mix(bottom,top,pow(h,0.6)),1.0); }`
+  });
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(420, 24, 12), skyMat));
+const hemi = new THREE.HemisphereLight(0xcfe6ff, 0x8f9299, 1.0);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff4e0, 2.5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
+sun.shadow.camera.left = -15; sun.shadow.camera.right = 15;
+sun.shadow.camera.top = 15;   sun.shadow.camera.bottom = -15;
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
+sun.shadow.camera.updateProjectionMatrix();
+scene.add(sun, sun.target);
+
+/* ================================================================
+   §1.5 GAME CONFIG — every tunable in one place (the Admin menu
+   writes into this object). Appliers push changes into the live
+   engine objects; everything persists to localStorage.
+================================================================ */
+const DEFAULTS = {
+  // player
+  maxHealth: 100, healthRegen: 8, regenDelay: 4, godMode: false, flyMode: false,
+  // movement — v6 double speed: walk 10.4 / run 17.6
+  // (ladder climb speed follows walk/run — see §12)
+  walkSpeed: 10.4, runSpeed: 17.6, jumpPower: 42, gravity: 165, stepHeight: 1.5,
+  // fall damage (free falls under 20 studs are safe, then gentle)
+  fallDamage: true, fallSafeHeight: 20, fallMultiplier: 2.5,
+  // combat
+  swordDamage: 1, zombieHealth: 2, zombieDamage: 10, zombieSpeed: 2.7,
+  zombieCooldown: 1.0, knockback: 16, maxZombies: 6,
+  // camera
+  fov: 60, camSensitivity: 1, invertY: false, zoomMin: 3, zoomMax: 28, occlusion: true,
+  // graphics (resScale / shadowQuality / fogDistance: 0 or -1 = follow the level)
+  graphicsLevel: (('ontouchstart' in window) || navigator.maxTouchPoints > 0) ? 2 : 4,
+  resMode: 'auto', resScale: 0, shadowQuality: -1, shadowDistance: 0, fogDistance: 0, showFps: true,
+  // world
+  dayTime: 10.2, daySpeed: 0
+};
+const V = Object.assign({}, DEFAULTS);
+
+/* graphics presets — pixel-ratio cap, shadow size/reach, fog, anisotropy.
+   sdist = how many studs around the PLAYER the shadow box covers
+   (the sun + its target follow the player, so bigger = shadows stay
+   visible further away, at the cost of texel resolution) */
+const GRAPHICS = {
+  1: { pr: 1.0,  shadows: false, smap: 0,    fog: 130, ani: 0, sdist: 20 },
+  2: { pr: 1.0,  shadows: true,  smap: 512,  fog: 150, ani: 1, sdist: 32 },
+  3: { pr: 1.25, shadows: true,  smap: 1024, fog: 170, ani: 2, sdist: 42 },
+  4: { pr: 1.5,  shadows: true,  smap: 2048, fog: 200, ani: 4, sdist: 52 },
+  5: { pr: 2.0,  shadows: true,  smap: 2048, fog: 230, ani: 8, sdist: 64 }
+};
+
+/* adaptive resolution — in Auto mode the render scale tunes itself
+   to hold ~55-60 fps (0.45x .. 1x of the preset cap) and re-applies
+   on rotate / resize, so portrait and landscape both stay smooth */
+const adaptive = { mult: 1, lowStreak: 0, highStreak: 0 };
+function updateAdaptiveRes(fps) {
+  if (V.resMode !== 'auto' || elapsed < 5) return;   // skip warm-up stutters
+  if (fps > 57) {
+    adaptive.lowStreak = 0;
+    if (++adaptive.highStreak >= 2 && adaptive.mult < 1) {
+      adaptive.highStreak = 0;
+      adaptive.mult = Math.min(1, adaptive.mult + 0.1);
+      applyGraphics();
+    }
+  } else if (fps < 47) {
+    adaptive.highStreak = 0;
+    if (++adaptive.lowStreak >= 3 && adaptive.mult > 0.45) {
+      adaptive.lowStreak = 0;
+      adaptive.mult = Math.max(0.45, adaptive.mult - 0.15);
+      applyGraphics();
+    }
+  } else { adaptive.lowStreak = 0; adaptive.highStreak = 0; }
+}
+
+function loadSettings() {
+  try { Object.assign(V, JSON.parse(localStorage.getItem('baseplate.settings.v6') || '{}')); }
+  catch (e) { /* private mode etc. — defaults are fine */ }
+}
+let saveTO = null;
+function queueSave() {
+  clearTimeout(saveTO);
+  saveTO = setTimeout(() => {
+    try {
+      const { godMode, flyMode, ...persist } = V;   // cheats never persist
+      localStorage.setItem('baseplate.settings.v6', JSON.stringify(persist));
+    } catch (e) {}
+  }, 250);
+}
+
+/* push the physics constants (declared in §3/§11/§12) out of V */
+function syncConsts() {
+  GRAV = V.gravity; JUMPV = V.jumpPower; STEP_H = V.stepHeight;
+  FALL_SAFE_H = V.fallSafeHeight; FALL_MULT = V.fallMultiplier; MAX_ZOMBIES = V.maxZombies;
+}
+
+function setShadowsEnabled(on) {
+  if (renderer.shadowMap.enabled === on) return;
+  renderer.shadowMap.enabled = on;
+  scene.traverse(o => {            // materials must recompile when shadow state flips
+    if (o.material) (Array.isArray(o.material) ? o.material : [o.material])
+      .forEach(m => { m.needsUpdate = true; });
+  });
+}
+
+/* shadow reach (studs around the player) + sun orbit radius — owned by
+   applyGraphics, consumed by updateDayNight so the shadow camera stays
+   far outside every building and tree */
+let SHADOW_SD = 52, SHADOW_R = 160;
+
+function applyGraphics() {
+  const g = GRAPHICS[V.graphicsLevel] || GRAPHICS[4];
+  // resolution: Auto adapts to fps, a fixed % multiplies the preset
+  // cap, and an explicit resScale override still beats them both
+  const mult = V.resMode === 'auto' ? adaptive.mult : (Number(V.resMode) || 1);
+  const cap = V.resScale > 0 ? V.resScale : g.pr;
+  renderer.setPixelRatio(Math.max(0.4, Math.min(devicePixelRatio || 1, cap) * mult));
+  renderer.setSize(innerWidth, innerHeight);
+  // shadows: shadowQuality 0 = off, -1 = from level
+  const sq = V.shadowQuality === -1 ? g.smap : V.shadowQuality;
+  const shOn = sq > 0;
+  setShadowsEnabled(shOn);
+  sun.castShadow = shOn;
+  if (shOn && sun.shadow.mapSize.x !== sq) {
+    sun.shadow.mapSize.set(sq, sq);
+    if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+  }
+  if (shOn) {
+    // shadow REACH: the shadow box is centred on the player (the sun
+    // and its target follow them in updateDayNight), so a bigger ortho
+    // extent simply extends how far away shadows stay visible. The
+    // map size CAPS the reach (one texel must stay under ~0.15 studs
+    // or the whole ground grows shadow acne) — the value chip shows
+    // the effective distance when this clamps.
+    const want = V.shadowDistance > 0 ? V.shadowDistance : g.sdist;
+    SHADOW_SD = Math.max(12, Math.min(want, sq * 0.075));
+    SHADOW_R = 90 + SHADOW_SD * 1.4;                 // where the sun sits (§day/night)
+    const sc = sun.shadow.camera;
+    if (sc.left !== -SHADOW_SD) {
+      sc.left = -SHADOW_SD; sc.right = SHADOW_SD;
+      sc.top = SHADOW_SD; sc.bottom = -SHADOW_SD;
+      // the frustum must also bracket the player along the light axis:
+      // the sun is SHADOW_R out, the box spans ±SHADOW_SD around them
+      sc.near = Math.max(1, SHADOW_R - SHADOW_SD - 6);
+      sc.far = SHADOW_R + SHADOW_SD + 12;
+      sc.updateProjectionMatrix();
+    }
+    // bias scales with the real texel size so every quality/reach combo stays acne-free
+    sun.shadow.normalBias = 0.03 + (2 * SHADOW_SD / sq) * 1.2;
+  }
+  // fog / view distance
+  const fog = V.fogDistance > 0 ? V.fogDistance : g.fog;
+  scene.fog.near = fog * 0.3; scene.fog.far = fog;
+  // texture filtering tier
+  studTex.anisotropy = Math.min(g.ani, renderer.capabilities.getMaxAnisotropy());
+  studTex.needsUpdate = true;
+}
+
+/* ================================================================
+   §2 HELPERS — cached materials & geometries (the perf core)
+   ----------------------------------------------------------------
+   geo(w,h,d,studW,studD): BoxGeometry from a cache. If studW/D are
+   given, the TOP face UVs are scaled so a shared stud texture tiles
+   1 stud per unit — no texture clones, one material per color.
+================================================================ */
+const geoCache = new Map();
+function geo(w, h, d, studW = 0, studD = 0) {
+  const key = w + '|' + h + '|' + d + '|' + studW + '|' + studD;
+  let g = geoCache.get(key);
+  if (!g) {
+    g = new THREE.BoxGeometry(w, h, d);
+    if (studW) { // BoxGeometry face order: +x,-x,+y,-y,+z,-z; +y verts are 8..11
+      const uv = g.attributes.uv;
+      for (let i = 8; i < 12; i++) uv.setXY(i, uv.getX(i) * studW, uv.getY(i) * studD);
+    }
+    geoCache.set(key, g);
+  }
+  return g;
+}
+
+function makeStudTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, 128, 128);
+  x.strokeStyle = 'rgba(0,0,0,0.13)'; x.lineWidth = 3; x.strokeRect(0, 0, 128, 128);
+  x.fillStyle = 'rgba(0,0,0,0.30)';     x.beginPath(); x.arc(67, 67, 36, 0, 7); x.fill();
+  x.fillStyle = 'rgba(255,255,255,0.5)'; x.beginPath(); x.arc(61, 61, 36, 0, 7); x.fill();
+  x.fillStyle = '#ffffff';              x.beginPath(); x.arc(64, 64, 36, 0, 7); x.fill();
+  x.fillStyle = 'rgba(0,0,0,0.045)';    x.beginPath(); x.arc(64, 64, 36, 0, 7); x.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;   // repeat comes from UVs now
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  return t;
+}
+const studTex = makeStudTexture();
+
+const matCache = new Map();
+function mat(color, roughness = 0.8, metalness = 0, env = 0.3) {
+  const key = `p${color}|${roughness}|${metalness}|${env}`;
+  let m = matCache.get(key);
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ color, roughness, metalness, envMapIntensity: env });
+    matCache.set(key, m);
+  }
+  return m;
+}
+/* material array with a studded top face — cached per color */
+function studMats(color, rough = 0.9) {
+  const key = `s${color}|${rough}`;
+  let arr = matCache.get(key);
+  if (!arr) {
+    const side = new THREE.MeshStandardMaterial({ color, roughness: rough, envMapIntensity: 0.25 });
+    const top  = new THREE.MeshStandardMaterial({ color, roughness: rough, map: studTex, envMapIntensity: 0.25 });
+    arr = [side, side, top, side, side, side];
+    matCache.set(key, arr);
+  }
+  return arr;
+}
+
+/* rig limb (uses cached geometry) */
+function part(w, h, d, material, x, y, z, parent) {
+  const m = new THREE.Mesh(geo(w, h, d), material);
+  m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+/* world-space decorative mesh (no physics) */
+function box(w, h, d, material, x, y, z, ry = 0, parent = scene) {
+  const m = new THREE.Mesh(geo(w, h, d), material);
+  m.position.set(x, y, z); m.rotation.y = ry;
+  m.castShadow = m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+/* world-space mesh + matching AABB collider. NOTE: collider ignores `ry`
+   (physics is axis-aligned only) — only use ry=0 for solids. */
+function solid(w, h, d, material, x, y, z) {
+  const m = box(w, h, d, material, x, y, z);
+  World.addBox(x, y, z, w, h, d);
+  return m;
+}
+
+const wallMat  = mat(0xF2F3F3, 0.9);
+const roofMat  = mat(0xC4281C, 0.8);
+const woodMat  = mat(0xA05F35, 0.85);
+const darkWood = mat(0x624732, 0.8);
+const stoneMat = mat(0x9BA0A6, 0.9);
+const leafMat  = mat(0x4B974B, 0.9);
+const trunkMat = mat(0x624732, 0.95);
+const goldMat  = mat(0xe0aa48, 0.3, 0.85, 1.0);
+const glassMat = new THREE.MeshStandardMaterial({ color: 0xbfe3f2, roughness: 0.1, transparent: true, opacity: 0.35 });
+
+/* ================================================================
+   §3 PHYSICS ENGINE
+   ----------------------------------------------------------------
+   The world is a list of axis-aligned boxes (AABBs).
+   moveBody() integrates one body per frame:
+     1. move on Y, resolve (sets grounded / landing impact)
+     2. move on X, resolve — with AUTO-STEP: grounded bodies climb
+        ledges up to STEP_H studs automatically (Roblox behaviour)
+     3. move on Z, resolve
+   Add colliders with World.addBox(...) and toggle them with
+   collider.enabled = false (the door does this).
+================================================================ */
+const World = {
+  colliders: [],
+  addBox(cx, cy, cz, w, h, d) {
+    const c = {
+      min: { x: cx - w / 2, y: cy - h / 2, z: cz - d / 2 },
+      max: { x: cx + w / 2, y: cy + h / 2, z: cz + d / 2 },
+      enabled: true
+    };
+    World.colliders.push(c);
+    return c;
+  }
+};
+
+let GRAV = 165, JUMPV = 42, STEP_H = 1.5;   /* live-synced from V (§1.5) */
+
+function bodyOverlap(b, c) {
+  return b.x - b.hw < c.max.x && b.x + b.hw > c.min.x &&
+         b.y < c.max.y && b.y + b.h > c.min.y &&
+         b.z - b.hw < c.max.z && b.z + b.hw > c.min.z;
+}
+function overlapsAny(b) {
+  for (const c of World.colliders) if (c.enabled && bodyOverlap(b, c)) return true;
+  return false;
+}
+function aabbOverlap(a, b) { // plain {min,max} boxes (triggers, etc.)
+  return a.min.x < b.max.x && a.max.x > b.min.x &&
+         a.min.y < b.max.y && a.max.y > b.min.y &&
+         a.min.z < b.max.z && a.max.z > b.min.z;
+}
+
+function moveAxis(b, axis, dt) {
+  const v = axis === 'x' ? b.vx : b.vz;
+  const d = v * dt;
+  if (d === 0) return;
+  b[axis] += d;
+  for (const c of World.colliders) {
+    if (!c.enabled || !bodyOverlap(b, c)) continue;
+    if (b.grounded) { // auto-step small ledges
+      const rise = c.max.y - b.y;
+      if (rise > 0 && rise <= STEP_H) {
+        const oldY = b.y;
+        b.y = c.max.y + 0.001;
+        if (!overlapsAny(b)) continue;
+        b.y = oldY;
+      }
+    }
+    if (d > 0) b[axis] = c.min[axis] - b.hw - 0.001;
+    else       b[axis] = c.max[axis] + b.hw + 0.001;
+    if (axis === 'x') b.vx = 0; else b.vz = 0;
+  }
+}
+
+function moveBody(b, dt) {
+  b.grounded = false;
+  b.impact = 0;
+  const vyIn = b.vy;
+  b.y += b.vy * dt;
+  for (const c of World.colliders) {
+    if (!c.enabled || !bodyOverlap(b, c)) continue;
+    if (vyIn <= 0) { b.y = c.max.y; b.vy = 0; b.grounded = true; b.impact = Math.max(b.impact, -vyIn); }
+    else           { b.y = c.min.y - b.h - 0.001; b.vy = 0; }
+  }
+  moveAxis(b, 'x', dt);
+  moveAxis(b, 'z', dt);
+}
+
+/* ================================================================
+   §4 CAMERA — Roblox-style third person controller
+   ----------------------------------------------------------------
+   - Subject (player head) is followed tightly — no trailing drag.
+   - Drag (any button / one finger) orbits; wheel / pinch zooms.
+   - OCCLUSION: a ray from the head to the desired camera position
+     is tested against every physics AABB; if a wall is in the way
+     the camera pulls in front of it (fast in, eased back out).
+   - A quick tap (not a drag) still triggers the equipped tool.
+   Live state: cam.yaw, cam.pitch, cam.zoom (3..28).
+================================================================ */
+const cam = {
+  yaw: Math.PI * 0.94,
+  pitch: 0.34,
+  zoom: 15,      // desired distance
+  dist: 15,      // actual (occlusion-limited) distance
+  fp: false,     // first person — zoom fully in to enter (§4 below)
+  subject: new THREE.Vector3(0, 4.6, 0)
+};
+
+/* segment-vs-AABB (slab method): nearest entry distance or maxDist */
+function occlusionDist(origin, dir, maxDist) {
+  let best = maxDist;
+  for (const c of World.colliders) {
+    if (!c.enabled) continue;
+    let tmin = 0, tmax = best, ok = true;
+    for (const a of ['x', 'y', 'z']) {
+      const o = origin[a], d = dir[a];
+      if (Math.abs(d) < 1e-9) {
+        if (o < c.min[a] || o > c.max[a]) { ok = false; break; }
+      } else {
+        let t1 = (c.min[a] - o) / d, t2 = (c.max[a] - o) / d;
+        if (t1 > t2) { const t = t1; t1 = t2; t2 = t; }
+        if (t1 > tmin) tmin = t1;
+        if (t2 < tmax) tmax = t2;
+        if (tmin > tmax) { ok = false; break; }
+      }
+    }
+    if (ok && tmin > 0.05 && tmin < best) best = tmin;
+  }
+  return best;
+}
+
+const camDir = new THREE.Vector3();
+function updateCamera(dt) {
+  // state guard: first person only exists AT the closest zoom — if any
+  // settings change pushed the zoom out, silently drop back to third person
+  if (cam.fp && cam.zoom > V.zoomMin + 0.75) exitFP();
+
+  // tight subject follow (smooths auto-steps, but never trails behind)
+  const k = 1 - Math.exp(-22 * dt);
+  cam.subject.x += (player.x - cam.subject.x) * k;
+  cam.subject.y += (player.y + 4.6 - cam.subject.y) * k;
+  cam.subject.z += (player.z - cam.subject.z) * k;
+
+  /* first person: the camera rides at the (hidden) head */
+  if (cam.fp) {
+    cam.pitch = clamp(cam.pitch, -1.45, 1.45);
+    const cp = Math.cos(cam.pitch);
+    camDir.set(Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), Math.cos(cam.yaw) * cp);
+    camera.position.copy(cam.subject).addScaledVector(camDir, -0.18);
+    camera.lookAt(camera.position.x - camDir.x * 5, camera.position.y - camDir.y * 5, camera.position.z - camDir.z * 5);
+    return;
+  }
+
+  cam.pitch = clamp(cam.pitch, -1.35, 1.5);
+  cam.zoom = clamp(cam.zoom, V.zoomMin, V.zoomMax);
+  const cp = Math.cos(cam.pitch);
+  camDir.set(Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), Math.cos(cam.yaw) * cp);
+
+  const hit = V.occlusion ? occlusionDist(cam.subject, camDir, cam.zoom) : cam.zoom;
+  const want = hit < cam.zoom ? Math.max(1.6, hit - 0.45) : cam.zoom;
+  // snap in fast when obstructed, ease back out when clear
+  const kz = want < cam.dist ? 1 - Math.exp(-30 * dt) : 1 - Math.exp(-8 * dt);
+  cam.dist += (want - cam.dist) * kz;
+
+  camera.position.copy(cam.subject).addScaledVector(camDir, cam.dist);
+  camera.lookAt(cam.subject);
+}
+
+/* camera input: drag-orbit + wheel/pinch zoom + tap-to-use-tool */
+const pointers = new Map();
+let tapInfo = null, pinchDist = 0, pinchFP = 0;
+const dom = renderer.domElement;
+
+dom.addEventListener('pointerdown', e => {
+  dom.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (cam.fp && !isTouch && document.pointerLockElement !== dom)   // re-lock after menus etc.
+    try { const p = dom.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) {}
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    tapInfo = null;
+  } else if (e.button === 0) {
+    tapInfo = { x: e.clientX, y: e.clientY, t: performance.now() };
+  }
+});
+dom.addEventListener('pointermove', e => {
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  if (pointers.size === 1) {
+    if (document.pointerLockElement === dom) { p.x = e.clientX; p.y = e.clientY; return; } // mouselook owns it
+    cam.yaw   -= (e.clientX - p.x) * 0.0052 * V.camSensitivity;
+    cam.pitch += (e.clientY - p.y) * 0.0052 * V.camSensitivity * (V.invertY ? -1 : 1);
+    if (tapInfo && Math.hypot(e.clientX - tapInfo.x, e.clientY - tapInfo.y) > 7) tapInfo = null;
+  }
+  p.x = e.clientX; p.y = e.clientY;
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinchDist > 0) {
+      if (cam.fp) {                                   // spreading fingers pops back out
+        pinchFP += d - pinchDist;
+        if (pinchFP > 12) { exitFP(); pinchFP = 0; }
+      } else if (cam.zoom > V.zoomMin + 0.01) {
+        cam.zoom = clamp(cam.zoom * pinchDist / d, V.zoomMin, V.zoomMax);
+        pinchFP = 0;
+      } else {                                        // pinched fully in -> first person
+        pinchFP += pinchDist - d;
+        if (pinchFP > 12) { enterFP(); pinchFP = 0; }
+      }
+    }
+    pinchDist = d;
+  }
+});
+function pointerEnd(e) {
+  if (tapInfo && pointers.size === 1 && performance.now() - tapInfo.t < 300) useEquipped();
+  pointers.delete(e.pointerId);
+  tapInfo = null;
+  pinchDist = 0;
+  pinchFP = 0;
+}
+dom.addEventListener('pointerup', pointerEnd);
+dom.addEventListener('pointercancel', pointerEnd);
+dom.addEventListener('wheel', e => {
+  e.preventDefault();
+  const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);  // lines/pages -> px
+  if (cam.fp) { if (dy > 0) exitFP(); return; }                      // scroll out pops back out
+  if (dy < 0 && cam.zoom <= V.zoomMin + 0.05) { enterFP(); return; } // zoomed fully in
+  cam.zoom = clamp(cam.zoom * Math.exp(dy * 0.0016), V.zoomMin, V.zoomMax);
+}, { passive: false });
+
+/* ---- FIRST PERSON — exactly like Roblox: zoom in all the way and the
+   camera pops into the head, the body hides (an equipped tool stays
+   visible), the mouse locks for look-around, and zooming back out
+   returns to third person. Mobile: pinch fully in / out. ---- */
+const fpCross = document.getElementById('fp-cross');
+const fpHint = document.getElementById('fp-hint');
+function applyFPVisibility() {
+  character.traverse(o => { if (o.isMesh) o.visible = !cam.fp || !!o.userData.tool; });
+  if (toolMesh) (cam.fp ? fpTool : toolAnchor).add(toolMesh);   // viewmodel <-> hand
+}
+function enterFP() {
+  if (cam.fp) return;
+  cam.fp = true;
+  cam.zoom = V.zoomMin;
+  applyFPVisibility();
+  fpCross.style.display = 'block';
+  updateFPHint();
+  if (!isTouch)                     // wheel/pinch aren't lock gestures — the
+    try { const p = dom.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {}  // next click re-locks
+}
+function exitFP() {
+  if (!cam.fp) return;
+  cam.fp = false;
+  cam.zoom = Math.max(V.zoomMin + 2.5, 4.5);   // a clearly-visible pop-out distance,
+  cam.dist = 2.2;                               // then the wheel keeps zooming from there
+  applyFPVisibility();
+  fpCross.style.display = 'none';
+  updateFPHint();
+  if (document.pointerLockElement === dom) document.exitPointerLock();
+}
+function updateFPHint() {
+  fpHint.style.display = (cam.fp && !isTouch && document.pointerLockElement !== dom) ? 'block' : 'none';
+}
+document.addEventListener('pointerlockchange', updateFPHint);
+document.addEventListener('mousemove', e => {            // locked mouselook
+  if (!cam.fp || document.pointerLockElement !== dom) return;
+  cam.yaw   -= e.movementX * 0.0026 * V.camSensitivity;
+  cam.pitch += e.movementY * 0.0026 * V.camSensitivity * (V.invertY ? -1 : 1);
+});
+
+/* ================================================================
+   §5 CHARACTER — classic R6 rig (default "noob" look)
+   root > hips(single-box legs) + torsoPivot > shoulders
+   (single-box arms) + neck(upright rounded head + face decal)
+   + toolAnchor at the right hand.
+   No hats / buttons / extras — pure Roblox default.
+================================================================ */
+const skinMat  = mat(0xF5CD30, 0.65);   // classic yellow — head & arms
+const shirtMat = mat(0x0D69AC, 0.8);    // bright blue — torso
+const pantsMat = mat(0x4B974B, 0.85);   // yellowish green — legs
+
+const character = new THREE.Group();
+scene.add(character);
+
+const torsoPivot = new THREE.Group();
+torsoPivot.position.set(0, 2, 0);
+character.add(torsoPivot);
+
+/* slightly rounded square torso (classic R6 body, not razor-sharp).
+   The geometry is shared with remote player rigs (§12.5). */
+const R6_TORSO_GEO = new RoundedBoxGeometry(2, 2, 1, 2, 0.09);
+const torso = new THREE.Mesh(R6_TORSO_GEO, shirtMat);
+torso.position.y = 1;
+torso.castShadow = torso.receiveShadow = true;
+torsoPivot.add(torso);
+
+const neckPivot = new THREE.Group();
+neckPivot.position.set(0, 2, 0);
+torsoPivot.add(neckPivot);
+
+/* the classic Roblox head: a vertical TUBE — from the top it is a
+   perfect circle (radius 0.6), extruded up 1.25 studs, with the top
+   and bottom rims filleted by a lathe profile. 1.2 x 1.25 x 1.2
+   studs — never wider than it is deep */
+function roundedHeadGeo(R, H, F, seg = 24) {
+  const hy = H / 2, pts = [];
+  pts.push(new THREE.Vector2(0.001, -hy), new THREE.Vector2(R - F, -hy));
+  for (let i = 1; i <= 4; i++) {                 // bottom rim fillet
+    const a = -Math.PI / 2 + (i / 4) * (Math.PI / 2);
+    pts.push(new THREE.Vector2(R - F + Math.cos(a) * F, -hy + F + Math.sin(a) * F));
+  }
+  pts.push(new THREE.Vector2(R, hy - F));       // straight side
+  for (let i = 1; i <= 4; i++) {                 // top rim fillet
+    const a = (i / 4) * (Math.PI / 2);
+    pts.push(new THREE.Vector2(R - F + Math.cos(a) * F, hy - F + Math.sin(a) * F));
+  }
+  pts.push(new THREE.Vector2(0.001, hy));
+  return new THREE.LatheGeometry(pts, seg);
+}
+const head = new THREE.Mesh(roundedHeadGeo(0.6, 1.25, 0.28), skinMat);
+head.position.y = 0.6;
+head.castShadow = head.receiveShadow = true;
+neckPivot.add(head);
+
+/* the classic smile — a CURVED decal that hugs the front of the
+   round tube (a flat plane would float off the cylinder), built as a
+   partial open cylinder 0.004 studs proud of the head surface */
+function makeFaceTexture() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = '#141414';
+  for (const ex of [-92, 92]) { x.beginPath(); x.ellipse(256 + ex, 108, 24, 38, 0, 0, 7); x.fill(); }
+  x.strokeStyle = '#141414'; x.lineWidth = 20; x.lineCap = 'round';
+  x.beginPath(); x.arc(256, 118, 70, 0.35, Math.PI - 0.35); x.stroke();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+const faceDecal = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.604, 0.604, 0.55, 24, 1, true, -0.85, 1.7),
+  new THREE.MeshStandardMaterial({ map: makeFaceTexture(), transparent: true, roughness: 0.65 }));
+faceDecal.position.y = 0.62;
+neckPivot.add(faceDecal);
+
+/* shared rig parts — remote players (§12.5) reuse the exact same
+   head / face / torso geometry so everyone looks consistent */
+const HEAD_GEO = head.geometry, FACE_GEO = faceDecal.geometry;
+const remoteFaceMat = new THREE.MeshStandardMaterial({
+  map: faceDecal.material.map, transparent: true, roughness: 0.65 });
+
+function buildArm(side) {          // one rigid R6 arm, pivots near the top
+  const shoulder = new THREE.Group();
+  shoulder.position.set(1.5 * side, 1.5, 0);
+  torsoPivot.add(shoulder);
+  part(0.95, 2, 0.95, skinMat, 0, -0.5, 0, shoulder);
+  return { shoulder };
+}
+const armL = buildArm(+1), armR = buildArm(-1);
+
+/* the hand — held tools weld here (the blade runs along +Z, so an
+   outstretched arm carries the sword pointing straight up) */
+const toolAnchor = new THREE.Group();
+toolAnchor.position.set(0, -1.45, 0);
+armR.shoulder.add(toolAnchor);
+
+/* first-person VIEWMODEL — exactly like Roblox: in first person the
+   equipped tool is anchored to the CAMERA (lower-right, blade up),
+   not the invisible arm. The tool re-parents between these anchors
+   whenever first person is entered or left (§4). */
+const fpTool = new THREE.Group();
+fpTool.position.set(0.58, -0.5, -1.3);                  // right, low, in front
+fpTool.rotation.set(-Math.PI / 2 + 0.1, -0.45, -0.1);    // blade up, sweeping toward centre
+scene.add(camera);                                       // camera children only render in-graph
+camera.add(fpTool);
+
+function buildLeg(side) {          // one rigid R6 leg, pivots at the hip
+  const hip = new THREE.Group();
+  hip.position.set(0.5 * side, 2, 0);
+  character.add(hip);
+  part(0.95, 2, 0.95, pantsMat, 0, -1, 0, hip);
+  return { hip };
+}
+const legL = buildLeg(+1), legR = buildLeg(-1);
+
+/* ================================================================
+   §6 ANIMATION SYSTEM
+   Every animation writes into a flat set of joint "channels";
+   switching animations snapshots the live pose and crossfades into
+   the new one, so transitions are always smooth. Held tools apply
+   an override layer on the right arm AFTER blending.
+   R6 rig: no elbows or knees — limbs stay straight and swing
+   from the shoulder / hip, exactly like classic Roblox.
+================================================================ */
+const CH = ['rootY',
+  'torsoRx','torsoRy','torsoRz',
+  'headRx','headRy','headRz',
+  'armLx','armLz',
+  'armRx','armRz',
+  'legLx','legRx'];
+
+const T = {}, APPLIED = {};
+CH.forEach(k => { T[k] = 0; APPLIED[k] = 0; });
+
+let animId = 'idle';
+let blendFrom = null, blendT = 1, blendDur = 0.3;
+
+function setAnim(id, dur = 0.28) {
+  if (id === animId) return;
+  blendFrom = Object.assign({}, APPLIED);
+  blendT = 0; blendDur = dur; animId = id;
+}
+
+const angWrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+const pulse = (p, center, w) => { const d = angWrap(p - center) / w; return Math.exp(-d * d); };
+const lerp = THREE.MathUtils.lerp, clamp = THREE.MathUtils.clamp, sstep = THREE.MathUtils.smoothstep;
+const easeOut = k => 1 - Math.pow(1 - k, 3);
+
+function poseIdle(t) {              // R6 idle: stand still, look around a bit
+  const b = Math.sin(t * 1.7);
+  T.rootY = b * 0.01 - 0.005;
+  T.torsoRy = Math.sin(t * 0.23) * 0.02;
+  T.headRy = Math.sin(t * 0.42) * Math.sin(t * 0.17 + 0.8) * 0.24;
+  T.headRx = Math.sin(t * 0.5) * 0.015;
+  T.armLz = 0.05 + b * 0.012;
+  T.armRz = -0.05 - b * 0.012;
+}
+function poseWalk() {               // R6 walk: straight limbs, stiff swing
+  const p = phase, s = Math.sin(p), c = Math.cos(p);
+  T.legLx = -s * 0.75; T.legRx = s * 0.75;
+  T.armLx = s * 0.75; T.armRx = -s * 0.75;
+  T.armLz = 0.06; T.armRz = -0.06;
+  T.torsoRx = 0.02; T.torsoRy = s * 0.11; T.torsoRz = c * 0.025;
+  T.rootY = Math.abs(c) * 0.06 - 0.03;
+  T.headRy = -s * 0.06;
+}
+function poseRun() {                // R6 run: big swings, forward lean
+  const p = phase, s = Math.sin(p), c = Math.cos(p);
+  T.legLx = -s * 1.05; T.legRx = s * 1.05;
+  T.armLx = s * 1.0; T.armRx = -s * 1.0;
+  T.armLz = 0.12; T.armRz = -0.12;
+  T.torsoRx = 0.16; T.torsoRy = s * 0.14; T.torsoRz = c * 0.02;
+  T.rootY = Math.abs(c) * 0.1 - 0.05;
+  T.headRx = -0.1; T.headRy = -s * 0.07;
+}
+function poseJump() {               // R6 jump: arms straight up, legs apart
+  const u = clamp(player.vy / JUMPV, -1, 1);
+  const k = sstep((1 - u) / 2, 0, 1);          // 0 = rising, 1 = falling
+  const arm = lerp(-2.9, -2.35, k);
+  T.armLx = arm; T.armRx = arm;
+  T.armLz = lerp(0.18, 0.38, k); T.armRz = -T.armLz;
+  T.legLx = lerp(-0.3, -0.08, k); T.legRx = lerp(0.14, 0.28, k);
+  T.torsoRx = lerp(-0.06, 0.1, k);
+  T.headRx = lerp(-0.1, 0.06, k);
+}
+function poseClimb() { // phase follows real vertical movement (§12)
+  const s = Math.sin(climbPhase), c = Math.cos(climbPhase);
+  T.armLx = -1.85 + s * 0.75; T.armRx = -1.85 - s * 0.75;   // alternate reach up
+  T.armLz = 0.12; T.armRz = -0.12;
+  T.legLx = -0.28 + c * 0.42; T.legRx = -0.28 - c * 0.42;   // alternate steps
+  T.torsoRx = 0.12;                                          // chest to the rungs
+  T.headRx = -0.26;                                          // look up the ladder
+  T.rootY = Math.abs(s) * 0.05 - 0.025;
+}
+function poseWave(t) {
+  T.armRz = -2.45 + Math.sin(t * 8) * 0.22;
+  T.armRx = -0.1;
+  T.headRz = 0.1; T.headRy = -0.14;
+  T.torsoRz = -0.05;
+  T.armLz = 0.06;
+}
+function poseDance(t) {
+  const p = t * 6.2, s = Math.sin(p);
+  T.torsoRy = s * 0.42; T.torsoRz = s * 0.12;
+  T.torsoRx = 0.05 + Math.sin(2 * p) * 0.03;
+  T.armLx = -0.4 - s * 0.85; T.armRx = -0.4 + s * 0.85;
+  T.armLz = 0.55; T.armRz = -0.55;
+  T.headRy = s * 0.16; T.headRz = -s * 0.12;
+  T.headRx = 0.04 + Math.sin(2 * p + 1) * 0.06;
+  T.rootY = Math.abs(Math.cos(p)) * 0.09 - 0.045;
+  T.legLx = -0.05; T.legRx = -0.05;
+}
+function poseSit(t) {
+  const b = Math.sin(t * 1.6);
+  T.rootY = -1.55 + b * 0.008;
+  T.legLx = -1.5; T.legRx = -1.47;            // legs stick straight out (R6)
+  T.armLx = 0.26; T.armRx = 0.26;
+  T.armLz = 0.22; T.armRz = -0.22;
+  T.torsoRx = -0.06 + b * 0.012;
+  T.headRy = Math.sin(t * 0.4) * Math.sin(t * 0.15) * 0.22;
+  T.headRx = 0.02;
+}
+function poseSalute(t) {
+  const b = Math.sin(t * 1.8) * 0.02;
+  T.armRx = -2.6; T.armRz = -0.62;            // straight-arm salute
+  T.headRy = -0.08; T.headRz = -0.08;
+  T.torsoRz = 0.03; T.torsoRx = -0.02 + b;
+  T.armLz = 0.05;
+}
+
+function evalPose(t) {
+  CH.forEach(k => T[k] = 0);
+  switch (animId) {
+    case 'idle':   poseIdle(t); break;
+    case 'walk':   poseWalk(); break;
+    case 'run':    poseRun(); break;
+    case 'jump':   poseJump(); break;
+    case 'climb':  poseClimb(); break;
+    case 'wave':   poseWave(emote ? emote.t : 0); break;
+    case 'dance':  poseDance(t); break;
+    case 'sit':    poseSit(t); break;
+    case 'salute': poseSalute(emote ? emote.t : 0); break;
+  }
+}
+
+function applyChannels(c) {
+  torsoPivot.rotation.set(c.torsoRx, c.torsoRy, c.torsoRz);
+  neckPivot.rotation.set(c.headRx, c.headRy, c.headRz);
+  armL.shoulder.rotation.set(c.armLx, 0, c.armLz);
+  armR.shoulder.rotation.set(c.armRx, 0, c.armRz);
+  legL.hip.rotation.set(c.legLx, 0, 0);
+  legR.hip.rotation.set(c.legRx, 0, 0);
+}
+
+/* ================================================================
+   §7 UI — chat (collapsible), hotbar, prompt, emote menu, health, fps
+================================================================ */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const refreshIcons = () => { if (window.lucide) lucide.createIcons(); };
+
+/* chat — click the header to collapse/expand */
+const chatEl = document.getElementById('chat');
+document.getElementById('chat-head').addEventListener('click', () => chatEl.classList.toggle('collapsed'));
+
+const chatMsgs = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+let chatFocused = false;
+function scheduleFade(el) { el._t = setTimeout(() => el.classList.add('faded'), 9000); }
+function revealAll() { [...chatMsgs.children].forEach(c => { clearTimeout(c._t); c.classList.remove('faded'); scheduleFade(c); }); }
+function addMsg(html, cls = '') {
+  const div = document.createElement('div');
+  div.className = 'cmsg ' + cls;
+  div.innerHTML = html;
+  chatMsgs.appendChild(div);
+  while (chatMsgs.children.length > 30) chatMsgs.firstChild.remove();
+  chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  revealAll();
+}
+const addChat = (name, text, admin) => addMsg(`<span class="cname${admin ? ' admin' : ''}">${esc(name)}:</span> ${esc(text)}`);
+/* Chat is for PLAYER TALK ONLY — every system/event message is muted
+   (pickups, deaths, welcomes, admin notices...). The call sites stay
+   so nothing breaks; they just print nothing. */
+const addSys = () => {};
+
+chatInput.addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') {
+    const v = chatInput.value.trim();
+    chatInput.value = '';
+    if (v) handleChat(v);
+    chatInput.blur();
+  } else if (e.key === 'Escape') chatInput.blur();
+});
+chatInput.addEventListener('focus', () => { chatFocused = true; chatEl.classList.remove('collapsed'); revealAll(); });
+chatInput.addEventListener('blur', () => { chatFocused = false; });
+dom.addEventListener('pointerdown', () => chatInput.blur());
+
+function handleChat(v) {
+  const m = v.match(/^\/e\s+(\w+)$/i);
+  if (m) {
+    const name = m[1].toLowerCase();
+    if (EMOTES.some(e => e.name === name)) triggerEmote(name);
+    else addSys(`Unknown emote: ${esc(name)}`, 'cerr');
+  } else if (v.toLowerCase() === '/help') {
+    addSys('<b>Controls</b>: WASD move · SHIFT run · SPACE jump · E interact · click to use tool · 1-9 hotbar · drag camera · scroll zoom · /e wave, dance, sit, salute · ESC or M for menu');
+    addSys('<b>Things to try</b>: take the sword by the tree, press the red button, climb the watchtower ladder, open the chest, sit on the chair, toggle the lamp, pump the tree swing, ride the merry-go-round and fire its rocket (E).');
+  } else if (v.startsWith('/')) {
+    addSys('Unknown command. Try /help', 'cerr');
+  } else {
+    addChat(USERNAME, v, isAdmin);
+    MP.sendChat(v);
+  }
+}
+
+/* hotbar */
+const hotbarEl = document.getElementById('hotbar');
+const slotEls = [];
+for (let i = 0; i < 9; i++) {
+  const el = document.createElement('div');
+  el.className = 'slot';
+  el.innerHTML = `<span class="num">${i + 1}</span>`;
+  el.addEventListener('click', () => Inventory.select(i));
+  hotbarEl.appendChild(el);
+  slotEls.push(el);
+}
+
+/* interaction prompt */
+const promptEl = document.getElementById('prompt');
+promptEl.addEventListener('click', () => { if (currentInteract) currentInteract.action(); });
+
+/* emote menu */
+const EMOTES = [
+  { name: 'wave',   icon: 'hand',     label: 'Wave',   dur: 2.7 },
+  { name: 'dance',  icon: 'music',    label: 'Dance',  dur: 0, loop: true },
+  { name: 'sit',    icon: 'armchair', label: 'Sit',    dur: 0, loop: true },
+  { name: 'salute', icon: 'award',    label: 'Salute', dur: 2.6 },
+];
+const EMOTE_DUR = {}, EMOTE_LOOP = {};
+EMOTES.forEach(e => { EMOTE_DUR[e.name] = e.dur; EMOTE_LOOP[e.name] = !!e.loop; });
+
+let emote = null;
+function stopEmote() { emote = null; }
+function triggerEmote(name) {
+  if (seated || climbing || !player.grounded || speed > 0.6) { addSys("You can't emote while moving."); return; }
+  if (emote && emote.name === name) { stopEmote(); return; }
+  Inventory.unequip();
+  emote = { name, t: 0 };
+  setAnim(name, 0.32);
+}
+
+const emoteMenuEl = document.getElementById('emote-menu');
+EMOTES.forEach(e => {
+  const row = document.createElement('button');
+  row.className = 'emote-row';
+  row.innerHTML = `<i data-lucide="${e.icon}"></i><span>${e.label}</span>`;
+  row.addEventListener('click', () => { triggerEmote(e.name); emoteMenuEl.classList.remove('open'); });
+  emoteMenuEl.appendChild(row);
+});
+document.getElementById('emote-fab').addEventListener('click', () => emoteMenuEl.classList.toggle('open'));
+
+/* health / damage flash */
+const hfill = document.getElementById('hfill');
+const hurtfxEl = document.getElementById('hurtfx');
+let hurtFxTO = null;
+function flashHurt() {
+  hurtfxEl.style.opacity = '0.55';
+  clearTimeout(hurtFxTO);
+  hurtFxTO = setTimeout(() => hurtfxEl.style.opacity = '0', 140);
+}
+
+/* ================================================================
+   §8 INVENTORY & TOOLS
+================================================================ */
+const ITEM_DEFS = {
+  sword: { name: 'Classic Sword', icon: 'sword', type: 'tool' },
+  apple: { name: 'Apple',         icon: 'apple', type: 'consumable' },
+};
+
+const Inventory = {
+  slots: new Array(9).fill(null),
+  equipped: -1,
+  give(id) {
+    const i = this.slots.indexOf(null);
+    if (i === -1) { addSys('Your inventory is full!'); return -1; }
+    this.slots[i] = { id };
+    renderSlot(i);
+    return i;
+  },
+  select(i) {
+    if (!this.slots[i]) return;
+    if (this.equipped === i) this.unequip();
+    else this.equip(i);
+  },
+  equip(i) {
+    this.unequip();
+    this.equipped = i;
+    attachTool(this.slots[i].id);
+    renderHotbar();
+  },
+  unequip() {
+    if (this.equipped < 0) return;
+    detachTool();
+    this.equipped = -1;
+    renderHotbar();
+  },
+  consume(i) {
+    this.slots[i] = null;
+    if (this.equipped === i) { detachTool(); this.equipped = -1; }
+    renderSlot(i);
+  },
+  current() { return this.equipped >= 0 ? this.slots[this.equipped] : null; }
+};
+
+function renderSlot(i) {
+  const el = slotEls[i], it = Inventory.slots[i];
+  el.innerHTML = `<span class="num">${i + 1}</span>` +
+    (it ? `<i data-lucide="${ITEM_DEFS[it.id].icon}"></i>` : '');
+  refreshIcons();
+  renderHotbar();
+}
+function renderHotbar() {
+  slotEls.forEach((el, i) => {
+    el.classList.toggle('filled', !!Inventory.slots[i]);
+    el.classList.toggle('active', Inventory.equipped === i);
+  });
+}
+
+/* tool meshes (built along +Z so an outstretched arm holds the
+   blade pointing straight up, exactly like Roblox) */
+const bladeMat = mat(0xd9dee3, 0.22, 0.9, 1.0);
+function buildSwordMesh() {
+  const g = new THREE.Group();
+  part(0.3, 0.3, 0.85, mat(0x6a4423, 0.6), 0, 0, 0, g);      // grip at the hand
+  part(0.36, 0.12, 0.36, goldMat, 0, 0, 0.34, g);            // collar
+  part(0.95, 0.2, 0.34, goldMat, 0, 0, 0.52, g);              // cross-guard
+  part(0.34, 0.14, 2.4, bladeMat, 0, 0, 1.85, g);             // blade
+  const tip = part(0.3, 0.3, 0.34, bladeMat, 0, 0, 3.2, g);   // point
+  tip.rotation.x = Math.PI / 4;
+  return g;
+}
+function buildAppleMesh() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 9), mat(0xd1332a, 0.35));
+  body.castShadow = true; g.add(body);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.3, 6), mat(0x6a4423, 0.8));
+  stem.position.y = 0.5; stem.castShadow = true; g.add(stem);
+  part(0.3, 0.06, 0.18, leafMat, 0.18, 0.55, 0, g);
+  return g;
+}
+
+let toolMesh = null;
+function attachTool(id) {
+  detachTool();
+  toolMesh = id === 'sword' ? buildSwordMesh() : buildAppleMesh();
+  toolMesh.traverse(o => { if (o.isMesh) o.userData.tool = true; });   // stays visible in first person
+  (cam.fp ? fpTool : toolAnchor).add(toolMesh);
+}
+function detachTool() { if (toolMesh) { toolMesh.removeFromParent(); toolMesh = null; } }
+
+/* using tools — triggered by a quick TAP on the canvas (§4) */
+let swingT = -1, eatT = 0, swingHitSet = new Set();
+
+function useEquipped() {
+  const it = Inventory.current();
+  if (!it) return;
+  if (it.id === 'sword') {
+    if (swingT < 0 || swingT > 0.3) { swingT = 0; swingHitSet = new Set(); }
+  } else if (it.id === 'apple') {
+    eatT = 0.5;
+    health = Math.min(V.maxHealth, health + 30);
+    addSys('You ate the Apple. Yum! <b>(+30 health)</b>');
+    Inventory.consume(Inventory.equipped);
+  }
+}
+
+function doSwingHits() { // anything in a ~70° arc in front of the player
+  const fx = Math.sin(yaw), fz = Math.cos(yaw);
+  for (const z of zombies) {
+    if (z.dead || swingHitSet.has(z)) continue;
+    const dx = z.body.x - player.x, dz = z.body.z - player.z;
+    const d = Math.hypot(dx, dz);
+    if (d > 5.6) continue;
+    if ((dx * fx + dz * fz) / (d || 1) < 0.35) continue;
+    swingHitSet.add(z);
+    damageZombie(z, V.swordDamage);
+  }
+}
+
+/* ================================================================
+   §9 INTERACTION SYSTEM
+   ----------------------------------------------------------------
+   Register anything usable with addInteractable({x,y,z,radius,
+   label,action,enabled?}). Nearest valid one inside its radius shows
+   an "[E] label" prompt; E (or tapping the prompt) runs action().
+   `label` may be a function ("Open Door" / "Close Door").
+   The prompt DOM is only touched when the label actually changes.
+================================================================ */
+const Interactables = [];
+let currentInteract = null;
+let lastPromptKey = '\0';
+function addInteractable(it) { Interactables.push(it); return it; }
+
+function updateInteractables() {
+  let best = null, bd = Infinity;
+  const px = player.x, py = player.y + 2.7, pz = player.z;
+  for (const it of Interactables) {
+    if (it.enabled && !it.enabled()) continue;
+    const d = (it.x - px) ** 2 + (it.y - py) ** 2 + (it.z - pz) ** 2;
+    if (d < it.radius * it.radius && d < bd) { bd = d; best = it; }
+  }
+  currentInteract = best;
+  const key = best ? (typeof best.label === 'function' ? best.label() : best.label) : '';
+  if (key === lastPromptKey) return;
+  lastPromptKey = key;
+  if (best) {
+    promptEl.innerHTML = `<span class="key">E</span>${esc(key)}`;
+    promptEl.classList.add('show');
+  } else {
+    promptEl.classList.remove('show');
+  }
+}
+
+/* ================================================================
+   §10 WORLD
+================================================================ */
+/* baseplate (fall off the edge → the void → respawn) */
+{
+  const plate = new THREE.Mesh(geo(120, 1.2, 120, 120, 120), studMats(0x6d7075, 0.95));
+  plate.position.y = -0.6;
+  plate.receiveShadow = true;
+  scene.add(plate);
+  World.addBox(0, -0.6, 0, 120, 1.2, 120);
+}
+/* spawn pad */
+{
+  const m = new THREE.Mesh(geo(6.5, 0.2, 6.5, 6.5, 6.5), studMats(0x90969c));
+  m.position.y = -0.08; m.receiveShadow = true; scene.add(m);
+  World.addBox(0, -0.08, 0, 6.5, 0.2, 6.5);
+}
+/* classic studded bricks (solid + auto-steppable) */
+function brick(w, h, d, color, x, y, z, ry = 0) {
+  const m = new THREE.Mesh(geo(w, h, d, w, d), studMats(color, 0.45));
+  m.position.set(x, y, z); m.rotation.y = ry;
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+  World.addBox(x, y, z, w, h, d);
+}
+brick(4.8, 1.44, 2.4, 0xC4281C, 9.6, 0.72, 4.2, 0.15);
+brick(2.4, 1.44, 2.4, 0x0D69AC, 10.4, 2.16, 4.5, 0.15);
+brick(2.4, 1.44, 4.8, 0xF5CD30, -6, 0.72, -6, 0.5);
+brick(2.4, 1.44, 2.4, 0x4B974B, -4.6, 0.72, -7.6, -0.2);
+brick(2.4, 1.44, 2.4, 0x0D69AC, 2, 0.72, 16, 1.1);
+brick(2.4, 1.44, 2.4, 0xF5CD30, -18, 0.72, 2, 0.4);
+
+/* trees (trunk solid, foliage decorative) */
+function addTree(x, z, s = 1) {
+  solid(1.4 * s, 7 * s, 1.4 * s, trunkMat, x, 3.5 * s, z);
+  box(5 * s, 3.4 * s, 5 * s, leafMat, x, 7.6 * s, z);
+  box(3.6 * s, 2.6 * s, 3.6 * s, leafMat, x, 10.1 * s, z);
+  box(2.2 * s, 1.8 * s, 2.2 * s, leafMat, x, 12 * s, z);
+}
+addTree(-14, -13); // sword tree
+addTree(-5, -18, 1.15);
+addTree(23, 7, 0.9);
+addTree(25, -11, 1.1);
+addTree(8, -20, 0.85);
+
+/* ---- WATCHTOWER + LADDER (Roblox-style, see §12 for the logic) ----
+   4-post tower, deck top at y=13. The ladder climbs the +z edge:
+   walk into it and hold W — you climb while pushing, hang when
+   idle, descend with S, and step onto the deck at the top. */
+for (const [px, pz] of [[-15, 9], [-9, 9], [-15, 15], [-9, 15]])
+  solid(0.9, 12, 0.9, woodMat, px, 6, pz);
+solid(8, 1, 8, darkWood, -12, 12.5, 12);          // deck (top = 13)
+solid(8.2, 0.9, 0.3, woodMat, -12, 13.45, 8.15);  // guard rails (3 sides)
+solid(0.3, 0.9, 7.4, woodMat, -15.85, 13.45, 11.9);
+solid(0.3, 0.9, 7.4, woodMat, -8.15, 13.45, 11.9);
+/* ladder visual on the +z edge */
+for (const sx of [-0.85, 0.85]) box(0.18, 13.6, 0.18, darkWood, -12 + sx, 6.8, 16.15);
+for (let y = 0.9; y <= 13.4; y += 1.25) box(1.7, 0.14, 0.14, woodMat, -12, y, 16.15);
+
+const LADDER = {
+  x: -12,
+  faceZ: 16.15,        // the plane the rungs sit on
+  southZ: 16.85,       // snap point when climbing the OUTSIDE (+z) face —
+                       // keeps the body clear of the deck collider edge at z=16
+  northZ: 15.45,       // snap point when climbing the INSIDE (-z) face
+  topY: 13,            // deck surface height
+  exitZ: 15.0,         // mounted once the player is past this z
+  trigger: { min: { x: -13.5, y: 0, z: 15.9 }, max: { x: -10.5, y: 12.4, z: 17.35 } }
+};
+
+/* ---- HOUSE (door faces +z/spawn) ---- */
+const WT = 0.6, WH = 7;
+solid(6.2, WH, WT, wallMat, 9.1, WH / 2, -2);
+solid(6.2, WH, WT, wallMat, 18.9, WH / 2, -2);
+solid(3.6, 0.6, WT, wallMat, 14, 6.7, -2);
+solid(16, WH, WT, wallMat, 14, WH / 2, -14);
+solid(WT, WH, 4, wallMat, 6, 3.5, -12);
+solid(WT, 2.8, 4, wallMat, 6, 1.4, -8);
+solid(WT, 2.0, 4, wallMat, 6, 6.0, -8);
+solid(WT, WH, 4, wallMat, 6, 3.5, -4);
+solid(WT, WH, 12, wallMat, 22, 3.5, -8);
+box(0.1, 2.2, 3.9, glassMat, 6, 3.9, -8);
+solid(15.6, 0.3, 11.6, woodMat, 14, 0.15, -8);   // floor (top = 0.3)
+
+/* roof (decorative — no sloped colliders in this engine) */
+const roofA = box(17.4, 0.5, 7.4, roofMat, 14, 8.15, -11.05); roofA.rotation.x = -0.35;
+const roofB = box(17.4, 0.5, 7.4, roofMat, 14, 8.15, -4.95);  roofB.rotation.x = 0.35;
+box(17.6, 0.45, 0.9, roofMat, 14, 9.28, -8);
+{
+  const s = new THREE.Shape();
+  s.moveTo(-5.9, 0); s.lineTo(5.9, 0); s.lineTo(0, 2.3); s.closePath();
+  const gableGeo = new THREE.ExtrudeGeometry(s, { depth: 0.6, bevelEnabled: false });
+  for (const gx of [5.7, 21.7]) {
+    const m = new THREE.Mesh(gableGeo, wallMat);
+    m.rotation.y = Math.PI / 2;
+    m.position.set(gx, 7, -8);
+    m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+  }
+}
+
+/* DOOR: hinged pivot + a collider that toggles when open */
+const door = { open: false, anim: 0, pivot: new THREE.Group(), collider: null };
+door.pivot.position.set(12.3, 0.05, -2);
+scene.add(door.pivot);
+box(3.4, 6.3, 0.28, darkWood, 1.7, 3.15, 0, 0, door.pivot);
+box(0.18, 0.5, 0.18, goldMat, 3.0, 3.0, 0.25, 0, door.pivot);
+box(0.5, 0.5, 0.06, glassMat, 1.7, 4.6, 0.18, 0, door.pivot);
+door.collider = World.addBox(14, 3.2, -2, 3.5, 6.4, 0.7);
+addInteractable({
+  x: 14, y: 3, z: -1.4, radius: 5,
+  label: () => door.open ? 'Close Door' : 'Open Door',
+  action: () => { door.open = !door.open; }
+});
+
+/* furniture: table, LAMP, chest, chair */
+solid(3.4, 2.6, 2.2, darkWood, 11, 1.3, -9);
+box(3.6, 0.35, 2.4, woodMat, 11, 2.5, -9);
+
+const lamp = {
+  on: false,
+  light: new THREE.PointLight(0xffd9a0, 0, 18, 2),
+  bulbMat: new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffd9a0, emissiveIntensity: 0.05 }),
+  toggle() {
+    this.on = !this.on;
+    this.light.intensity = this.on ? 50 : 0;
+    this.bulbMat.emissiveIntensity = this.on ? 2 : 0.05;
+  }
+};
+lamp.light.position.set(11, 4.7, -9);
+scene.add(lamp.light);
+{
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.15, 10), darkWood);
+  base.position.set(11, 2.75, -9); base.castShadow = true; scene.add(base);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.5, 6), darkWood);
+  pole.position.set(11, 3.5, -9); pole.castShadow = true; scene.add(pole);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), lamp.bulbMat);
+  bulb.position.set(11, 4.15, -9); scene.add(bulb);
+  const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.32, 0.7, 12), mat(0xE8DDBE, 0.8));
+  shade.position.set(11, 4.55, -9); shade.castShadow = true; scene.add(shade);
+}
+addInteractable({
+  x: 11, y: 4, z: -9, radius: 4,
+  label: () => lamp.on ? 'Turn Lamp Off' : 'Turn Lamp On',
+  action: () => lamp.toggle()
+});
+
+/* chest — opens once, gives an Apple */
+const chest = { opened: false, anim: 0, lid: new THREE.Group() };
+solid(2.2, 1.4, 1.3, darkWood, 20.4, 1.0, -12.6);
+box(2.3, 0.14, 1.4, goldMat, 20.4, 1.05, -12.6);
+chest.lid.position.set(20.4, 1.72, -13.25);
+scene.add(chest.lid);
+box(2.3, 0.45, 1.4, woodMat, 0, 0.2, 0.65, 0, chest.lid);
+box(0.25, 0.32, 0.1, goldMat, 0, 0.18, 1.32, 0, chest.lid);
+addInteractable({
+  x: 20.4, y: 1.2, z: -11.9, radius: 4,
+  label: () => chest.opened ? 'Chest (empty)' : 'Open Chest',
+  action: () => {
+    if (chest.opened) { addSys('The chest is empty.'); return; }
+    if (Inventory.give('apple') < 0) { addSys('Your inventory is full — the apple stays inside.'); return; }
+    chest.opened = true;
+    addSys('You found an <b>Apple</b>! Equip it and click to eat.');
+  }
+});
+
+/* chair — scripted sit state */
+solid(1.6, 2.0, 1.6, woodMat, 13.6, 1.0, -9);
+box(1.5, 0.25, 1.5, woodMat, 13.6, 1.75, -9);
+box(0.22, 1.8, 1.5, woodMat, 14.3, 2.7, -9);
+const CHAIR = { sitX: 13.6, sitZ: -9, sitY: 3.05, yaw: -Math.PI / 2, standX: 15.4, standZ: -9 };
+addInteractable({
+  x: 13.6, y: 1.5, z: -9, radius: 3.5,
+  label: 'Sit on Chair',
+  action: () => {
+    if (seated) return;
+    seated = true;
+    player.x = CHAIR.sitX; player.z = CHAIR.sitZ; player.y = CHAIR.sitY;
+    player.vx = player.vy = player.vz = 0;
+    Inventory.unequip();
+    emote = { name: 'sit', t: 0 };
+    setAnim('sit', 0.3);
+  }
+});
+
+/* zombie button */
+const button = { press: 0, mesh: null };
+solid(1.8, 1.4, 1.8, stoneMat, 5, 0.7, 9);
+{
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.25, 16),
+    new THREE.MeshStandardMaterial({ color: 0xC4281C, roughness: 0.4 }));
+  b.position.set(5, 1.52, 9);
+  b.castShadow = true;
+  scene.add(b);
+  button.mesh = b;
+}
+addInteractable({
+  x: 5, y: 1.6, z: 9, radius: 4.5,
+  label: () => `Press Button — spawn zombie (${V.maxZombies - zombies.length} left)`,
+  action: () => {
+    button.press = 0.3;
+    if (!spawnZombie(5 + (Math.random() * 10 - 5), 13.5 + Math.random() * 3)) {
+      addSys('Too many zombies already!');
+    } else {
+      const hits = Math.max(1, Math.ceil(V.zombieHealth / Math.max(0.001, V.swordDamage)));
+      addSys(`A zombie has spawned! <b>(${hits} sword hit${hits > 1 ? 's' : ''} to kill)</b>`);
+    }
+  }
+});
+
+/* sword pickup (floating + spinning next to the tree) */
+const swordPickup = { taken: false, spin: new THREE.Group(), light: new THREE.PointLight(0x9fd8ff, 20, 7, 2) };
+{
+  const inner = buildSwordMesh();
+  inner.rotation.x = -Math.PI / 2;   // blade up
+  swordPickup.spin.add(inner);
+  swordPickup.spin.position.set(-11.6, 2.0, -11);
+  scene.add(swordPickup.spin);
+  swordPickup.light.position.set(-11.6, 3.2, -11);
+  scene.add(swordPickup.light);
+}
+addInteractable({
+  x: -11.6, y: 2, z: -11, radius: 4,
+  label: 'Take the Classic Sword',
+  enabled: () => !swordPickup.taken,
+  action: () => {
+    if (swordPickup.taken) return;
+    const slot = Inventory.give('sword');
+    if (slot < 0) { addSys('Your inventory is full!'); return; }
+    swordPickup.taken = true;
+    scene.remove(swordPickup.spin);
+    scene.remove(swordPickup.light);
+    Inventory.equip(slot);
+    addSys('You got the <b>Classic Sword</b>! Click to swing it.');
+  }
+});
+
+/* ================================================================
+   §10.5 RIDES — tree swing + rocket merry-go-round
+   ----------------------------------------------------------------
+   Both rides keep ALL of their physics in a tiny plain object
+   (SWING.state / MGR.state — numbers only, JSON-serializable) so a
+   future MULTIPLAYER SERVER can own the simulation:
+     - the server replicates { angle, angVel, rocketOn } ~10x / sec
+     - clients keep integrating locally between snapshots
+     - seats track an occupant id ('local' for now), so a remote
+       player can claim a seat without touching the local rig
+   Sitting goes through the seatCtl interface consumed by §12.
+================================================================ */
+const DYNAMIC = new Set([button.mesh]);   // meshes that animate after freezeStatics()
+
+/* ---- the BIG tree + a swing you can actually pump ---- */
+const SWING = {
+  pivot: { x: -25.5, y: 9.8, z: -22 }, L: 6.8,
+  state: { angle: 0, vel: 0 },            // server-authoritative
+  pump: 0, settleT: 0, occupant: null, group: null
+};
+{
+  solid(3.2, 14, 3.2, trunkMat, -30, 7, -22);          // trunk (top = 14)
+  box(10.5, 4.2, 10.5, leafMat, -30, 15.4, -22);
+  box(7.5, 3.4, 7.5, leafMat, -30, 18.4, -22);
+  box(4.6, 2.6, 4.6, leafMat, -30, 20.7, -22);
+  solid(7.5, 1.1, 1.6, trunkMat, -26.2, 10.5, -22);    // branch the swing hangs from
+  box(0.3, 0.3, 3.2, darkWood, SWING.pivot.x, SWING.pivot.y + 0.3, SWING.pivot.z); // crossbar
+  const g = new THREE.Group();
+  g.position.set(SWING.pivot.x, SWING.pivot.y, SWING.pivot.z);
+  for (const rx of [-1.05, 1.05]) {
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, SWING.L, 6), darkWood);
+    rope.position.set(rx, -SWING.L / 2, 0); rope.castShadow = true; g.add(rope);
+  }
+  const seat = new THREE.Mesh(geo(2.5, 0.28, 1.05), mat(0xC4281C, 0.7));
+  seat.position.y = -SWING.L; seat.castShadow = seat.receiveShadow = true; g.add(seat);
+  scene.add(g);
+  SWING.group = g;
+}
+const swingSeatCtl = {
+  update(dt) {                       // called by §12 while the local player rides
+    const s = SWING.state;
+    SWING.pump = clamp(tmpV.z * 1.6, -1, 1);            // pump along the swing axis (camera-relative W/S)
+    if (SWING.settleT > 0) {                             // ease the camera behind the seat
+      SWING.settleT -= dt;
+      cam.yaw += angWrap(Math.PI - cam.yaw) * Math.min(1, dt * 3);
+    }
+    player.x = SWING.pivot.x;
+    player.z = SWING.pivot.z + Math.sin(s.angle) * SWING.L;
+    player.y = SWING.pivot.y - Math.cos(s.angle) * SWING.L + 0.17;
+    player.vx = player.vy = player.vz = 0;
+    character.rotation.y = yaw;                         // face forward, like a real swing
+    character.position.set(player.x, player.y, player.z);
+    setAnim('sit', 0.3);
+  },
+  exit() {                          // hop off — inherit the tangential velocity
+    const s = SWING.state;
+    let vz = Math.cos(s.angle) * SWING.L * s.vel;
+    let vy = Math.sin(s.angle) * SWING.L * s.vel + 9;
+    const sp = Math.hypot(vz, vy);
+    if (sp > 34) { vz *= 34 / sp; vy *= 34 / sp; }
+    player.vx = 0; player.vy = vy; player.vz = vz;
+    SWING.occupant = null; SWING.pump = 0;
+  },
+  detach() { SWING.occupant = null; SWING.pump = 0; }   // respawn / cleanup — no fling
+};
+addInteractable({
+  x: SWING.pivot.x, y: 3.4, z: SWING.pivot.z, radius: 5.5,
+  label: 'Sit on the Swing',
+  action: () => {
+    if (seated || SWING.occupant) return;
+    SWING.occupant = 'local';
+    SWING.settleT = 1.4;
+    yaw = 0;                                  // face down the swing axis (+Z)
+    seated = true; seatCtl = swingSeatCtl;
+    Inventory.unequip();
+    emote = { name: 'sit', t: 0 };
+    setAnim('sit', 0.3);
+    addSys('You sit on the swing — hold <b>W / S</b> to pump it, <b>SPACE</b> to hop off.');
+  }
+});
+
+/* ---- MERRY-GO-ROUND with a rocket booster ---- */
+const MGR = {
+  center: { x: 28, z: 24 }, R: 7.8, seatR: 5.9,
+  state: { angle: 0, angVel: 0, rocketOn: false },       // server-authoritative
+  ACC: 0.75, MAXW: 6.5,                                 // rad/s² torque, rad/s cap (rocket top speed)
+  seats: [], spin: null, rocket: null
+};
+{
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 5.6, 12), goldMat);
+  pole.position.set(MGR.center.x, 2.8, MGR.center.z);
+  pole.castShadow = pole.receiveShadow = true; scene.add(pole);
+  World.addBox(MGR.center.x, 2.8, MGR.center.z, 1, 5.6, 1);
+
+  const spin = new THREE.Group();
+  spin.position.set(MGR.center.x, 0, MGR.center.z);
+  scene.add(spin);
+  MGR.spin = spin;
+
+  /* octagonal deck — a stop-sign shape is the union of exactly THREE
+     axis-aligned boxes, so the walkable colliders match the visuals
+     perfectly (no rotating-collider support needed in §3) */
+  const deck = new THREE.Mesh(new THREE.CylinderGeometry(MGR.R, MGR.R, 0.5, 8), mat(0x39404a, 0.85));
+  deck.rotation.y = Math.PI / 8;                        // flats face the axes
+  deck.position.y = 0.25; deck.castShadow = deck.receiveShadow = true;
+  spin.add(deck);
+  const sS = 1.531 * MGR.R, sA = 1.848 * MGR.R, sB = 0.765 * MGR.R;
+  World.addBox(MGR.center.x, 0.25, MGR.center.z, sS, 0.5, sS);
+  World.addBox(MGR.center.x, 0.25, MGR.center.z, sA, 0.5, sB);
+  World.addBox(MGR.center.x, 0.25, MGR.center.z, sB, 0.5, sA);
+
+  /* top stripes — the visual proof that the deck is spinning.
+     Each stripe is an exact OCTANT WEDGE of the deck (a pie slice
+     with a straight outer edge that ends flush with the rim), so
+     the eight wedges tile the octagon perfectly — the old rotated
+     squares overlapped each other at the corners. */
+  const stripeCols = [0xC4281C, 0xF2F3F3];
+  const stripeMats = stripeCols.map(c =>
+    new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, side: THREE.DoubleSide }));
+  for (let i = 0; i < 8; i++) {
+    const th0 = i * Math.PI / 4 - Math.PI / 8, th1 = th0 + Math.PI / 4;
+    const sh = new THREE.Shape();
+    sh.moveTo(Math.sin(th0) * 0.95, Math.cos(th0) * 0.95);
+    sh.lineTo(Math.sin(th0) * MGR.R, Math.cos(th0) * MGR.R);
+    sh.lineTo(Math.sin(th1) * MGR.R, Math.cos(th1) * MGR.R);
+    sh.lineTo(Math.sin(th1) * 0.95, Math.cos(th1) * 0.95);
+    sh.closePath();
+    const wg = new THREE.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: false });
+    wg.rotateX(Math.PI / 2);                       // lay it flat on the deck (XY -> XZ)
+    const st = new THREE.Mesh(wg, stripeMats[i % 2]);
+    st.position.y = 0.56; st.receiveShadow = true;
+    spin.add(st);
+  }
+
+  /* four seats — each an independently claimable slot */
+  const seatCols = [0xC4281C, 0x0D69AC, 0xF5CD30, 0x4B974B];
+  for (let i = 0; i < 4; i++) {
+    const an = i * Math.PI / 2;
+    const sg = new THREE.Group();
+    sg.position.set(Math.sin(an) * MGR.seatR, 0, Math.cos(an) * MGR.seatR);
+    sg.rotation.y = an;
+    const sm = mat(seatCols[i], 0.7);
+    const bench = new THREE.Mesh(geo(2.6, 0.35, 1.15), sm);
+    bench.position.y = 1.05; bench.castShadow = bench.receiveShadow = true; sg.add(bench);
+    const back = new THREE.Mesh(geo(2.6, 1.05, 0.2), sm);
+    back.position.set(0, 1.72, -0.55); back.castShadow = true; sg.add(back);
+    for (const lx of [-0.95, 0.95]) {
+      const leg = new THREE.Mesh(geo(0.22, 0.55, 0.95), darkWood);
+      leg.position.set(lx, 0.775, 0); leg.castShadow = true; sg.add(leg);
+    }
+    spin.add(sg);
+    const seat = { angle: an, occupant: null, ctl: null, ix: null };
+    seat.ctl = {
+      update(dt) {
+        const a = seat.angle + MGR.state.angle;
+        player.x = MGR.center.x + Math.sin(a) * MGR.seatR;
+        player.z = MGR.center.z + Math.cos(a) * MGR.seatR;
+        player.y = 1.22;                                // sits ON the bench (top 1.225)
+        player.vx = player.vy = player.vz = 0;
+        yaw = angWrap(a);                               // face outward, back against the backrest
+        character.rotation.y = yaw;
+        character.position.set(player.x, player.y, player.z);
+        setAnim('sit', 0.3);
+      },
+      exit() {                                          // hop off — tangential fling!
+        const a = seat.angle + MGR.state.angle, w = MGR.state.angVel;
+        let vx = Math.cos(a) * w * MGR.seatR, vz = -Math.sin(a) * w * MGR.seatR;
+        const sp = Math.hypot(vx, vz);
+        if (sp > 36) { vx *= 36 / sp; vz *= 36 / sp; }
+        player.vx = vx; player.vz = vz; player.vy = 11; player.y = 1.6;
+        seat.occupant = null;
+      },
+      detach() { seat.occupant = null; }
+    };
+    seat.ix = addInteractable({
+      x: MGR.center.x, y: 1.6, z: MGR.center.z, radius: 4,   // x/z go live in updateRides
+      label: 'Ride the Merry-Go-Round',
+      enabled: () => !seat.occupant,
+      action: () => {
+        if (seated || seat.occupant) return;
+        seat.occupant = 'local';
+        seated = true; seatCtl = seat.ctl;
+        Inventory.unequip();
+        emote = { name: 'sit', t: 0 };
+        setAnim('sit', 0.3);
+        addSys('You hop on the merry-go-round — <b>SPACE</b> to hop off. Try firing the <b>rocket</b> with <b>E</b>!');
+      }
+    });
+    MGR.seats.push(seat);
+  }
+
+  /* the rocket booster — rim-mounted, nose along the tangent, so its
+     thrust torques the whole ride around. Fire it with E any time:
+     from a seat, or from the ground as it sweeps past you. */
+  const rg = new THREE.Group();
+  const ra = Math.PI / 4;                               // sits between two seats
+  rg.position.set(Math.sin(ra) * 6.4, 0, Math.cos(ra) * 6.4);
+  rg.rotation.y = ra + Math.PI / 2;
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 3.1, 12), mat(0xF2F3F3, 0.35, 0.7, 0.8));
+  body.rotation.x = Math.PI / 2; body.position.y = 1.55; body.castShadow = true; rg.add(body);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.44, 1.05, 12), mat(0xC4281C, 0.4));
+  nose.rotation.x = Math.PI / 2; nose.position.set(0, 1.55, 2.05); nose.castShadow = true; rg.add(nose);
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.22, 12), mat(0xC4281C, 0.4));
+  ring.rotation.x = Math.PI / 2; ring.position.set(0, 1.55, 0.7); rg.add(ring);
+  for (let i = 0; i < 3; i++) {                        // tail fins
+    const fa = i * Math.PI * 2 / 3 + Math.PI / 6;
+    const fin = new THREE.Mesh(geo(0.1, 0.9, 0.9), mat(0xC4281C, 0.4));
+    fin.position.set(Math.sin(fa) * 0.55, 1.55 + Math.cos(fa) * 0.55, -1.35);
+    fin.rotation.z = -fa; fin.castShadow = true; rg.add(fin);
+  }
+  const mount = new THREE.Mesh(geo(0.5, 1.15, 0.5), darkWood);
+  mount.position.set(0, 0.55, 0); mount.castShadow = true; rg.add(mount);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.7, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.95, depthWrite: false }));
+  flame.rotation.x = -Math.PI / 2; flame.position.set(0, 1.55, -2.45); flame.visible = false; rg.add(flame);
+  const flame2 = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.1, 8),
+    new THREE.MeshBasicMaterial({ color: 0xfff3c0, transparent: true, opacity: 0.95, depthWrite: false }));
+  flame2.rotation.x = -Math.PI / 2; flame2.position.set(0, 1.55, -2.15); flame2.visible = false; rg.add(flame2);
+  const rlight = new THREE.PointLight(0xff9a3c, 0, 14, 2);
+  rlight.position.set(0, 1.6, -2.2); rg.add(rlight);
+  spin.add(rg);
+  DYNAMIC.add(flame, flame2);                          // they flicker — never freeze these
+  MGR.rocket = { group: rg, flame, flame2, light: rlight, ix: null };
+  MGR.rocket.ix = addInteractable({
+    x: MGR.center.x, y: 1.6, z: MGR.center.z, radius: 6.5,     // x/z go live in updateRides
+    label: () => MGR.state.rocketOn ? 'Cut the Rocket' : 'Fire the Rocket!',
+    action: () => {
+      MGR.state.rocketOn = !MGR.state.rocketOn;
+      addSys(MGR.state.rocketOn
+        ? '<b>The rocket booster fires!</b> The merry-go-round is accelerating — hop off (SPACE) for a big fling!'
+        : 'Rocket booster shut down.');
+    }
+  });
+}
+
+function updateRides(dt) {
+  /* swing: damped pendulum + player pumping (input set by seatCtl) */
+  const sw = SWING.state;
+  let acc = -(34 / SWING.L) * Math.sin(sw.angle) - sw.vel * 0.07;
+  if (SWING.pump && (SWING.pump * sw.vel > 0 || Math.abs(sw.vel) < 0.2)) acc += SWING.pump * 4.5;
+  sw.vel = clamp(sw.vel + acc * dt, -3.2, 3.2);
+  sw.angle += sw.vel * dt;
+  if (Math.abs(sw.angle) > 1.42) { sw.angle = clamp(sw.angle, -1.42, 1.42); sw.vel *= -0.3; }
+  SWING.group.rotation.x = -sw.angle;               // pendulum swings BACK AND FORTH (world Z)
+
+  /* merry-go-round: rocket torque vs friction */
+  const mg = MGR.state;
+  if (mg.rocketOn) mg.angVel = Math.min(MGR.MAXW, mg.angVel + MGR.ACC * dt);
+  else mg.angVel *= Math.exp(-0.22 * dt);
+  mg.angle += mg.angVel * dt;
+  MGR.spin.rotation.y = mg.angle;
+
+  /* live prompt positions — the seats and rocket revolve with the ride */
+  for (const seat of MGR.seats) {
+    const a = seat.angle + mg.angle;
+    seat.ix.x = MGR.center.x + Math.sin(a) * MGR.seatR;
+    seat.ix.z = MGR.center.z + Math.cos(a) * MGR.seatR;
+  }
+  const ra = Math.PI / 4 + mg.angle;
+  MGR.rocket.ix.x = MGR.center.x + Math.sin(ra) * 6.4;
+  MGR.rocket.ix.z = MGR.center.z + Math.cos(ra) * 6.4;
+
+  /* rocket exhaust flicker */
+  const on = mg.rocketOn;
+  MGR.rocket.flame.visible = MGR.rocket.flame2.visible = on;
+  MGR.rocket.light.intensity = on ? 40 + Math.sin(elapsed * 40) * 14 : 0;
+  if (on) {
+    MGR.rocket.flame.scale.set(1, 0.75 + Math.random() * 0.5, 1);
+    MGR.rocket.flame2.scale.set(1, 0.8 + Math.random() * 0.5, 1);
+  }
+}
+
+/* ================================================================
+   §11 ZOMBIES
+   ----------------------------------------------------------------
+   spawnZombie(x,z): blocky R6 zombie, 2 HP (two sword hits).
+   AI: walk straight at the player, attack when close (10 dmg, 1s
+   cooldown, knockback), same AABB physics as the player.
+   NOTE: materials are per-instance (hit flash + death fade), but
+   geometry + face texture are shared. Rig refs: armL/armR are the
+   shoulder pivots, legL/legR are the hip pivots.
+================================================================ */
+let MAX_ZOMBIES = 6;   /* live-synced from V (§1.5) */
+const zombies = [];
+
+function makeZombieFaceTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  x.fillStyle = '#8fb05c'; x.fillRect(0, 0, 256, 256);
+  x.fillStyle = '#1c2313';
+  x.save(); x.translate(88, 100); x.rotate(0.35);  x.beginPath(); x.ellipse(0, 0, 17, 26, 0, 0, 7); x.fill(); x.restore();
+  x.save(); x.translate(168, 100); x.rotate(-0.35); x.beginPath(); x.ellipse(0, 0, 17, 26, 0, 0, 7); x.fill(); x.restore();
+  x.beginPath(); x.ellipse(128, 178, 24, 20, 0, 0, 7); x.fill();
+  x.fillStyle = '#dfe6d0'; x.fillRect(112, 160, 8, 9); x.fillRect(136, 160, 8, 9);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+const zombieFaceTex = makeZombieFaceTexture(); // shared — created ONCE
+
+function buildZombieRig() {
+  const group = new THREE.Group();
+  const deathPivot = new THREE.Group(); group.add(deathPivot);
+  // per-instance materials (flash/fade are per zombie)
+  const skin  = new THREE.MeshStandardMaterial({ color: 0x8fb05c, roughness: 0.7 });
+  const shirt = new THREE.MeshStandardMaterial({ color: 0x5c6b45, roughness: 0.85 });
+  const pants = new THREE.MeshStandardMaterial({ color: 0x3b4048, roughness: 0.85 });
+  const shoes = new THREE.MeshStandardMaterial({ color: 0x2b2118, roughness: 0.7 });
+  const face  = new THREE.MeshStandardMaterial({ map: zombieFaceTex, roughness: 0.7 });
+  const matsList = [skin, shirt, pants, face, shoes];
+  for (const m of [skin, shirt, pants, face]) { m.emissive = new THREE.Color(0xff2200); m.emissiveIntensity = 0; }
+
+  const torso = new THREE.Group(); torso.position.y = 2; deathPivot.add(torso);
+  part(2, 2, 1, shirt, 0, 1, 0, torso);
+  const neck = new THREE.Group(); neck.position.y = 2; torso.add(neck);
+  const zhead = new THREE.Mesh(geo(1.25, 1.25, 1.25), [skin, skin, skin, skin, face, skin]);
+  zhead.position.y = 0.95; zhead.castShadow = zhead.receiveShadow = true;
+  neck.add(zhead);
+
+  const mkArm = side => {
+    const sh = new THREE.Group(); sh.position.set(1.5 * side, 1.5, 0); torso.add(sh);
+    part(0.95, 1.9, 0.95, skin, 0, -0.95, 0, sh);
+    return sh;
+  };
+  const mkLeg = side => {
+    const hip = new THREE.Group(); hip.position.set(0.5 * side, 2, 0); deathPivot.add(hip);
+    part(0.95, 1.8, 0.95, pants, 0, -0.9, 0, hip);
+    part(1.0, 0.36, 1.3, shoes, 0, -1.82, 0.12, hip);
+    return hip;
+  };
+  return { group, deathPivot, torso, neck, armL: mkArm(1), armR: mkArm(-1), legL: mkLeg(1), legR: mkLeg(-1), matsList };
+}
+
+function spawnZombie(x, z) {
+  if (zombies.length >= MAX_ZOMBIES) return false;
+  const rig = buildZombieRig();
+  rig.group.position.set(x, 0.5, z);
+  rig.group.scale.setScalar(0.01);
+  scene.add(rig.group);
+  zombies.push({
+    ...rig,
+    body: { x, y: 0.5, z, vx: 0, vy: 0, vz: 0, hw: 0.7, h: 5.2, grounded: false, impact: 0 },
+    hp: V.zombieHealth, walk: Math.random() * 6, hurtT: 0, attackT: 0, lungeT: 0,
+    spawnT: 0, dead: false, deathT: 0
+  });
+  return true;
+}
+
+function damageZombie(z, dmg) {
+  if (z.dead) return;
+  z.hp -= dmg;
+  z.hurtT = 0.18;
+  const dx = z.body.x - player.x, dz = z.body.z - player.z, d = Math.hypot(dx, dz) || 1;
+  z.body.vx += (dx / d) * V.knockback; z.body.vz += (dz / d) * V.knockback;
+  if (z.body.grounded) z.body.vy = 8;
+  if (z.hp <= 0) { z.dead = true; z.deathT = 0; addSys('Zombie defeated!'); }
+}
+
+function updateZombies(dt) {
+  for (let i = zombies.length - 1; i >= 0; i--) {
+    const z = zombies[i];
+
+    if (z.dead) { // fall over, fade out, remove
+      z.deathT += dt;
+      z.deathPivot.rotation.x = -easeOut(Math.min(1, z.deathT / 0.55)) * 1.52;
+      if (z.deathT > 0.8) {
+        const o = 1 - Math.min(1, (z.deathT - 0.8) / 0.6);
+        z.matsList.forEach(m => { m.transparent = true; m.opacity = o; });
+      }
+      if (z.deathT > 1.45) { scene.remove(z.group); zombies.splice(i, 1); }
+      continue;
+    }
+
+    if (z.spawnT < 0.3) { z.spawnT += dt; z.group.scale.setScalar(easeOut(Math.min(1, z.spawnT / 0.3))); }
+    if (z.hurtT > 0) z.hurtT -= dt;
+    const flash = z.hurtT > 0 ? 1.4 : 0;
+    if (z.flashCur !== flash) {          // skip redundant material writes
+      z.flashCur = flash;
+      for (let m = 0; m < 4; m++) z.matsList[m].emissiveIntensity = flash;
+    }
+
+    const dx = player.x - z.body.x, dz = player.z - z.body.z;
+    const dist = Math.hypot(dx, dz) || 0.001;
+    z.group.rotation.y = Math.atan2(dx, dz);
+
+    let moving = false;
+    if (dist > 2.5) {
+      z.body.vx = (dx / dist) * V.zombieSpeed;
+      z.body.vz = (dz / dist) * V.zombieSpeed;
+      z.walk += dt * 4.6;
+      moving = true;
+    } else { z.body.vx *= 0.6; z.body.vz *= 0.6; }
+
+    z.body.vy -= GRAV * dt;
+    moveBody(z.body, dt);
+    if (z.body.y < -60) { scene.remove(z.group); zombies.splice(i, 1); continue; }
+
+    if (dist < 3.2) {
+      z.attackT += dt;
+      if (z.attackT >= V.zombieCooldown) {
+        z.attackT = 0; z.lungeT = 0.45;
+        hurtPlayer(V.zombieDamage, (dx / dist) * 14, (dz / dist) * 14);
+      }
+    } else {
+      z.attackT = Math.max(0, z.attackT - dt);
+    }
+    if (z.lungeT > 0) z.lungeT -= dt;
+
+    // shamble: arms out, legs alternating (rig pivots are the groups)
+    const s = Math.sin(z.walk), sw = moving ? 1 : 0.15;
+    const lunge = z.lungeT > 0 ? Math.sin((0.45 - z.lungeT) / 0.45 * Math.PI) : 0;
+    z.legL.rotation.x = s * 0.55 * sw;
+    z.legR.rotation.x = -s * 0.55 * sw;
+    z.armL.rotation.set(-1.15 - lunge * 0.75 + s * 0.12, 0, 0.15);
+    z.armR.rotation.set(-1.15 - lunge * 0.75 - s * 0.12, 0, -0.15);
+    z.torso.rotation.x = 0.16 + lunge * 0.12;
+    z.neck.rotation.set(-0.05, 0, 0.12);
+
+    z.group.position.set(z.body.x, z.body.y, z.body.z);
+  }
+}
+
+/* ================================================================
+   §12 PLAYER CONTROLLER
+   ----------------------------------------------------------------
+   The `player` object is the physical body (feet-anchored AABB).
+   Each frame: read input -> seated? / ladder? / locomotion ->
+   integrate with moveBody() -> fall damage -> pick animation.
+================================================================ */
+const player = { x: 0, y: 0.5, z: 0, vx: 0, vy: 0, vz: 0, hw: 0.75, h: 5.4, grounded: false, impact: 0 };
+
+let yaw = 0, speed = 0, phase = 0, land = 0, climbPhase = 0;
+let climbing = false, seated = false, seatCtl = null, ladderLatch = 0, climbSide = 1;
+let climbJumpV = 0, jumpWasDown = false;   // ladder hop (§12) press tracking
+let health = V.maxHealth, timeSinceHurt = 99, lastHealth = -1;
+
+/* FALL DAMAGE — Roblox-style math.
+   impact velocity is converted to fall height (h = v²/2g); falls
+   under SAFE_H studs are free, then damage ramps at MULT per stud.
+   Tuned live from the Admin menu (V.fallSafeHeight / V.fallMultiplier). */
+let FALL_SAFE_H = 8, FALL_MULT = 10;   /* live-synced from V (§1.5) */
+
+const keys = {};
+let joyFwd = 0, joySide = 0, joyMag = 0, touchJump = false;
+
+function hurtPlayer(dmg, kbx = 0, kbz = 0) {
+  if (health <= 0 || V.godMode) return;
+  health -= dmg;
+  timeSinceHurt = 0;
+  flashHurt();
+  player.vx += kbx; player.vz += kbz;
+  if (player.grounded) player.vy = Math.max(player.vy, 12);
+  if (health <= 0) { health = 0; respawn(); }
+}
+function respawn() {
+  const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 4;   // spawn ring —
+  player.x = Math.sin(a) * r; player.z = Math.cos(a) * r; player.y = 0.5;   // players never stack in multiplayer
+  player.vx = player.vy = player.vz = 0;
+  health = V.maxHealth; timeSinceHurt = 99;
+  if (seatCtl && seatCtl.detach) seatCtl.detach();   // leave any ride seat cleanly
+  seatCtl = null;
+  seated = false; climbing = false; ladderLatch = 0; speed = 0;
+  stopEmote();
+}
+
+const UP = new THREE.Vector3(0, 1, 0);
+const tmpDir = new THREE.Vector3(), tmpRight = new THREE.Vector3(), tmpV = new THREE.Vector3();
+const _pb = { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } };
+function playerAABB() {
+  _pb.min.x = player.x - player.hw; _pb.max.x = player.x + player.hw;
+  _pb.min.y = player.y;             _pb.max.y = player.y + player.h;
+  _pb.min.z = player.z - player.hw; _pb.max.z = player.z + player.hw;
+  return _pb;
+}
+
+function updateMovement(dt) {
+  /* camera-relative move intent (used by the seats, ladder & locomotion) */
+  const iF = ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0) + joyFwd;
+  const iS = ((keys['d'] || keys['arrowright']) ? 1 : 0) - ((keys['a'] || keys['arrowleft']) ? 1 : 0) + joySide;
+  const run = keys['shift'] || joyMag > 0.92;
+  const jumpDown = !!(keys[' '] || touchJump);
+  const jumpEdge = jumpDown && !jumpWasDown;      // fresh press — ladder hops (§12)
+  jumpWasDown = jumpDown;
+
+  camera.getWorldDirection(tmpDir); tmpDir.y = 0; tmpDir.normalize();
+  tmpRight.crossVectors(tmpDir, UP);
+  tmpV.set(0, 0, 0).addScaledVector(tmpDir, iF).addScaledVector(tmpRight, iS);
+  const len = tmpV.length();
+  if (len > 1) tmpV.divideScalar(len);
+  const moving = len > 0.12;
+
+  /* seated: a ride seat (seatCtl from §10.5) or the scripted chair.
+     Rides read the intent above (the swing uses it as pump input). */
+  if (seated) {
+    if (seatCtl && seatCtl.update) {
+      if (keys[' '] || touchJump) {            // hop off — rides fling you
+        seatCtl.exit();
+        seated = false; stopEmote(); seatCtl = null;
+      } else seatCtl.update(dt);
+      return;
+    }
+    if (Math.abs(iF) > 0.35 || Math.abs(iS) > 0.35 || keys[' '] || touchJump) {
+      seated = false; stopEmote();
+      player.x = CHAIR.standX; player.z = CHAIR.standZ; player.y = 0.32;
+      player.vx = player.vy = player.vz = 0;
+    } else {
+      yaw = CHAIR.yaw;
+      character.rotation.y = yaw;
+      character.position.set(player.x, player.y, player.z);
+      setAnim('sit', 0.3);
+      return;
+    }
+  }
+
+  if (moving && emote) stopEmote();
+
+  /* ---- FLY MODE (Admin) — noclip, camera-relative, SPACE/C = up/down ---- */
+  if (V.flyMode) {
+    climbing = false;
+    camera.getWorldDirection(tmpDir);              // full 3D direction this time
+    tmpRight.crossVectors(tmpDir, UP).normalize();
+    tmpV.set(0, 0, 0).addScaledVector(tmpDir, iF).addScaledVector(tmpRight, iS);
+    let fl = tmpV.length();
+    if (fl > 1) { tmpV.divideScalar(fl); fl = 1; }
+    const fsp = ((run ? V.runSpeed : V.walkSpeed) + 6) * 1.6;
+    player.vx = tmpV.x * fsp; player.vz = tmpV.z * fsp;
+    player.vy = tmpV.y * fsp;
+    if (keys[' '] || touchJump) player.vy = fsp * 0.9;
+    else if (keys['c'] || keys['control']) player.vy = -fsp * 0.9;
+    player.x += player.vx * dt; player.y += player.vy * dt; player.z += player.vz * dt;
+    player.grounded = false; player.impact = 0;
+    if (fl > 0.1) yaw += angWrap(Math.atan2(tmpV.x, tmpV.z) - yaw) * Math.min(1, dt * 10);
+    speed = Math.hypot(player.vx, player.vz);
+    character.rotation.y = yaw;
+    character.position.set(player.x, player.y, player.z);
+    setAnim('jump', 0.2);
+    return;                                        // no physics, ladder or fall damage
+  }
+
+  /* ---- LADDER (Roblox-style, grabbable from EITHER side) ----
+     Push FIRMLY toward the rungs (mostly-straight input) while
+     close to them to grab — brushing past won't do it. You can
+     run at the ladder and JUMP into it: the grab works mid-air.
+       pushing in  -> climb up       no input -> hang in place
+       pulling out -> climb down     SPACE    -> hop UP the rungs
+     Jumping never detaches you (no more phasing through the
+     ladder) — you stay glued to the rungs while you hop. Hold
+     jump and keep pushing in to rocket up it. To LEAP OFF,
+     jump while pulling away from the rungs. ladderLatch
+     prevents instantly re-grabbing after leaving. */
+  if (ladderLatch > 0) ladderLatch -= dt;
+  const onLadder = aabbOverlap(playerAABB(), LADDER.trigger);
+  const side = player.z >= LADDER.faceZ ? 1 : -1;   // which face we're on
+  const push = tmpV.z * side;                        // <0 = into the rungs, >0 = away
+  const intoLadder = push < -0.62;                   // must REALLY push into it
+  const offLadder  = push > 0.3;
+
+  if (!climbing && onLadder && intoLadder && len > 0.35 &&
+      Math.abs(player.z - LADDER.faceZ) < 1.25 &&    // close to the rungs
+      ladderLatch <= 0 && player.y < LADDER.topY - 0.6) {
+    climbing = true;
+    climbSide = side;
+    speed = 0;
+    climbJumpV = 0;
+    player.vx = player.vz = 0;
+  }
+
+  if (climbing) {
+    const climbSpd = Math.max(5.5, run ? V.runSpeed : V.walkSpeed);  // ladder speed follows walk/run
+    if (jumpEdge && offLadder) {      // SPACE while pulling away: leap off
+      climbing = false; ladderLatch = 0.45;
+      player.vy = 16; player.vz = 7 * climbSide; player.vx = 0;
+    } else {
+      if (jumpEdge) climbJumpV = Math.max(climbJumpV, climbSpd * 1.9);  // hop UP the rungs
+      climbJumpV = Math.max(0, climbJumpV - GRAV * 0.35 * dt);          // the hop decays gently
+      const baseVy = intoLadder ? climbSpd : (offLadder ? -climbSpd : 0);  // hang when idle
+      player.vx = 0; player.vz = 0;
+      player.vy = Math.max(baseVy, climbJumpV);   // the hop overrides while it lasts
+      climbPhase += player.vy * dt * 1.15;   // animation follows real movement — down plays in reverse
+      const snapZ = climbSide > 0 ? LADDER.southZ : LADDER.northZ;
+      player.x += (LADDER.x - player.x) * Math.min(1, dt * 7);
+      if (player.y < LADDER.topY - 1.1)         // stay glued to the rungs —
+        player.z += (snapZ - player.z) * Math.min(1, dt * 7);  // but NOT in the mount band
+
+      if (player.y >= LADDER.topY - 1.1) { // mount the deck
+        if (player.y < LADDER.topY + 0.1) {
+          if (intoLadder || climbJumpV > 0) player.vy = Math.max(player.vy, 3.4);  // rising push finishes the mount
+        } else { player.vy = 0; player.vz = -climbSpd; }              // step over the top rung
+        if (player.y >= LADDER.topY - 0.05 && player.z <= LADDER.exitZ) {
+          climbing = false;
+          player.y = LADDER.topY; player.vy = 0; player.vz = 0; speed = 0;
+        }
+      }
+      if (player.grounded && player.vy <= 0) { // reached the bottom
+        climbing = false;
+      }
+      if (!onLadder && player.y < LADDER.topY - 2) climbing = false; // safety
+    }
+  }
+
+  if (!climbing) {
+    /* normal locomotion */
+    if (moving) {
+      const heading = Math.atan2(tmpV.x, tmpV.z);
+      yaw += angWrap(heading - yaw) * Math.min(1, dt * 12);
+      const target = (run ? V.runSpeed : V.walkSpeed) * Math.min(1, len);
+      speed += (target - speed) * Math.min(1, dt * (target > speed ? 8 : 11));
+      player.vx = (tmpV.x / len) * speed;
+      player.vz = (tmpV.z / len) * speed;
+    } else {
+      speed *= Math.max(0, 1 - dt * 12);
+      player.vx *= Math.max(0, 1 - dt * 14);
+      player.vz *= Math.max(0, 1 - dt * 14);
+    }
+    if ((keys[' '] || touchJump) && player.grounded) player.vy = JUMPV;
+    player.vy -= GRAV * dt;
+    if (player.vy < -120) player.vy = -120;
+  }
+
+  moveBody(player, dt);
+
+  /* landing squash + fall damage (height-based, see FALL_SAFE_H) */
+  if (player.impact > 8) {
+    land = Math.min(1, (player.impact - 10) / 40);
+    const fallH = (player.impact * player.impact) / (2 * GRAV);
+    if (V.fallDamage && fallH > FALL_SAFE_H && !climbing)
+      hurtPlayer(Math.ceil((fallH - FALL_SAFE_H) * FALL_MULT));
+  }
+  land = Math.max(0, land - dt * 3.2);
+  if (player.y < -70 && !V.flyMode) { respawn(); return; }
+
+  if (player.grounded && !climbing && !emote && speed > 0.3) phase += dt * (4.5 + speed * 1.3);
+
+  if (cam.fp && !climbing)                       // first person: always face the camera
+    yaw += angWrap(cam.yaw + Math.PI - yaw) * Math.min(1, dt * 16);
+  character.rotation.y = climbing ? (climbSide > 0 ? Math.PI : 0) : yaw; // face the rungs while climbing
+  character.position.set(player.x, player.y, player.z);
+
+  /* animation state selection */
+  if (climbing) setAnim('climb', 0.15);
+  else if (!player.grounded) setAnim('jump', 0.12);
+  else if (emote) setAnim(emote.name, 0.32);
+  else if (speed > (V.walkSpeed + V.runSpeed) * 0.5) setAnim('run');
+  else if (speed > 0.35) setAnim('walk');
+  else setAnim('idle');
+}
+
+function updateAnim(dt, t) {
+  if (emote) {
+    emote.t += dt;
+    if (!EMOTE_LOOP[emote.name] && emote.t >= EMOTE_DUR[emote.name]) stopEmote();
+  }
+  evalPose(t);
+
+  let out = T;
+  if (blendT < blendDur) {
+    blendT += dt;
+    const a = sstep(clamp(blendT / blendDur, 0, 1), 0, 1);
+    out = {};
+    CH.forEach(k => out[k] = blendFrom[k] + (T[k] - blendFrom[k]) * a);
+  }
+
+  /* landing impact layered on any grounded pose */
+  if (!climbing && player.grounded && land > 0.001) {
+    out.rootY -= land * 0.3;
+    out.torsoRx += land * 0.22;
+    out.armLx -= land * 0.2; out.armRx -= land * 0.2;
+  }
+
+  /* TOOL LAYER — overrides the right arm while equipped.
+     Roblox classic sword: arm straight out, blade straight up;
+     the slash lifts up-back, then chops down across the body. */
+  const it = Inventory.current();
+  if (it && !seated) {
+    if (it.id === 'sword') {
+      let rx = -1.57, rz = -0.06;                 // hold: arm out, sword up
+      if (swingT >= 0) {
+        const k = swingT / 0.42;
+        if (k < 0.28) {                            // windup: lift up & out
+          const u = k / 0.28;
+          rx = -1.57 - u * 1.2; rz = -0.06 - u * 0.5;
+        } else {                                   // chop down across
+          const u = (k - 0.28) / 0.72;
+          rx = -2.77 + easeOut(u) * 1.9; rz = -0.56 + u * 0.62;
+        }
+      }
+      out.armRx = rx; out.armRz = rz;
+    } else if (it.id === 'apple') {
+      if (eatT > 0) { out.armRx = -2.3; out.armRz = -0.35; }
+      else { out.armRx = -0.32; out.armRz = -0.12; }
+    }
+  }
+
+  applyChannels(out);
+  /* first person: the tool is the camera-anchored viewmodel — play the
+     windup / chop on it so swinging reads right up close */
+  if (cam.fp) {
+    let fx = -Math.PI / 2 + 0.1, fz = -0.1;
+    if (it && it.id === 'sword' && swingT >= 0) {
+      const k = swingT / 0.42;
+      if (k < 0.28) { const u = k / 0.28; fx -= u * 0.6; fz -= u * 0.3; }
+      else { const u = (k - 0.28) / 0.72; fx += -0.6 + easeOut(u) * 1.5; fz += 0.3 * u; }
+    }
+    fpTool.rotation.x = fx; fpTool.rotation.z = fz;
+  }
+  character.position.y = player.y + out.rootY;
+  CH.forEach(k => APPLIED[k] = out[k]);
+}
+
+/* ---- keyboard ---- */
+addEventListener('keydown', e => {
+  if (chatFocused || userModalOpen) return;
+  const k = e.key.toLowerCase();
+  if (k === 'escape') {                    // Roblox-style: Esc opens the menu
+    if (!document.fullscreenElement) openMenu(!menuOpen);
+    return;
+  }
+  if (menuOpen) return;                   // the menu swallows game input
+  keys[k] = true;
+  if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
+  if (k === '/') { e.preventDefault(); chatInput.focus(); }
+  if (k === 'e' && currentInteract) currentInteract.action();
+  if (k >= '1' && k <= '9') Inventory.select(+k - 1);
+  if (k === 'm') openMenu(true);
+});
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; }); // no stuck keys on alt-tab
+
+/* ---- touch (joystick + jump button) ---- */
+const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (isTouch) {
+  document.body.classList.add('touch');
+  const joyEl = document.getElementById('joy');
+  const knob = document.getElementById('knob');
+  let joyId = null;
+  const joyMove = e => {
+    const r = joyEl.getBoundingClientRect();
+    let dx = e.clientX - (r.left + r.width / 2);
+    let dy = e.clientY - (r.top + r.height / 2);
+    const d = Math.hypot(dx, dy), R = 40;
+    if (d > R) { dx *= R / d; dy *= R / d; }
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    joySide = dx / R; joyFwd = -dy / R; joyMag = Math.min(1, d / R);
+  };
+  const joyReset = () => { knob.style.transform = 'translate(-50%,-50%)'; joySide = joyFwd = joyMag = 0; };
+  joyEl.addEventListener('pointerdown', e => { e.preventDefault(); joyId = e.pointerId; joyEl.setPointerCapture(joyId); joyMove(e); });
+  joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
+  const joyEnd = e => { if (e.pointerId === joyId) { joyId = null; joyReset(); } };
+  joyEl.addEventListener('pointerup', joyEnd);
+  joyEl.addEventListener('pointercancel', joyEnd);
+
+  const jb = document.getElementById('jumpbtn');
+  jb.addEventListener('pointerdown', e => { e.preventDefault(); touchJump = true; jb.classList.add('pressed'); });
+  const jbEnd = () => { touchJump = false; jb.classList.remove('pressed'); };
+  jb.addEventListener('pointerup', jbEnd);
+  jb.addEventListener('pointercancel', jbEnd);
+}
+
+/* ================================================================
+   §12.5 MULTIPLAYER — Cloudflare Worker relay
+   ----------------------------------------------------------------
+   Every player runs the WHOLE WORLD locally (own physics, own
+   zombies, own props). The Cloudflare Worker at the URL below is
+   a tiny relay: it forwards each player's state (position, yaw,
+   animation, tool) and chat to everyone else, so everybody who
+   opens this file renders together in the same world. Nothing is
+   server-authoritative — the worker just "combines the players".
+
+     - connects automatically on load (after the username check)
+     - broadcasts state 12x per second (~90 bytes each)
+     - remote players render as R6 rigs (shared geometry with §5)
+       with nametags, smoothly interpolated between updates
+     - joining / leaving is silent; chat relays ONLY what players
+       actually type (no system events — see §7)
+
+   If the worker is unreachable the game keeps playing solo; the
+   little chip next to the menu button shows the status and it
+   retries in the background with a backoff.
+================================================================ */
+const WORKER_URL = 'wss://nexusaipro.kadharri-minecraft.workers.dev/ws';
+const ADMIN_CODE = 'Jesusisthebom';
+const CROWN = '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:#f5c542;vertical-align:-1px"><path d="M3 17.5 L3 7.5 L8.2 11.2 L12 4 L15.8 11.2 L21 7.5 L21 17.5 Z"/></svg>';
+const ANIM_OK = ['idle', 'walk', 'run', 'jump', 'climb', 'sit', 'wave', 'dance', 'salute'];
+
+/* ---- identity: username (asked ONCE, then remembered) + admin
+   unlock (type the code once — you are admin forever after) ---- */
+let USERNAME = 'Player', isAdmin = false, userModalOpen = false, hasStoredName = false;
+function loadIdentity() {
+  try { const n = localStorage.getItem('baseplate.user.v1'); if (n) { USERNAME = n; hasStoredName = true; } } catch (e) {}
+  try { isAdmin = localStorage.getItem('baseplate.admin.v1') === '1'; } catch (e) {}
+}
+function applyIdentityToHUD() {
+  const pname = document.querySelector('#playerhud .pname');
+  pname.innerHTML = (isAdmin ? CROWN : '') + esc(USERNAME);
+  pname.classList.toggle('admin', isAdmin);
+  nametag.innerHTML = `<div class="dn${isAdmin ? ' admin' : ''}">${isAdmin ? CROWN : ''}${esc(USERNAME)}</div>` +
+                     `<div class="un">@${slug(USERNAME)}</div>`;
+}
+const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'player';
+
+/* ---- username modal (first load, or "Change Username" in Settings) ---- */
+const userModal = document.getElementById('user-modal');
+const userNameIn = document.getElementById('user-name-in');
+const userNameErr = document.getElementById('user-name-err');
+function showNameModal() {
+  userModalOpen = true;
+  for (const k in keys) keys[k] = false;
+  joyFwd = joySide = joyMag = 0; touchJump = false;
+  userNameIn.value = hasStoredName ? USERNAME : '';
+  userNameErr.textContent = '';
+  userModal.classList.add('open');
+  setTimeout(() => userNameIn.focus(), 60);
+}
+function confirmName() {
+  const n = userNameIn.value.replace(/\s+/g, ' ').trim().slice(0, 20);
+  if (!n) {
+    userNameErr.textContent = 'Enter a username to play.';
+    const c = userModal.querySelector('.card');
+    c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake');
+    return;
+  }
+  USERNAME = n;
+  try { localStorage.setItem('baseplate.user.v1', n); } catch (e) {}
+  hasStoredName = true;
+  userModalOpen = false;
+  userModal.classList.remove('open');
+  applyIdentityToHUD();
+  MP.connect();
+}
+document.getElementById('user-play-btn').addEventListener('click', confirmName);
+userNameIn.addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') confirmName();
+});
+
+/* ---- remote player rigs (same R6 parts as §5, torso color per player) ---- */
+const REMOTE_TORSO_COLORS = [0x0D69AC, 0xC4281C, 0x4B974B, 0xF5CD30, 0x7458C4, 0xE76B2B,
+  0x1B8A9C, 0xD35FA2, 0x2E4172, 0x8A6D3B, 0x5C6B7A, 0x33735B];
+
+function buildRemoteRig(torsoColor) {
+  const g = new THREE.Group();
+  const torsoPivot = new THREE.Group(); torsoPivot.position.set(0, 2, 0); g.add(torsoPivot);
+  const torso = new THREE.Mesh(R6_TORSO_GEO, mat(torsoColor, 0.8));
+  torso.position.y = 1; torso.castShadow = torso.receiveShadow = true; torsoPivot.add(torso);
+  const neckPivot = new THREE.Group(); neckPivot.position.set(0, 2, 0); torsoPivot.add(neckPivot);
+  const head = new THREE.Mesh(HEAD_GEO, skinMat);
+  head.position.y = 0.6; head.castShadow = head.receiveShadow = true; neckPivot.add(head);
+  const face = new THREE.Mesh(FACE_GEO, remoteFaceMat);
+  face.position.y = 0.62; neckPivot.add(face);
+  const mkArm = side => {
+    const s = new THREE.Group(); s.position.set(1.5 * side, 1.5, 0); torsoPivot.add(s);
+    part(0.95, 2, 0.95, skinMat, 0, -0.5, 0, s);
+    return s;
+  };
+  const armL = mkArm(+1), armR = mkArm(-1);
+  const toolAnchor = new THREE.Group(); toolAnchor.position.set(0, -1.45, 0); armR.add(toolAnchor);
+  const mkLeg = side => {
+    const h = new THREE.Group(); h.position.set(0.5 * side, 2, 0); g.add(h);
+    part(0.95, 2, 0.95, pantsMat, 0, -1, 0, h);
+    return h;
+  };
+  const legL = mkLeg(+1), legR = mkLeg(-1);
+  scene.add(g);
+  return { g, torsoPivot, neckPivot, armL, armR, legL, legR, toolAnchor };
+}
+
+const remoteTagHTML = (name, admin) =>
+  `<div class="dn${admin ? ' admin' : ''}">${admin ? CROWN : ''}${esc(name)}</div><div class="un">@${slug(name)}</div>`;
+
+function createRemote(id, name, admin, x, y, z) {
+  const hash = [...id].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const pivots = buildRemoteRig(REMOTE_TORSO_COLORS[hash % REMOTE_TORSO_COLORS.length]);
+  const tag = document.createElement('div');
+  tag.className = 'remote-tag';
+  tag.innerHTML = remoteTagHTML(name, admin);
+  document.body.appendChild(tag);
+  const r = {
+    id, name, admin, pivots, tag,
+    x, y, z, tx: x, ty: y, tz: z, px: x, pz: z, yaw: 0, yawT: 0,
+    anim: 'idle', pAnim: '', animT: 0, phase: 0, vy: 0,
+    tool: '', toolMesh: null, toolMeshId: '', sw: -1, lastSeen: elapsed,
+    ch: { torsoRx: 0, torsoRy: 0, torsoRz: 0, headRx: 0, headRy: 0, headRz: 0,
+      armLx: 0, armLz: 0, armRx: 0, armRz: 0, legLx: 0, legRx: 0, rootY: 0 }
+  };
+  MP.remotes.set(id, r);
+  MP.paintChip();
+  return r;
+}
+
+function removeRemote(id) {
+  const r = MP.remotes.get(id);
+  if (!r) return;
+  if (r.toolMesh) r.toolMesh.removeFromParent();
+  scene.remove(r.pivots.g);
+  r.tag.remove();
+  MP.remotes.delete(id);
+  MP.paintChip();
+}
+
+/* ---- remote animation (mirrors the §6 poses, per-rig channels) ---- */
+function remotePose(r, t) {
+  const c = r.ch;
+  for (const k in c) c[k] = 0;
+  let a = r.anim;
+  if ((a === 'wave' && r.animT > 2.7) || (a === 'salute' && r.animT > 2.6)) a = 'idle'; // one-shot emotes end
+  const s = Math.sin(r.phase), cc = Math.cos(r.phase);
+  switch (a) {
+    case 'walk':
+      c.legLx = -s * 0.75; c.legRx = s * 0.75;
+      c.armLx = s * 0.75; c.armRx = -s * 0.75;
+      c.armLz = 0.06; c.armRz = -0.06;
+      c.torsoRx = 0.02; c.torsoRy = s * 0.11; c.torsoRz = cc * 0.025;
+      c.rootY = Math.abs(cc) * 0.06 - 0.03;
+      c.headRy = -s * 0.06;
+      break;
+    case 'run':
+      c.legLx = -s * 1.05; c.legRx = s * 1.05;
+      c.armLx = s * 1.0; c.armRx = -s * 1.0;
+      c.armLz = 0.12; c.armRz = -0.12;
+      c.torsoRx = 0.16; c.torsoRy = s * 0.14; c.torsoRz = cc * 0.02;
+      c.rootY = Math.abs(cc) * 0.1 - 0.05;
+      c.headRx = -0.1; c.headRy = -s * 0.07;
+      break;
+    case 'jump': {
+      const u = clamp(r.vy / JUMPV, -1, 1);
+      const k = sstep((1 - u) / 2, 0, 1);          // 0 = rising, 1 = falling
+      const arm = lerp(-2.9, -2.35, k);
+      c.armLx = arm; c.armRx = arm;
+      c.armLz = lerp(0.18, 0.38, k); c.armRz = -c.armLz;
+      c.legLx = lerp(-0.3, -0.08, k); c.legRx = lerp(0.14, 0.28, k);
+      c.torsoRx = lerp(-0.06, 0.1, k);
+      c.headRx = lerp(-0.1, 0.06, k);
+      break;
+    }
+    case 'climb': {
+      c.armLx = -1.85 + s * 0.75; c.armRx = -1.85 - s * 0.75;   // alternate reach up
+      c.armLz = 0.12; c.armRz = -0.12;
+      c.legLx = -0.28 + cc * 0.42; c.legRx = -0.28 - cc * 0.42;
+      c.torsoRx = 0.12; c.headRx = -0.26;
+      c.rootY = Math.abs(s) * 0.05 - 0.025;
+      break;
+    }
+    case 'sit': {
+      const b = Math.sin(t * 1.6);
+      c.rootY = -1.55 + b * 0.008;
+      c.legLx = -1.5; c.legRx = -1.47;
+      c.armLx = 0.26; c.armRx = 0.26;
+      c.armLz = 0.22; c.armRz = -0.22;
+      c.torsoRx = -0.06 + b * 0.012;
+      c.headRy = Math.sin(t * 0.4) * Math.sin(t * 0.15) * 0.22;
+      c.headRx = 0.02;
+      break;
+    }
+    case 'wave':
+      c.armRz = -2.45 + Math.sin(r.animT * 8) * 0.22;
+      c.armRx = -0.1;
+      c.headRz = 0.1; c.headRy = -0.14;
+      c.torsoRz = -0.05; c.armLz = 0.06;
+      break;
+    case 'dance': {
+      const p = t * 6.2, ds = Math.sin(p);
+      c.torsoRy = ds * 0.42; c.torsoRz = ds * 0.12;
+      c.torsoRx = 0.05 + Math.sin(2 * p) * 0.03;
+      c.armLx = -0.4 - ds * 0.85; c.armRx = -0.4 + ds * 0.85;
+      c.armLz = 0.55; c.armRz = -0.55;
+      c.headRy = ds * 0.16; c.headRz = -ds * 0.12;
+      c.headRx = 0.04 + Math.sin(2 * p + 1) * 0.06;
+      c.rootY = Math.abs(Math.cos(p)) * 0.09 - 0.045;
+      c.legLx = -0.05; c.legRx = -0.05;
+      break;
+    }
+    case 'salute':
+      c.armRx = -2.6; c.armRz = -0.62;
+      c.headRy = -0.08; c.headRz = -0.08;
+      c.torsoRz = 0.03; c.torsoRx = -0.02;
+      c.armLz = 0.05;
+      break;
+    default: {                                  // idle
+      const b = Math.sin(t * 1.7);
+      c.rootY = b * 0.01 - 0.005;
+      c.torsoRy = Math.sin(t * 0.23) * 0.02;
+      c.headRy = Math.sin(t * 0.42) * Math.sin(t * 0.17 + 0.8) * 0.24;
+      c.headRx = Math.sin(t * 0.5) * 0.015;
+      c.armLz = 0.05 + b * 0.012;
+      c.armRz = -0.05 - b * 0.012;
+    }
+  }
+  /* tool layer — same hold / slash math as §6 */
+  if (r.tool === 'sword' && a !== 'sit') {
+    let rx = -1.57, rz = -0.06;                 // hold: arm out, sword up
+    if (r.sw >= 0) {
+      const k = r.sw / 0.42;
+      if (k < 0.28) { const u = k / 0.28; rx = -1.57 - u * 1.2; rz = -0.06 - u * 0.5; }
+      else { const u = (k - 0.28) / 0.72; rx = -2.77 + easeOut(u) * 1.9; rz = -0.56 + u * 0.62; }
+    }
+    c.armRx = rx; c.armRz = rz;
+  } else if (r.tool === 'apple') {
+    c.armRx = -0.32; c.armRz = -0.12;
+  }
+}
+
+function remoteToolMesh(r) {
+  if (r.toolMesh && r.toolMeshId !== r.tool) { r.toolMesh.removeFromParent(); r.toolMesh = null; r.toolMeshId = ''; }
+  if (r.tool && !r.toolMesh) {
+    r.toolMesh = r.tool === 'sword' ? buildSwordMesh() : buildAppleMesh();
+    r.toolMeshId = r.tool;
+    r.pivots.toolAnchor.add(r.toolMesh);
+  }
+}
+
+/* ---- the multiplayer client ---- */
+const chipEl = document.getElementById('mp-chip');
+const chipTxt = document.getElementById('mp-chip-txt');
+const MP = {
+  ws: null, connected: false, state: 'off', retry: 0, retryTO: null, sendTO: 0, pingTO: 25,
+  id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)),
+  remotes: new Map(),
+
+  paintChip() {
+    if (this.state === 'on') { chipEl.className = 'on'; chipTxt.textContent = (this.remotes.size + 1) + ' online'; }
+    else if (this.state === 'wait') { chipEl.className = ''; chipTxt.textContent = 'connecting…'; }
+    else { chipEl.className = 'err'; chipTxt.textContent = 'offline · retrying'; }
+  },
+
+  connect() {
+    clearTimeout(this.retryTO);
+    if (this.ws) {                      // drop any stale socket first
+      try { this.ws.onclose = null; this.ws.close(); } catch (e) {}
+      this.ws = null; this.connected = false;
+    }
+    if (!('WebSocket' in window)) { this.state = 'off'; this.paintChip(); return; }
+    this.state = 'wait'; this.paintChip();
+    let ws;
+    try { ws = new WebSocket(WORKER_URL); } catch (e) { this._down(); return; }
+    this.ws = ws;
+    ws.onopen = () => {
+      if (this.ws !== ws) return;
+      this.connected = true; this.state = 'on'; this.retry = 0;
+      this.sendTO = 0; this.pingTO = 25;      // send a state right away
+      this.paintChip();
+    };
+    ws.onmessage = ev => this._onmsg(ev.data);
+    ws.onclose = () => { if (this.ws === ws) this._down(); };
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  },
+
+  _down() {
+    this.ws = null; this.connected = false; this.state = 'off'; this.paintChip();
+    const wait = Math.min(15000, 800 * Math.pow(2, this.retry++));
+    clearTimeout(this.retryTO);
+    this.retryTO = setTimeout(() => this.connect(), wait);
+  },
+
+  _send(o) { if (this.connected) { try { this.ws.send(JSON.stringify(o)); } catch (e) {} } },
+
+  _onmsg(data) {
+    let m;
+    try { m = JSON.parse(data); } catch (e) { return; }
+    if (m.t === 's') this._state(m);
+    else if (m.t === 'c') {
+      if (m.id === this.id) return;                 // never echo own chat back
+      addChat(String(m.n || 'Player'), String(m.x || ''), !!m.a);
+    }
+    else if (m.t === 'bye') removeRemote(m.id);
+  },
+
+  _state(m) {
+    if (typeof m.id !== 'string' || m.id === this.id) return;
+    let r = this.remotes.get(m.id);
+    if (!r) r = createRemote(m.id, String(m.n || 'Player'), !!m.a, +m.x || 0, +m.y || 0, +m.z || 0);
+    else if (r.name !== m.n || r.admin !== !!m.a) {  // renamed / promoted mid-session
+      r.name = String(m.n || 'Player'); r.admin = !!m.a;
+      r.tag.innerHTML = remoteTagHTML(r.name, r.admin);
+    }
+    r.tx = +m.x || 0; r.ty = +m.y || 0; r.tz = +m.z || 0;
+    r.yawT = +m.yw || 0;
+    r.anim = ANIM_OK.includes(m.an) ? m.an : 'idle';
+    r.tool = (m.tl === 'sword' || m.tl === 'apple') ? m.tl : '';
+    r.sw = typeof m.sw === 'number' ? m.sw : -1;
+    r.lastSeen = elapsed;
+  },
+
+  sendChat(text) { this._send({ t: 'c', id: this.id, n: USERNAME, a: isAdmin ? 1 : 0, x: String(text).slice(0, 120) }); },
+
+  tick(dt, t) {
+    /* broadcast our own state 12x per second */
+    if (this.connected) {
+      this.sendTO -= dt;
+      if (this.sendTO <= 0) {
+        this.sendTO = 1 / 12;
+        const it = Inventory.current();
+        this._send({
+          t: 's', id: this.id, n: USERNAME, a: isAdmin ? 1 : 0,
+          x: +player.x.toFixed(2), y: +player.y.toFixed(2), z: +player.z.toFixed(2),
+          yw: +(climbing ? (climbSide > 0 ? Math.PI : 0) : yaw).toFixed(2),
+          an: animId, tl: it ? it.id : '', sw: +(swingT < 0 ? -1 : swingT).toFixed(2)
+        });
+      }
+      this.pingTO -= dt;
+      if (this.pingTO <= 0) { this.pingTO = 25; this._send({ t: 'p' }); }   // keep the socket warm
+    }
+
+    /* advance every remote rig toward its latest state */
+    for (const r of [...this.remotes.values()]) {
+      if (elapsed - r.lastSeen > 8) { removeRemote(r.id); continue; }      // stale — they left
+      if (Math.hypot(r.tx - r.x, r.ty - r.y, r.tz - r.z) > 12) {         // teleport snap
+        r.x = r.tx; r.y = r.ty; r.z = r.tz; r.px = r.x; r.pz = r.z;
+      }
+      const k = Math.min(1, dt * 12);
+      r.x += (r.tx - r.x) * k; r.y += (r.ty - r.y) * k; r.z += (r.tz - r.z) * k;
+      r.yaw += angWrap(r.yawT - r.yaw) * k;
+      const moved = Math.hypot(r.x - r.px, r.z - r.pz) / Math.max(dt, 0.001);
+      r.px = r.x; r.pz = r.z;
+      r.vy = lerp(r.vy, clamp((r.ty - r.y) * 12, -60, 60), 0.25);        // for the jump pose
+      if (r.anim !== r.pAnim) { r.pAnim = r.anim; r.animT = 0; }
+      r.animT += dt;
+      if (r.anim === 'walk' || r.anim === 'run') r.phase += dt * (4.5 + Math.min(moved, 24) * 1.3);
+      else if (r.anim === 'climb') r.phase += r.vy * dt * 1.15;
+      if (r.sw >= 0) { r.sw += dt; if (r.sw > 0.42) r.sw = -1; }          // their sword swing
+      remoteToolMesh(r);
+      remotePose(r, t);
+      const c = r.ch, p = r.pivots;
+      p.g.position.set(r.x, r.y + c.rootY, r.z);
+      p.g.rotation.y = r.yaw;
+      p.torsoPivot.rotation.set(c.torsoRx, c.torsoRy, c.torsoRz);
+      p.neckPivot.rotation.set(c.headRx, c.headRy, c.headRz);
+      p.armL.rotation.set(c.armLx, 0, c.armLz);
+      p.armR.rotation.set(c.armRx, 0, c.armRz);
+      p.legL.rotation.set(c.legLx, 0, 0);
+      p.legR.rotation.set(c.legRx, 0, 0);
+    }
+  },
+
+  /* nametag projection — called AFTER updateCamera (§13) so tags
+     never lag a frame behind the world */
+  projectTags() {
+    for (const r of this.remotes.values()) {
+      tmpV.set(r.x, r.y + 5.6, r.z).project(camera);
+      if (tmpV.z < 1) {
+        r.tag.style.display = 'block';
+        r.tag.style.left = ((tmpV.x * 0.5 + 0.5) * innerWidth) + 'px';
+        r.tag.style.top = ((-tmpV.y * 0.5 + 0.5) * innerHeight) + 'px';
+      } else r.tag.style.display = 'none';
+    }
+  }
+};
+MP.paintChip();
+
+/* ================================================================
+   §13 MAIN LOOP — exception-guarded
+   A thrown error in game logic logs to console + chat ONCE, but
+   the camera and renderer keep running, so the game never hard-
+   freezes silently (that's how the old zombie bug felt like a crash).
+================================================================ */
+const nametag = document.getElementById('nametag');
+const fpsEl = document.getElementById('fps');
+const clock = new THREE.Clock();
+let elapsed = 0, frames = 0, fpsTime = 0, scriptErrored = false;
+
+function updateWorldAnims(dt, t) {
+  const dT = door.open ? 1 : 0;
+  door.anim += clamp(dT - door.anim, -dt * 2.2, dt * 2.2);
+  door.pivot.rotation.y = sstep(door.anim, 0, 1) * 1.95;
+  door.collider.enabled = door.anim < 0.25;
+
+  const cT = chest.opened ? 1 : 0;
+  chest.anim += clamp(cT - chest.anim, -dt * 2.5, dt * 2.5);
+  chest.lid.rotation.x = -sstep(chest.anim, 0, 1) * 1.85;
+
+  if (button.press > 0) button.press -= dt;
+  const bp = clamp(button.press, 0, 0.3) / 0.3;
+  button.mesh.position.y = 1.52 - Math.sin(bp * Math.PI) * 0.12;
+
+  if (!swordPickup.taken) {
+    swordPickup.spin.rotation.y += dt * 1.2;
+    swordPickup.spin.position.y = 2.0 + Math.sin(t * 2) * 0.15;
+  }
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  elapsed += dt;
+
+  /* fps counter (updated twice a second) */
+  frames++; fpsTime += dt;
+  if (fpsTime >= 0.5) {
+    const f = Math.round(frames / fpsTime);
+    fpsEl.textContent = f + ' FPS · ' + renderer.info.render.calls + ' draws';
+    fpsEl.style.color = f > 45 ? 'rgba(120,220,130,0.75)' : f > 25 ? 'rgba(255,200,90,0.8)' : 'rgba(255,110,100,0.85)';
+    updateAdaptiveRes(f);            // Auto resolution follows the framerate
+    frames = 0; fpsTime = 0;
+  }
+
+  try {
+    updateMovement(dt);
+    updateAnim(dt, elapsed);
+    updateInteractables();
+    updateWorldAnims(dt, elapsed);
+    updateRides(dt);
+    updateZombies(dt);
+    MP.tick(dt, elapsed);      // multiplayer: relay + remote rigs (§12.5)
+
+    if (swingT >= 0) {
+      swingT += dt;
+      if (swingT > 0.12 && swingT < 0.3) doSwingHits();
+      if (swingT > 0.42) swingT = -1;
+    }
+    if (eatT > 0) eatT -= dt;
+
+    timeSinceHurt += dt;
+    if (timeSinceHurt > V.regenDelay && health > 0 && health < V.maxHealth)
+      health = Math.min(V.maxHealth, health + V.healthRegen * dt);
+
+    if (Math.abs(health - lastHealth) > 0.4) {
+      lastHealth = health;
+      hfill.style.width = (health / V.maxHealth * 100) + '%';
+      hfill.style.background =
+        health > V.maxHealth * 0.5 ? '#5dbb52' :
+        health > V.maxHealth * 0.25 ? '#e2a33c' : '#d9534f';
+    }
+
+    updateDayNight(dt);   // sun / sky / fog follow time-of-day + the player
+  } catch (err) {
+    if (!scriptErrored) {
+      scriptErrored = true;
+      console.error('[Baseplate loop error]', err);
+      addSys('A script error occurred — see the console (F12).', 'cerr');
+    }
+  }
+
+  updateCamera(dt); // outside the try: camera must never stop
+
+  // nametag projection (hidden in first person)
+  if (cam.fp) nametag.style.display = 'none';
+  else {
+    tmpV.set(player.x, player.y + 5.6, player.z).project(camera);   // just above the head
+    if (tmpV.z < 1) {
+      nametag.style.display = 'block';
+      nametag.style.left = ((tmpV.x * 0.5 + 0.5) * innerWidth) + 'px';
+      nametag.style.top = ((-tmpV.y * 0.5 + 0.5) * innerHeight) + 'px';
+    } else nametag.style.display = 'none';
+  }
+
+  MP.projectTags();   // remote nametags (camera is updated now — no lag)
+
+  renderer.render(scene, camera); // also outside the try
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  applyGraphics();   // re-applies pixel ratio too (dpr can change between monitors)
+});
+
+/* ---- hint + welcome ---- */
+const hint = document.getElementById('hint');
+hint.textContent = isTouch
+  ? 'Stick to move (full tilt = run) · tap the button to jump · drag anywhere to look · pinch to zoom (fully in = first person) · ☰ for menu'
+  : 'WASD move · SHIFT run · SPACE jump · E interact · CLICK use tool · ESC menu · drag camera · scroll zoom (fully in = first person) · / chat';
+setTimeout(() => { hint.style.opacity = '0'; }, 12000);
+
+/* (no welcome / event chat — §7 keeps the chat for player talk only) */
+
+/* ================================================================
+   §14 GAME MENU — settings · controls · admin variables
+   ----------------------------------------------------------------
+   Esc / M / the ☰ button (top-left, next to the chat) opens a
+   Roblox-style menu. The Admin tab exposes every tunable in V
+   (see §1.5) with live sliders, toggles and action buttons, and
+   persists between sessions. Day/night + static-matrix freezing
+   live here too.
+================================================================ */
+const menuOverlay = document.getElementById('menu-overlay');
+let menuOpen = false, adminBuilt = false;
+
+function openMenu(open) {
+  menuOpen = open;
+  menuOverlay.classList.toggle('open', open);
+  if (open) {
+    if (document.pointerLockElement) document.exitPointerLock();   // free the cursor for the menu
+    for (const k in keys) keys[k] = false;     // stop walking / jumping
+    joyFwd = joySide = joyMag = 0; touchJump = false;
+    chatInput.blur();
+    emoteMenuEl.classList.remove('open');
+    if (!adminBuilt) { buildAdminTab(); adminBuilt = true; }
+    refreshValues();
+    refreshIcons();
+  }
+}
+document.getElementById('menu-fab').addEventListener('click', () => openMenu(!menuOpen));
+document.getElementById('menu-close').addEventListener('click', () => openMenu(false));
+menuOverlay.addEventListener('pointerdown', e => { if (e.target === menuOverlay) openMenu(false); });
+
+document.querySelectorAll('#menu-rail .mtab[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#menu-rail .mtab').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.mtabpane').forEach(p => p.classList.toggle('active', p.dataset.tab === btn.dataset.tab));
+  });
+});
+
+/* ---- tiny DOM + control builders (Settings & Admin share them) ---- */
+function mkEl(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  return e;
+}
+
+function setVal(key, val) {
+  V[key] = val;
+  queueSave();
+  switch (key) {
+    case 'fov': camera.fov = val; camera.updateProjectionMatrix(); break;
+    case 'maxHealth': health = Math.min(health, val); break;
+    case 'zoomMin': cam.zoom = clamp(cam.zoom, val, V.zoomMax); break;
+    case 'zoomMax': cam.zoom = clamp(cam.zoom, V.zoomMin, val); break;
+    case 'showFps': fpsEl.style.display = val ? 'block' : 'none'; break;
+    case 'graphicsLevel': case 'resMode': case 'resScale': case 'shadowQuality': case 'shadowDistance': case 'fogDistance':
+      applyGraphics(); break;
+  }
+  syncConsts();
+}
+
+function bindSlider(key, label, range, fmt) {
+  const min = range[0], max = range[1], step = range[2] || 1;
+  const row = mkEl('div', 'mrow');
+  const top = mkEl('div', 'mrow-top');
+  top.append(mkEl('span', 'mlabel', label));
+  const val = mkEl('span', 'mval');
+  top.append(val);
+  row.append(top);
+
+  /* the control: [−] track [+]
+     - dragging the TRACK is RELATIVE — a stray tap never jumps the
+       value (the old misclick problem); you slide from wherever the
+       drag started, for pixel-fine control
+     - vertical swipes scroll the panel instead (touch-action:pan-y)
+     - [−]/[+] step precisely, hold to repeat
+     - click the value chip to type an exact number
+     - arrow keys work when the row is focused */
+  const sld = mkEl('div', 'sld'); sld.tabIndex = 0;
+  const minus = mkEl('button', 'sbtn', '−');
+  const plus = mkEl('button', 'sbtn', '+');
+  const track = mkEl('div', 'strack');
+  const fill = mkEl('div', 'sfill');
+  const thumb = mkEl('div', 'sthumb');
+  track.append(fill, thumb);
+  sld.append(minus, track, plus);
+  row.append(sld);
+
+  const fmtVal = v => fmt ? fmt(v) : (step < 1 ? (+v).toFixed(2) : String(Math.round(v)));
+  let editing = false;
+  const paint = () => {
+    if (editing) return;
+    const v = clamp(V[key], min, max);
+    const pct = (v - min) / (max - min) * 100;
+    fill.style.width = pct + '%';
+    thumb.style.left = pct + '%';
+    val.innerHTML = fmtVal(v);
+  };
+  const apply = v => {
+    v = Math.round(clamp(+v, min, max) / step) * step;
+    setVal(key, +v.toFixed(4));
+    paint();
+  };
+
+  let drag = null;
+  track.addEventListener('pointerdown', e => {
+    drag = { x: e.clientX, v: V[key], on: false };
+    try { track.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  track.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.on) { if (Math.abs(dx) < 6) return; drag.on = true; }   // tiny jitters change nothing
+    apply(drag.v + dx / (track.clientWidth || 1) * (max - min));
+  });
+  const dragEnd = () => { drag = null; };
+  track.addEventListener('pointerup', dragEnd);
+  track.addEventListener('pointercancel', dragEnd);
+
+  const hookStep = (b, dir) => {
+    let t1 = null, t2 = null;
+    const stop = () => { clearTimeout(t1); clearInterval(t2); };
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      apply(V[key] + dir * step);
+      t1 = setTimeout(() => { t2 = setInterval(() => apply(V[key] + dir * step), 70); }, 380);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  };
+  hookStep(minus, -1); hookStep(plus, +1);
+
+  sld.addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === 'Home') { e.preventDefault(); apply(min); return; }
+    if (k === 'End') { e.preventDefault(); apply(max); return; }
+    const d = k === 'ArrowLeft' || k === 'ArrowDown' ? -1 : k === 'ArrowRight' || k === 'ArrowUp' ? 1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    apply(V[key] + d * step);
+  });
+
+  val.addEventListener('click', () => {              // type an exact value
+    if (editing) return;
+    editing = true;
+    const inp = document.createElement('input');
+    inp.className = 'mval-in'; inp.type = 'number';
+    inp.min = min; inp.max = max; inp.step = step; inp.value = V[key];
+    val.innerHTML = '';
+    val.append(inp);
+    inp.focus(); inp.select();
+    const done = ok => {
+      editing = false;
+      if (ok) { const n = parseFloat(inp.value); if (!isNaN(n)) apply(n); }
+      else paint();
+    };
+    inp.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') done(true);
+      else if (e.key === 'Escape') done(false);
+    });
+    inp.addEventListener('blur', () => done(true));
+  });
+
+  paint();
+  row._sync = paint;
+  return row;
+}
+
+function bindToggle(key, label, sub) {
+  const row = mkEl('div', 'mrow');
+  const top = mkEl('div', 'mrow-top');
+  top.append(mkEl('span', 'mlabel', label));
+  const t = mkEl('button', 'tgl');
+  top.append(t);
+  row.append(top);
+  if (sub) row.append(mkEl('div', 'msub', sub));
+  const paint = () => t.classList.toggle('on', !!V[key]);
+  t.addEventListener('click', () => { setVal(key, !V[key]); paint(); });
+  paint();
+  row._sync = paint;
+  return row;
+}
+
+function bindSeg(key, label, values, labelFn) {
+  const row = mkEl('div', 'mrow');
+  const top = mkEl('div', 'mrow-top');
+  top.append(mkEl('span', 'mlabel', label));
+  row.append(top);
+  const seg = mkEl('div', 'seg');
+  const paint = () => [...seg.children].forEach((b, i) => b.classList.toggle('on', values[i] === V[key]));
+  values.forEach(v => {
+    const b = mkEl('button', null, labelFn ? labelFn(v) : String(v));
+    b.addEventListener('click', () => { setVal(key, v); paint(); });
+    seg.append(b);
+  });
+  paint();
+  row.append(seg);
+  row._sync = paint;
+  return row;
+}
+
+function actBtn(label, fn, cls) {
+  const b = mkEl('button', 'abtn' + (cls ? ' ' + cls : ''), label);
+  b.addEventListener('click', fn);
+  return b;
+}
+
+function refreshValues() {
+  document.querySelectorAll('#settings-list .mrow, #admin-list .mrow')
+    .forEach(r => r._sync && r._sync());
+}
+
+function buildSettingsTab() {
+  const list = document.getElementById('settings-list');
+  list.append(mkEl('div', 'msection', 'Graphics'));
+  list.append(bindSeg('graphicsLevel', 'Graphics Level', [1, 2, 3, 4, 5],
+    n => ['', 'Potato', 'Low', 'Medium', 'High', 'Ultra'][n]));
+  list.append(bindSeg('resMode', 'Resolution', ['auto', 0.5, 0.75, 1],
+    v => v === 'auto' ? 'Auto' : Math.round(v * 100) + '%'));
+  list.append(mkEl('div', 'msection', 'Shadows'));
+  list.append(bindSeg('shadowQuality', 'Shadow Quality', [-1, 0, 1024, 2048, 4096],
+    v => v === -1 ? 'Auto' : v === 0 ? 'Off' : v >= 4096 ? 'Ultra' : v >= 2048 ? 'High' : 'Low'));
+  list.append(bindSlider('shadowDistance', 'Shadow Distance', [0, 140, 5],
+    v => v === 0 ? 'Auto' : SHADOW_SD < v - 0.5
+      ? Math.round(SHADOW_SD) + ' of ' + Math.round(v) : Math.round(v) + ' studs'));
+  list.append(mkEl('div', 'msection', 'Camera'));
+  list.append(bindSlider('camSensitivity', 'Camera Sensitivity', [0.2, 3, 0.05], v => (+v).toFixed(2) + '&times;'));
+  list.append(bindToggle('invertY', 'Invert Camera Y', 'Flip the up/down drag direction.'));
+  list.append(bindToggle('occlusion', 'Camera Occlusion', 'Pull the camera in when a wall blocks the view.'));
+  list.append(mkEl('div', 'msection', 'Display'));
+  list.append(bindToggle('showFps', 'Show FPS &amp; Draw Calls'));
+  list.append(mkEl('div', 'msection', 'Identity'));
+  const ibr = mkEl('div', 'btnrow');
+  ibr.append(actBtn('Change Username', () => { openMenu(false); showNameModal(); }));
+  list.append(ibr);
+  const br = mkEl('div', 'btnrow');
+  br.append(actBtn('Fullscreen', () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch (e) {}
+  }));
+  br.append(actBtn('Reset Character', () => { openMenu(false); respawn(); }, 'danger'));
+  list.append(br);
+}
+
+function rebuildAdminTab() {
+  const list = document.getElementById('admin-list');
+  list.innerHTML = '';
+  buildAdminTab();
+  refreshValues();
+  refreshIcons();
+}
+
+function buildAdminTab() {
+  const list = document.getElementById('admin-list');
+  const S = t => list.append(mkEl('div', 'msection', t));
+
+  /* ---- locked: enter the admin code to unlock (once, forever) ---- */
+  if (!isAdmin) {
+    const wrap = mkEl('div', 'lockwrap');
+    wrap.innerHTML = '<i data-lucide="shield-alert"></i>' +
+      '<div class="lt">Admin locked</div>' +
+      '<div class="ls">Enter the admin code to unlock the world controls.<br>' +
+      'Once unlocked, this device is admin forever.</div>';
+    const inp = mkEl('input', 'code-in');
+    inp.type = 'password'; inp.placeholder = 'Admin code';
+    inp.autocomplete = 'off'; inp.maxLength = 40;
+    const errEl = mkEl('div', 'lockerr');
+    const btn = mkEl('button', 'abtn', 'Unlock');
+    btn.style.marginTop = '4px';
+    const tryUnlock = () => {
+      if (inp.value === ADMIN_CODE) {
+        isAdmin = true;
+        try { localStorage.setItem('baseplate.admin.v1', '1'); } catch (e) {}
+        applyIdentityToHUD();
+        rebuildAdminTab();
+      } else {
+        errEl.textContent = 'Incorrect code.';
+        inp.value = ''; inp.focus();
+      }
+    };
+    btn.addEventListener('click', tryUnlock);
+    inp.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') tryUnlock();
+    });
+    wrap.append(inp, errEl, btn);
+    list.append(wrap);
+    refreshIcons();
+    return;
+  }
+
+  const badge = mkEl('div');
+  badge.innerHTML = `<div class="adminbadge">${CROWN} Admin — world controls unlocked</div>`;
+  list.append(badge);
+
+  S('Player');
+  list.append(bindSlider('maxHealth', 'Max Health', [1, 500, 1]));
+  list.append(bindSlider('healthRegen', 'Health Regen (per sec)', [0, 50, 0.5]));
+  list.append(bindSlider('regenDelay', 'Regen Delay (sec)', [0, 20, 0.5]));
+  list.append(bindToggle('godMode', 'God Mode', 'Take no damage of any kind.'));
+  list.append(bindToggle('flyMode', 'Fly Mode', 'Noclip flight — WASD to fly, SPACE up, C or CTRL down.'));
+
+  S('Movement');
+  list.append(bindSlider('walkSpeed', 'Walk Speed', [0.5, 32, 0.05]));
+  list.append(bindSlider('runSpeed', 'Run Speed', [1, 48, 0.1]));
+  list.append(bindSlider('jumpPower', 'Jump Power', [5, 120, 1]));
+  list.append(bindSlider('gravity', 'Gravity', [20, 400, 5]));
+  list.append(bindSlider('stepHeight', 'Auto-Step Height', [0, 4, 0.1]));
+
+  S('Fall Damage');
+  list.append(bindToggle('fallDamage', 'Fall Damage', 'Damage from hitting the ground too fast.'));
+  list.append(bindSlider('fallSafeHeight', 'Safe Fall Height (studs)', [0, 50, 0.5]));
+  list.append(bindSlider('fallMultiplier', 'Damage per Stud', [0, 50, 0.5]));
+
+  S('Combat &amp; Zombies');
+  list.append(bindSlider('swordDamage', 'Sword Damage', [0.5, 10, 0.5]));
+  list.append(bindSlider('zombieHealth', 'Zombie Health', [1, 50, 1]));
+  list.append(bindSlider('zombieDamage', 'Zombie Damage', [0, 100, 1]));
+  list.append(bindSlider('zombieSpeed', 'Zombie Speed', [0, 12, 0.1]));
+  list.append(bindSlider('zombieCooldown', 'Zombie Attack Cooldown (sec)', [0.2, 5, 0.1]));
+  list.append(bindSlider('knockback', 'Sword Knockback Force', [0, 60, 1]));
+  list.append(bindSlider('maxZombies', 'Max Zombies', [1, 30, 1]));
+
+  S('Camera');
+  list.append(bindSlider('fov', 'Field of View', [30, 110, 1], v => Math.round(v) + '&deg;'));
+  list.append(bindSlider('zoomMin', 'Zoom Minimum', [1, 12, 0.5]));
+  list.append(bindSlider('zoomMax', 'Zoom Maximum', [10, 60, 1]));
+
+  S('Graphics (advanced)');
+  list.append(bindSlider('graphicsLevel', 'Graphics Level', [1, 5, 1],
+    n => ['', 'Potato', 'Low', 'Medium', 'High', 'Ultra'][n] || n));
+  list.append(bindSeg('shadowQuality', 'Shadow Quality', [-1, 0, 1024, 2048, 4096],
+    v => v === -1 ? 'Auto' : v === 0 ? 'Off' : v >= 4096 ? 'Ultra' : v >= 2048 ? 'High' : 'Low'));
+  list.append(bindSlider('fogDistance', 'Fog / View Distance', [0, 300, 10],
+    v => v === 0 ? 'Auto' : String(Math.round(v))));
+
+  S('World');
+  list.append(bindSlider('dayTime', 'Time of Day', [0, 24, 0.1], v => {
+    const h = Math.floor(v) % 24, m = Math.round((v - Math.floor(v)) * 60);
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }));
+  list.append(bindSlider('daySpeed', 'Day Cycle Speed', [0, 2, 0.05],
+    v => v === 0 ? 'Frozen' : (+v).toFixed(2) + ' h/s'));
+
+  S('Actions');
+  const br = mkEl('div', 'btnrow');
+  br.append(actBtn('Heal', () => { health = V.maxHealth; addSys('Admin: health restored.'); }));
+  br.append(actBtn('Give Sword', () => {
+    if (Inventory.give('sword') >= 0) addSys('Admin: gave a Classic Sword.');
+    else addSys('Your inventory is full!', 'cerr');
+  }));
+  br.append(actBtn('Give Apple', () => {
+    if (Inventory.give('apple') >= 0) addSys('Admin: gave an Apple.');
+    else addSys('Your inventory is full!', 'cerr');
+  }));
+  br.append(actBtn('Spawn Zombie', () => {
+    if (!spawnZombie(player.x + 3 + Math.random() * 5, player.z + 3 + Math.random() * 5))
+      addSys('Too many zombies already!');
+  }));
+  br.append(actBtn('Kill Zombies', () => {
+    let n = 0;
+    zombies.forEach(z => { if (!z.dead) { z.dead = true; z.deathT = 0; n++; } });
+    addSys('Admin: removed ' + n + ' zombie' + (n === 1 ? '' : 's') + '.');
+  }));
+  br.append(actBtn('Reset Character', () => { openMenu(false); respawn(); }));
+  br.append(actBtn('Restore Defaults', () => {
+    Object.keys(DEFAULTS).forEach(k => V[k] = DEFAULTS[k]);
+    adaptive.mult = 1; adaptive.lowStreak = adaptive.highStreak = 0;
+    queueSave(); syncConsts(); applyGraphics();
+    camera.fov = V.fov; camera.updateProjectionMatrix();
+    health = V.maxHealth;
+    fpsEl.style.display = V.showFps ? 'block' : 'none';
+    refreshValues();
+    addSys('Admin: all settings restored to defaults.');
+  }, 'danger'));
+  br.append(actBtn('Lock Admin', () => {
+    isAdmin = false;
+    try { localStorage.removeItem('baseplate.admin.v1'); } catch (e) {}
+    applyIdentityToHUD();
+    rebuildAdminTab();
+  }, 'danger'));
+  list.append(br);
+}
+
+/* ---- day / night cycle (Admin: Time of Day / Day Cycle Speed) ---- */
+const SKY_DAY_TOP = new THREE.Color(0x5c9fd6), SKY_DAY_BOT = new THREE.Color(0xd8e7f3);
+const SKY_NGT_TOP = new THREE.Color(0x0a1024), SKY_NGT_BOT = new THREE.Color(0x1b2440);
+const SKY_DUSK = new THREE.Color(0xe8935a);
+const SUN_WARM = new THREE.Color(0xff8a3c), SUN_DAY = new THREE.Color(0xfff4e0);
+const _cA = new THREE.Color(), _cB = new THREE.Color(), _cC = new THREE.Color();
+const _sunDir = new THREE.Vector3();
+
+function updateDayNight(dt) {
+  if (V.daySpeed > 0) V.dayTime = (V.dayTime + V.daySpeed * dt) % 24;
+  const e = Math.sin(((V.dayTime - 6) / 12) * Math.PI);   // sun elevation, -1..1
+  const az = ((V.dayTime - 6) / 12) * Math.PI;            // east -> west sweep
+  // The sun sits FAR out along its lighting direction — only the
+  // direction matters to a directional light, so the look is the same,
+  // but the shadow camera can never end up inside a tree or a roof
+  // (which once shadowed the entire world). The floor of 17 keeps
+  // evening shadows from stretching out into pure acne.
+  _sunDir.set(Math.cos(az) * 26, Math.max(9, e * 40) + 8, 15).normalize();
+  sun.position.set(
+    player.x + _sunDir.x * SHADOW_R,
+    Math.max(24, _sunDir.y * SHADOW_R),
+    player.z + _sunDir.z * SHADOW_R);
+  sun.target.position.set(player.x, 0, player.z);
+
+  const dl = clamp(e * 1.8 + 0.35, 0, 1);                 // daylight amount
+  const dusk = clamp(1 - Math.abs(e) * 3.2, 0, 1);        // horizon glow
+  _cA.lerpColors(SKY_NGT_TOP, SKY_DAY_TOP, dl);
+  _cB.lerpColors(SKY_NGT_BOT, SKY_DAY_BOT, dl).lerp(SKY_DUSK, dusk * 0.55);
+  skyMat.uniforms.top.value.copy(_cA);
+  skyMat.uniforms.bottom.value.copy(_cB);
+  scene.fog.color.copy(_cB);
+  _cC.lerpColors(SUN_WARM, SUN_DAY, clamp(e * 3, 0, 1));
+  sun.color.copy(_cC);
+  sun.intensity = 0.15 + dl * 2.35;
+  hemi.intensity = 0.22 + dl * 0.8;
+}
+
+/* ---- PERF: freeze the local matrices of every static mesh ----
+   (world props never move locally; their pivots still animate).
+   Things created later — zombies, tools — are unaffected.) */
+function freezeStatics() {
+  scene.traverse(o => {
+    if (o.isMesh && !DYNAMIC.has(o)) {    // DYNAMIC = meshes that animate (§10.5)
+      o.matrixAutoUpdate = false;
+      o.updateMatrix();
+    }
+  });
+}
+
+/* ---- boot: load settings, build UI, apply, go ---- */
+loadSettings();
+syncConsts();
+buildSettingsTab();
+applyGraphics();
+camera.fov = V.fov;
+camera.updateProjectionMatrix();
+cam.zoom = clamp(cam.zoom, V.zoomMin, V.zoomMax);
+health = V.maxHealth;
+fpsEl.style.display = V.showFps ? 'block' : 'none';
+
+/* identity + multiplayer boot (§12.5): remembered username/admin
+   load silently; a first-timer gets the username modal on top */
+loadIdentity();
+applyIdentityToHUD();
+if (hasStoredName) MP.connect();
+else showNameModal();
+
+freezeStatics();
+updateDayNight(0);
+
+/* ---- console handle for tinkering / debugging ---- */
+window.BASEPLATE = {
+  V, cam, MGR, SWING, Interactables, MP,
+  debug: { scene, camera, character },   // console tinkering / automated tests
+  get player() { return player; },
+  get climbing() { return climbing; },
+  get seated() { return seated; },
+  get health() { return health; },
+  get firstPerson() { return cam.fp; },
+  get username() { return USERNAME; },
+  get isAdmin() { return isAdmin; },
+  zombies, keys,
+  Inventory, spawnZombie, respawn, setVal, applyGraphics
+};
+
+loop();   // started here so every §14 constant is initialized first
+
+refreshIcons();
+</script>
+</body>
+</html>
