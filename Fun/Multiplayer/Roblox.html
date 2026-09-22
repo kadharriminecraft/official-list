@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Baseplate — v8</title>
+<title>Baseplate — v12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -61,6 +61,18 @@
   .slot.filled { display:flex; align-items:center; justify-content:center; opacity:1; }
   .slot:hover { border-color:rgba(255,255,255,0.45); }
   .slot.active { border-color:#fff; background:rgba(255,255,255,0.16); opacity:1; }
+  .slot { touch-action:none; user-select:none; -webkit-user-select:none; }
+
+  /* ---- hold-to-drop ring (appears after a 0.5 s grace, then fills for 1.5 s) ---- */
+  #drop-ring { position:fixed; left:50%; top:50%; width:78px; height:78px; margin:-39px 0 0 -39px;
+    z-index:45; display:none; pointer-events:none; }
+  #drop-ring svg { display:block; width:100%; height:100%; }
+  #drop-ring circle { fill:none; stroke-width:6; }
+  #drop-ring .bgc { stroke:rgba(13,17,23,0.6); }
+  #drop-ring .fgc { stroke:#fff; stroke-linecap:round;
+    stroke-dasharray:163.4; stroke-dashoffset:163.4;
+    transform:rotate(-90deg); transform-origin:50% 50%; }
+  #drop-ring.filling .fgc { transition:stroke-dashoffset 1.5s linear; stroke-dashoffset:0; }
   @media (max-width:640px){ .slot { width:40px; height:40px; border-radius:9px; } .slot svg{ width:18px; height:18px; } }
 
   /* ---------- interaction prompt ---------- */
@@ -255,6 +267,37 @@
   .mp-player .tag { font-size:10.5px; color:rgba(255,255,255,0.45); font-weight:700; }
   .mp-player .you { margin-left:auto; font-size:10px; font-weight:800; color:#01A2FF;
     border:1px solid rgba(1,162,255,0.5); border-radius:99px; padding:2px 9px; flex:none; }
+  .mp-player .wchip { margin-left:auto; font-size:10px; font-weight:800; color:rgba(255,255,255,0.65);
+    border:1px solid rgba(255,255,255,0.18); border-radius:99px; padding:2px 9px; flex:none;
+    background:rgba(255,255,255,0.05); max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ---------- WORLDS tab (v12): switch worlds + see who's where ---------- */
+  #worlds-list { display:flex; flex-direction:column; gap:8px; }
+  .wcard { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.07); }
+  .wcard.cur { border-color:rgba(1,162,255,0.55); background:rgba(1,162,255,0.08); }
+  .wcard .wicon { width:40px; height:40px; border-radius:10px; flex:none; display:flex; align-items:center;
+    justify-content:center; background:rgba(255,255,255,0.07); }
+  .wcard .wicon svg { width:20px; height:20px; }
+  .wcard .wtxt { flex:1; min-width:0; }
+  .wcard .wnm { font-weight:800; font-size:13.5px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .wcard .wdesc { font-size:11px; color:rgba(255,255,255,0.5); font-weight:600; margin-top:2px; line-height:1.4; }
+  .wcard .who { font-size:11px; color:rgba(255,255,255,0.75); font-weight:700; margin-top:3px;
+    display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .wcard .who .pchip { background:rgba(255,255,255,0.08); border-radius:99px; padding:1px 8px;
+    font-size:10.5px; border:1px solid rgba(255,255,255,0.1); }
+  .wcard .here { font-size:10px; font-weight:800; color:#01A2FF; border:1px solid rgba(1,162,255,0.5);
+    border-radius:99px; padding:2px 9px; flex:none; }
+  .woff { font-size:12px; font-weight:700; color:rgba(255,255,255,0.55); line-height:1.55;
+    padding:4px 2px 2px; }
+
+  /* ---------- boot overlay while the world loads (v12) ---------- */
+  #world-loading { position:fixed; inset:0; z-index:80; display:flex; flex-direction:column; gap:10px;
+    align-items:center; justify-content:center; background:#0b0d12; color:#fff;
+    font:800 14px 'Nunito Sans',sans-serif; }
+  #world-loading .wl-dot { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,0.14);
+    border-top-color:#01A2FF; animation:wlspin 0.9s linear infinite; }
+  @keyframes wlspin { to { transform:rotate(360deg); } }
 
   /* ---------- remote player nametags (projected like #nametag) ---------- */
   .remote-tag { position:fixed; z-index:10; transform:translate(-50%,-100%); text-align:center; pointer-events:none; }
@@ -297,6 +340,81 @@
     border-radius:99px; background:rgba(245,197,66,0.12); border:1px solid rgba(245,197,66,0.4);
     color:#f5c542; font-size:12px; font-weight:800; }
   .crown { display:inline-block; width:12px; height:12px; margin-right:4px; vertical-align:-1px; }
+
+  /* ---- admin panel sub-tabs (§7) ---- */
+  .atab-bar { display:flex; gap:5px; overflow-x:auto; margin:0 0 12px; scrollbar-width:none; }
+  .atab-bar::-webkit-scrollbar { display:none; }
+  .atab { flex:none; border:none; border-radius:8px; padding:7px 12px; cursor:pointer;
+    background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.6);
+    font:800 12px 'Nunito Sans',sans-serif; letter-spacing:0.2px; }
+  .atab:hover { color:#fff; }
+  .atab.on { background:#01A2FF; color:#04121d; }
+  .apane { display:none; }
+  .apane.on { display:block; }
+  .apinfo { font-size:12px; font-weight:700; color:rgba(255,255,255,0.5); margin:2px 0 10px; line-height:1.5; }
+  .pid { font-size:11px; font-weight:600; color:rgba(255,255,255,0.42); margin-left:6px; }
+  .abtn.mini { padding:5px 10px; font-size:11px; border-radius:7px; }
+  .ain { width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.14);
+    background:rgba(255,255,255,0.06); color:#fff; outline:none;
+    font:600 13px 'Nunito Sans',sans-serif; margin-bottom:8px; }
+  .ain:focus { border-color:#01A2FF; }
+  .srvrow { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 10px;
+    border-radius:8px; background:rgba(255,255,255,0.05); font-size:12px; font-weight:600;
+    color:rgba(255,255,255,0.55); margin-bottom:5px; }
+  .srvrow b { color:#fff; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ---- YOU chip (cards + the drill-down player menu) ---- */
+  .pyou { display:inline-block; margin-left:7px; padding:2px 7px; border-radius:6px; vertical-align:1px;
+    background:#01A2FF; color:#04121d; font-size:10px; font-weight:800; letter-spacing:0.5px; }
+  .abtn.mini.smite { background:#f5c542; color:#231a02; }
+  .abtn.mini.on { background:#01A2FF; color:#04121d; }
+
+  /* ---- v11: player cards + the drill-down player menu ---- */
+  .pcard { display:flex; align-items:center; gap:11px; width:100%; text-align:left; cursor:pointer;
+    background:rgba(255,255,255,0.055); border:1px solid rgba(255,255,255,0.09); border-radius:11px;
+    padding:10px 12px; margin-bottom:7px; color:#fff; font:inherit;
+    transition:background .15s, border-color .15s; }
+  .pcard:hover { background:rgba(1,162,255,0.14); border-color:rgba(1,162,255,0.45); }
+  .pavatar { flex:none; width:34px; height:34px; border-radius:9px; display:flex; align-items:center;
+    justify-content:center; font-size:15px; font-weight:800; color:#04121d; background:#01A2FF; }
+  .pavatar svg { width:17px; height:17px; }
+  .pavatar.everyone { background:#f5c542; color:#231a02; }
+  .pcard-txt { flex:1; min-width:0; }
+  .pcard-nm { font-size:13.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pcard-nm svg { width:13px; height:13px; color:#f5c542; margin-right:4px; vertical-align:-2px; }
+  .pcard-sub { font-size:11px; font-weight:600; color:rgba(255,255,255,0.45); margin-top:2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pchev { flex:none; color:rgba(255,255,255,0.35); }
+  .pchev svg { width:16px; height:16px; }
+  .pmenu-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .pmenu-title { font-size:15px; font-weight:800; flex:1; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pmenu-title svg { width:14px; height:14px; color:#f5c542; margin-right:5px; vertical-align:-2px; }
+  .pmenu-title .pyou { vertical-align:2px; }
+  .abtn.smite { background:#f5c542; color:#231a02; }
+  .abtn.smite:hover { background:#ffd75e; }
+  .btnrow.foot { border-top:1px solid rgba(255,255,255,0.08); margin-top:10px; padding-top:12px; }
+
+  /* ---- v11 confirm dialog (reset / kick / leave all ask first) ---- */
+  #confirm-modal { position:fixed; inset:0; z-index:75; display:none;
+    align-items:center; justify-content:center; background:rgba(4,10,18,0.62); backdrop-filter:blur(3px); }
+  #confirm-modal.open { display:flex; }
+  #confirm-modal .card { width:min(360px, calc(100vw - 40px)); background:#1d2129;
+    border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:22px; text-align:center;
+    box-shadow:0 24px 70px rgba(0,0,0,0.5); }
+  #confirm-modal h1 { font-size:18px; margin-bottom:8px; }
+  #confirm-modal p { font-size:12.5px; color:rgba(255,255,255,0.55); font-weight:600;
+    line-height:1.5; margin-bottom:16px; }
+  #confirm-modal .btnrow { justify-content:center; padding:0; }
+  #confirm-modal .abtn { flex:1; }
+
+  /* ---- admin banner (teleports / kicks / broadcasts) ---- */
+  #admin-banner { position:fixed; top:64px; left:50%; transform:translateX(-50%) translateY(-8px); z-index:70;
+    background:rgba(13,17,23,0.92); border:1px solid rgba(245,197,66,0.5); color:#f5c542;
+    font:800 13px 'Nunito Sans',sans-serif; padding:10px 18px; border-radius:10px;
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
+    max-width:min(560px, calc(100vw - 40px)); text-align:center; }
+  #admin-banner.show { opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -309,6 +427,11 @@
 
 <div id="menu-fab" title="Menu (Esc)"><i data-lucide="menu"></i></div>
 
+<div id="drop-ring"><svg viewBox="0 0 60 60"><circle class="bgc" cx="30" cy="30" r="26"/><circle class="fgc" cx="30" cy="30" r="26"/></svg></div>
+<div id="admin-banner"></div>
+
+<div id="world-loading"><div class="wl-dot"></div><div id="world-loading-txt">Loading world…</div></div>
+
 <div id="user-modal">
   <div class="card">
     <h1>Welcome to Baseplate</h1>
@@ -320,11 +443,23 @@
   </div>
 </div>
 
+<div id="confirm-modal">
+  <div class="card">
+    <h1 id="confirm-title">Are you sure?</h1>
+    <p id="confirm-text"></p>
+    <div class="btnrow">
+      <button class="abtn" id="confirm-no">Cancel</button>
+      <button class="abtn danger" id="confirm-yes">Yes</button>
+    </div>
+  </div>
+</div>
+
 <div id="menu-overlay">
   <div id="menu">
     <div id="menu-rail">
       <div class="rail-title">Baseplate</div>
       <button class="mtab active" data-tab="online"><i data-lucide="globe"></i><span>Online</span></button>
+      <button class="mtab" data-tab="worlds"><i data-lucide="map"></i><span>Worlds</span></button>
       <button class="mtab" data-tab="settings"><i data-lucide="settings"></i><span>Settings</span></button>
       <button class="mtab" data-tab="controls"><i data-lucide="keyboard"></i><span>Controls</span></button>
       <button class="mtab" data-tab="admin"><i data-lucide="shield"></i><span>Admin</span></button>
@@ -339,11 +474,21 @@
             <div class="mp-status" id="mp-status"><span class="dot"></span><span id="mp-status-txt">Connecting…</span></div>
           </div>
           <div class="msub">World relay: robloxmultiplayer.kadharri-minecraft.workers.dev — everyone who opens
-            the game file joins this same world. Positions, animations and chat are shared live.</div>
+            the game file joins the same relay. Switch worlds from the <b>Worlds</b> tab — this list shows
+            every player, in every world, live.</div>
         </div>
         <div class="msection" id="mp-count">Players in this world</div>
         <div class="mrow"><div id="mp-players"></div></div>
+        <div class="btnrow" id="mp-rejoin-row" style="display:none">
+          <button class="abtn" id="mp-rejoin">Rejoin the world</button>
+        </div>
+        <div class="btnrow">
+          <button class="abtn danger" id="mp-leave">Leave Game</button>
+        </div>
       </div>
+      <div class="mtabpane" data-tab="worlds"><div id="worlds-list">
+        <div class="woff">Loading worlds…</div>
+      </div></div>
       <div class="mtabpane" data-tab="settings"><div id="settings-list"></div></div>
       <div class="mtabpane" data-tab="controls">
         <div class="crow"><span class="kbd">W A S D</span>Move</div>
@@ -353,6 +498,7 @@
         <div class="crow"><span class="kbd">E</span>Interact</div>
         <div class="crow"><span class="kbd">Click</span>Use equipped tool · fire the blaster (FP: crosshair, 3rd: where you click)</div>
         <div class="crow"><span class="kbd">1 – 9</span>Hotbar slots</div>
+        <div class="crow"><span class="kbd">Hold slot</span>Drop that item (the ring appears after 0.5 s, then fills)</div>
         <div class="crow"><span class="kbd">/</span>Open chat · Enter to send</div>
         <div class="crow"><span class="kbd">Esc / M</span>Open this menu</div>
         <div class="crow"><span class="kbd">Drag</span>Rotate camera</div>
@@ -537,9 +683,88 @@ const DEFAULTS = {
   graphicsLevel: (('ontouchstart' in window) || navigator.maxTouchPoints > 0) ? 2 : 4,
   resMode: 'auto', resScale: 0, shadowQuality: -1, shadowDistance: 0, fogDistance: 0, showFps: true,
   // world
-  dayTime: 10.2, daySpeed: 0
+  dayTime: 10.2, daySpeed: 0,
+  // smite (admin lightning) + player-size stat scaling — room rules too (§1.6)
+  smiteDmg: 70, smiteSize: 4, smitePower: 30, smiteSplash: true, smiteRadius: 8,
+  sizeScaleStats: true
 };
 const V = Object.assign({}, DEFAULTS);
+
+/* ================================================================
+   §1.6 ROOM RULES + PLAYER SIZE (v10)
+   ----------------------------------------------------------------
+   RULE_KEYS are the half of V that belongs to the ROOM, not to the
+   device: gravity, damage, zoom limits, smite tuning... Admins edit
+   them from the Rules tab; every change is broadcast to everyone
+   (the 'rrules' world event) AND remembered by relay v4, so whoever
+   joins later inherits them automatically. The personal keys (fov,
+   sensitivity, graphics...) never leave this device — those live in
+   the Settings tab.
+
+   Player SIZE is per-player ('psize' events + the sz state field):
+   mini or huge, with an optional stats toggle — speed scales 1:1,
+   jump with the square root so a mini player can still hop a block.
+================================================================ */
+const RULE_KEYS = ['maxHealth', 'healthRegen', 'regenDelay',
+  'walkSpeed', 'runSpeed', 'jumpPower', 'gravity', 'stepHeight',
+  'fallDamage', 'fallSafeHeight', 'fallMultiplier',
+  'swordDamage', 'swordPvpDamage', 'gunDamage', 'knockback',
+  'zombieHealth', 'zombieDamage', 'zombieSpeed', 'zombieCooldown', 'maxZombies',
+  'zoomMin', 'zoomMax',
+  'smiteDmg', 'smiteSize', 'smitePower', 'smiteSplash', 'smiteRadius', 'sizeScaleStats'];
+let applyingRoomRules = false;      // applying a received batch never re-broadcasts it
+let rrulesTO = null;
+function queueRuleSync(delay) {     // throttled — slider drags collapse into one message
+  if (!isAdmin) return;
+  clearTimeout(rrulesTO);
+  rrulesTO = setTimeout(() => {
+    if (!MP.connected) return;
+    const d = {};
+    for (const k of RULE_KEYS) d[k] = typeof V[k] === 'boolean' ? V[k] : +(+V[k]).toFixed(2);
+    WS.emit('rrules', d);
+  }, delay || 250);
+}
+function applyRoomRules(d) {
+  if (!d || typeof d !== 'object') return;
+  applyingRoomRules = true;
+  try {
+    for (const k of RULE_KEYS) {
+      if (!(k in d)) continue;
+      let v = d[k];
+      if (typeof v !== 'boolean') { v = +v; if (!isFinite(v)) continue; }
+      if (V[k] !== v) setVal(k, v);
+    }
+  } finally { applyingRoomRules = false; }
+  refreshValues();                   // open menus repaint with the room's values
+}
+let myScale = 1;                    // my own size multiplier (admin Players tab)
+function setMyScale(s) {
+  myScale = clamp(Math.round(s * 100) / 100, 0.25, 3);
+  character.scale.setScalar(myScale);
+}
+/* v11 PER-PLAYER STATS — multipliers that ride ON TOP of the room
+   rules: walk/run get mySpd, jump gets myJmp, and the
+   "size scales speed & jump" room rule can be overridden per player
+   (mySzSc: null = follow the room rule, true/false = override).
+   Set from the admin player menu ('pstat' events) and synced to
+   everyone via the state broadcast. */
+let mySpd = 1, myJmp = 1, mySzSc = null;
+function mySzScale() { return (mySzSc == null ? V.sizeScaleStats : mySzSc) ? myScale : 1; }
+function setMyStats(d) {
+  if (!d) return;
+  if (d.sm != null && isFinite(+d.sm)) mySpd = clamp(+d.sm, 0.25, 4);
+  if (d.jm != null && isFinite(+d.jm)) myJmp = clamp(+d.jm, 0.25, 4);
+  if (d.sc != null) mySzSc = +d.sc < 0 ? null : !!+d.sc;
+}
+/* one-click cleanup for the admin menu: default size, default stats,
+   back to following the room rule + respawn */
+function resetMyCharacter() {
+  setMyScale(1); setMyStats({ sm: 1, jm: 1, sc: -1 });
+  WS.act('psize', { id: MP.id, s: 1 });
+  WS.act('pstat', { id: MP.id, sm: 1, jm: 1, sc: -1 });
+  respawn();
+  adminBanner('Character reset — size, speed and jump back to default.');
+}
 
 /* graphics presets — pixel-ratio cap, shadow size/reach, fog, anisotropy.
    sdist = how many studs around the PLAYER the shadow box covers
@@ -586,6 +811,7 @@ function queueSave() {
   saveTO = setTimeout(() => {
     try {
       const { godMode, flyMode, ...persist } = V;   // cheats never persist
+      for (const k of RULE_KEYS) delete persist[k];  // room rules live on the relay
       localStorage.setItem('baseplate.settings.v6', JSON.stringify(persist));
     } catch (e) {}
   }, 250);
@@ -769,14 +995,58 @@ const glassMat = new THREE.MeshStandardMaterial({ color: 0xbfe3f2, roughness: 0.
 ================================================================ */
 const World = {
   colliders: [],
+  grid: new Map(),        // spatial hash (8×8 XZ cells) — big terrain worlds
+  CELL: 8,                 // (v12) need it so 30k column colliders stay cheap
   addBox(cx, cy, cz, w, h, d) {
     const c = {
       min: { x: cx - w / 2, y: cy - h / 2, z: cz - d / 2 },
       max: { x: cx + w / 2, y: cy + h / 2, z: cz + d / 2 },
-      enabled: true
+      enabled: true, _s: 0
     };
     World.colliders.push(c);
+    const gx0 = Math.floor(c.min.x / World.CELL), gx1 = Math.floor(c.max.x / World.CELL);
+    const gz0 = Math.floor(c.min.z / World.CELL), gz1 = Math.floor(c.max.z / World.CELL);
+    for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) {
+      const k = gx + '|' + gz;
+      let arr = World.grid.get(k);
+      if (!arr) World.grid.set(k, arr = []);
+      arr.push(c);
+    }
     return c;
+  },
+  /* candidate colliders whose cells cover an XZ box (deduped — a big
+     box like the baseplate lives in many cells) */
+  _q: [], _stamp: 0,
+  query(x0, z0, x1, z1) {
+    const out = World._q;
+    out.length = 0;
+    const s = ++World._stamp;
+    const gx0 = Math.floor(x0 / World.CELL), gx1 = Math.floor(x1 / World.CELL);
+    const gz0 = Math.floor(z0 / World.CELL), gz1 = Math.floor(z1 / World.CELL);
+    for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) {
+      const arr = World.grid.get(gx + '|' + gz);
+      if (!arr) continue;
+      for (let i = 0; i < arr.length; i++) {
+        const c = arr[i];
+        if (c._s === s) continue;
+        c._s = s;
+        out.push(c);
+      }
+    }
+    return out;
+  },
+  /* highest solid surface under (x, z) below yTop — spawns, zombies,
+     drops... work on any world shape (v12). Inclusive bounds: a point
+     exactly on a column edge must never fall through to the water. */
+  groundAt(x, z, yTop = Infinity) {
+    let best = -Infinity;
+    const cands = World.query(x - 0.01, z - 0.01, x + 0.01, z + 0.01);
+    for (let i = 0; i < cands.length; i++) {
+      const c = cands[i];
+      if (!c.enabled || c.max.y > yTop) continue;
+      if (x >= c.min.x && x <= c.max.x && z >= c.min.z && z <= c.max.z && c.max.y > best) best = c.max.y;
+    }
+    return best;
   }
 };
 
@@ -788,7 +1058,8 @@ function bodyOverlap(b, c) {
          b.z - b.hw < c.max.z && b.z + b.hw > c.min.z;
 }
 function overlapsAny(b) {
-  for (const c of World.colliders) if (c.enabled && bodyOverlap(b, c)) return true;
+  for (const c of World.query(b.x - b.hw, b.z - b.hw, b.x + b.hw, b.z + b.hw))
+    if (c.enabled && bodyOverlap(b, c)) return true;
   return false;
 }
 function aabbOverlap(a, b) { // plain {min,max} boxes (triggers, etc.)
@@ -802,7 +1073,7 @@ function moveAxis(b, axis, dt) {
   const d = v * dt;
   if (d === 0) return;
   b[axis] += d;
-  for (const c of World.colliders) {
+  for (const c of World.query(b.x - b.hw, b.z - b.hw, b.x + b.hw, b.z + b.hw)) {
     if (!c.enabled || !bodyOverlap(b, c)) continue;
     if (b.grounded) { // auto-step small ledges
       const rise = c.max.y - b.y;
@@ -824,7 +1095,7 @@ function moveBody(b, dt) {
   b.impact = 0;
   const vyIn = b.vy;
   b.y += b.vy * dt;
-  for (const c of World.colliders) {
+  for (const c of World.query(b.x - b.hw, b.z - b.hw, b.x + b.hw, b.z + b.hw)) {
     if (!c.enabled || !bodyOverlap(b, c)) continue;
     if (vyIn <= 0) { b.y = c.max.y; b.vy = 0; b.grounded = true; b.impact = Math.max(b.impact, -vyIn); }
     else           { b.y = c.min.y - b.h - 0.001; b.vy = 0; }
@@ -853,10 +1124,33 @@ const cam = {
   subject: new THREE.Vector3(0, 4.6, 0)
 };
 
-/* segment-vs-AABB (slab method): nearest entry distance or maxDist */
+/* segment-vs-AABB (slab method): nearest entry distance or maxDist.
+   (v12) marches the ray's cells instead of every collider — terrain
+   worlds carry tens of thousands of them. */
 function occlusionDist(origin, dir, maxDist) {
   let best = maxDist;
-  for (const c of World.colliders) {
+  /* collect candidate colliders along the segment (4-stud samples →
+     the covered cell corridor is contiguous) */
+  const seen = [];
+  const stamp = ++World._stamp;
+  const step = World.CELL / 2;
+  for (let t = 0; t <= maxDist; t += step) {
+    const px = origin.x + dir.x * t, pz = origin.z + dir.z * t;
+    const gx0 = Math.floor((px - step) / World.CELL), gx1 = Math.floor((px + step) / World.CELL);
+    const gz0 = Math.floor((pz - step) / World.CELL), gz1 = Math.floor((pz + step) / World.CELL);
+    for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) {
+      const arr = World.grid.get(gx + '|' + gz);
+      if (!arr) continue;
+      for (let i = 0; i < arr.length; i++) {
+        const c = arr[i];
+        if (c._s === stamp) continue;
+        c._s = stamp;
+        seen.push(c);
+      }
+    }
+  }
+  for (let ci = 0; ci < seen.length; ci++) {
+    const c = seen[ci];
     if (!c.enabled) continue;
     let tmin = 0, tmax = best, ok = true;
     for (const a of ['x', 'y', 'z']) {
@@ -885,7 +1179,7 @@ function updateCamera(dt) {
   // tight subject follow (smooths auto-steps, but never trails behind)
   const k = 1 - Math.exp(-22 * dt);
   cam.subject.x += (player.x - cam.subject.x) * k;
-  cam.subject.y += (player.y + 4.6 - cam.subject.y) * k;
+  cam.subject.y += (player.y + 4.6 * myScale - cam.subject.y) * k;   // eye height follows my size
   cam.subject.z += (player.z - cam.subject.z) * k;
 
   /* first person: the camera rides at the (hidden) head */
@@ -919,7 +1213,7 @@ let tapInfo = null, pinchDist = 0;
 const dom = renderer.domElement;
 
 dom.addEventListener('pointerdown', e => {
-  dom.setPointerCapture(e.pointerId);
+  try { dom.setPointerCapture(e.pointerId); } catch (err) {}   // synthetic events have no active pointer
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (cam.fp && !isTouch && document.pointerLockElement !== dom)   // re-lock after menus etc.
     try { const p = dom.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) {}
@@ -945,15 +1239,15 @@ dom.addEventListener('pointermove', e => {
     const [a, b] = [...pointers.values()];
     const d = Math.hypot(a.x - b.x, a.y - b.y);
     if (pinchDist > 0) {
-      /* exactly like Roblox mobile: PINCH IN (fingers closing) moves the
-         camera CLOSER — all the way into first person; SPREAD (fingers
-         opening) pulls it back out. The old ratio was inverted, which made
-         zoom + first person feel flipped. */
+      /* v10 — INVERTED (as requested): SPREADING the fingers apart
+         now zooms IN — all the way into first person — and CLOSING
+         the pinch pulls the camera back out. (The wheel keeps its
+         own direction: scroll down = in, scroll up = out.) */
       if (cam.fp) {
-        if (d > pinchDist + 1.5) exitFP();                    // spreading pops back out
+        if (d < pinchDist - 1.5) exitFP();                     // closing pulls back out
       } else {
-        cam.zoom = clamp(cam.zoom * d / pinchDist, V.zoomMin, V.zoomMax);   // spread = out
-        if (d < pinchDist - 1.5 && cam.zoom <= V.zoomMin + 0.01) enterFP(); // pinched fully in
+        cam.zoom = clamp(cam.zoom * pinchDist / d, V.zoomMin, V.zoomMax);  // spread = in
+        if (d > pinchDist + 1.5 && cam.zoom <= V.zoomMin + 0.01) enterFP(); // spread all the way
       }
     }
     pinchDist = d;
@@ -970,20 +1264,31 @@ dom.addEventListener('pointercancel', pointerEnd);
 dom.addEventListener('wheel', e => {
   e.preventDefault();
   const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);  // lines/pages -> px
-  if (cam.fp) { if (dy > 0) exitFP(); return; }                      // scroll out pops back out
-  cam.zoom = clamp(cam.zoom * Math.exp(dy * 0.0016), V.zoomMin, V.zoomMax);
-  if (dy < 0 && cam.zoom <= V.zoomMin + 0.01) enterFP();            // the SAME scroll that bottoms
+  /* Roblox direction: scrolling DOWN (toward you) reels the camera IN —
+     all the way into first person — and scrolling UP pulls back out.
+     (Trackpad pinch-out reads as scroll-up, so it zooms out too.) */
+  if (cam.fp) { if (dy < 0) exitFP(); return; }                      // scroll up pops back out
+  cam.zoom = clamp(cam.zoom * Math.exp(-dy * 0.0016), V.zoomMin, V.zoomMax);
+  if (dy > 0 && cam.zoom <= V.zoomMin + 0.01) enterFP();            // the SAME scroll that bottoms
 }, { passive: false });                                              // out pops into FP — no extra click
 
 /* ---- FIRST PERSON — exactly like Roblox: zoom in all the way and the
    camera pops into the head, the body hides (an equipped tool stays
    visible), the mouse locks for look-around, and zooming back out
-   returns to third person. Mobile: pinch fully in / out. ---- */
+   returns to third person. Mobile: spread all the way in / pinch to go back out. ---- */
 const fpCross = document.getElementById('fp-cross');
 const fpHint = document.getElementById('fp-hint');
 function applyFPVisibility() {
   character.traverse(o => { if (o.isMesh) o.visible = !cam.fp || !!o.userData.tool; });
-  if (toolMesh) (cam.fp ? fpTool : toolAnchor).add(toolMesh);   // viewmodel <-> hand
+  if (toolMesh) {
+    toolMesh.scale.setScalar(1);                             // world size; the FP pose rescales
+    /* the gun rides the hand barrel-forward (a quarter-turn on X);
+       as a camera viewmodel it stands UPRIGHT instead — the fpTool
+       pose below turns it to point where you look */
+    const it = Inventory.current();
+    toolMesh.rotation.x = (!cam.fp && it && it.id === 'gun') ? Math.PI / 2 : 0;
+    (cam.fp ? fpTool : toolAnchor).add(toolMesh);           // viewmodel <-> hand
+  }
 }
 function enterFP() {
   if (cam.fp) return;
@@ -1113,12 +1418,20 @@ armR.shoulder.add(toolAnchor);
 /* first-person VIEWMODEL — exactly like Roblox: in first person the
    equipped tool is anchored to the CAMERA (lower-right, blade up),
    not the invisible arm. The tool re-parents between these anchors
-   whenever first person is entered or left (§4). */
+   whenever first person is entered or left (§4).
+   v11: the viewmodel lives in its OWN scene (fpScene) and is drawn
+   in a second pass with a CLEARED depth buffer — it renders ON TOP of
+   the world, so it can never clip through the floor when a mini
+   player looks straight down, and never hides behind walls. The grip
+   position is FOV math (placeFPTool, §8), not fixed studs. */
 const fpTool = new THREE.Group();
-fpTool.position.set(0.58, -0.5, -1.3);                  // right, low, in front
-fpTool.rotation.set(-Math.PI / 2 + 0.1, -0.45, -0.1);    // blade up, sweeping toward centre
-scene.add(camera);                                       // camera children only render in-graph
-camera.add(fpTool);
+const fpScene = new THREE.Scene();
+const fpCam = new THREE.PerspectiveCamera(60, 1, 0.05, 40);   // sits at the origin, never moves
+const fpHemi = new THREE.HemisphereLight(0xcfe6ff, 0x8f9299, 1.0);   // viewmodel lights —
+const fpSun = new THREE.DirectionalLight(0xfff4e0, 2.5);              // tinted by the day cycle
+fpSun.position.set(1.5, 3, 2);
+fpCam.add(fpTool);
+fpScene.add(fpCam, fpHemi, fpSun);
 
 function buildLeg(side) {          // one rigid R6 leg, pivots at the hip
   const hip = new THREE.Group();
@@ -1336,8 +1649,109 @@ for (let i = 0; i < 9; i++) {
   el.className = 'slot';
   el.innerHTML = `<span class="num">${i + 1}</span>`;
   el.addEventListener('click', () => Inventory.select(i));
+  /* HOLD-TO-DROP: press and hold a filled slot — after a 0.5 s grace
+     a bare ring appears at the centre of the screen (no labels) and
+     fills for 1.5 s; finish the hold and the item drops into the
+     world as a pickup anyone can grab. A quick tap still just
+     selects the slot. */
+  el.addEventListener('pointerdown', e => {
+    if (menuOpen || userModalOpen || !Inventory.slots[i]) return;
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    startDropHold(i);
+  });
+  const endHold = () => { cancelDropHold(); };   // released early — it was a tap
+  el.addEventListener('pointerup', endHold);
+  el.addEventListener('pointercancel', endHold);
   hotbarEl.appendChild(el);
   slotEls.push(el);
+}
+
+/* the drop ring (pure CSS: .filling animates stroke-dashoffset over
+   exactly 1.5 s; the JS timeout matches it). v10: the first 0.5 s of
+   the hold is SILENT — the ring only appears once the hold is
+   clearly deliberate, then fills (2 s total; a quick tap stays a
+   tap) */
+const dropRing = document.getElementById('drop-ring');
+let dropHold = null;
+function hideDropRing() {
+  dropRing.classList.remove('filling');
+  dropRing.style.display = 'none';
+}
+function startDropHold(i) {
+  cancelDropHold();
+  dropHold = { slot: i, delay: setTimeout(() => {
+    if (!dropHold) return;                   // released before the ring ever showed
+    dropRing.classList.remove('filling');
+    dropRing.style.display = 'block';
+    void dropRing.offsetWidth;               // commit the empty ring
+    dropRing.classList.add('filling');      // 1.5 s fill from here
+    dropHold.to = setTimeout(() => {
+      const s = dropHold ? dropHold.slot : null;
+      dropHold = null;
+      hideDropRing();
+      if (s != null) dropItem(s);
+    }, 1500);
+  }, 500) };
+}
+function cancelDropHold() {
+  if (!dropHold) { hideDropRing(); return; }
+  clearTimeout(dropHold.delay);
+  clearTimeout(dropHold.to);
+  dropHold = null;
+  hideDropRing();
+}
+addEventListener('blur', cancelDropHold);
+
+/* drop the item: out of the hotbar, into the world. Dropped items are
+   synced (§12.6 'drop'/'pick' events) so everyone sees the same
+   floating pickups — first one there grabs it. */
+const dropPickups = new Map();   // uid -> {spin, light, inter, baseY, phase}
+function dropItem(i) {
+  const it = Inventory.slots[i];
+  if (!it) return;
+  const fx = Math.sin(yaw), fz = Math.cos(yaw);
+  const x = player.x + fx * 2.6, z = player.z + fz * 2.6;
+  /* rest it on whatever is beneath the drop spot (floats a little) */
+  const hit = occlusionDist({ x, y: player.y + 20, z }, { x: 0, y: -1, z: 0 }, 200);
+  const y = hit < 199 ? player.y + 20 - hit + 1.1 : player.y + 0.5;
+  const uid = MP.id + '.' + Math.random().toString(36).slice(2, 8);
+  Inventory.consume(i);
+  spawnDropPickup(it.id, x, y, z, uid);
+  if (MP.connected) WS.emit('drop', { i: it.id, x: +x.toFixed(1), y: +y.toFixed(1), z: +z.toFixed(1), u: uid });
+}
+function spawnDropPickup(id, x, y, z, uid) {
+  if (dropPickups.has(uid) || !ITEM_DEFS[id]) return;
+  if (dropPickups.size >= 24) removeDropPickup(dropPickups.keys().next().value);   // oldest goes first
+  const spin = new THREE.Group();
+  const inner = id === 'sword' ? buildSwordMesh() : id === 'gun' ? buildGunMesh() : buildAppleMesh();
+  inner.rotation.x = -Math.PI / 2;                     // blade / barrel up
+  inner.scale.setScalar(1.1);
+  spin.add(inner);
+  spin.position.set(x, y, z);
+  scene.add(spin);
+  const light = new THREE.PointLight(id === 'gun' ? 0xffd27a : 0x9fd8ff, 14, 6, 2);
+  light.position.set(x, y + 1, z);
+  scene.add(light);
+  const inter = addInteractable({
+    x, y, z, radius: 3.5,
+    label: 'Pick up the ' + ITEM_DEFS[id].name,
+    action: () => {
+      const slot = Inventory.give(id);
+      if (slot < 0) return;                             // full — leave it lying there
+      if (MP.connected) WS.emit('pick', { u: uid });
+      removeDropPickup(uid);
+    }
+  });
+  dropPickups.set(uid, { spin, light, inter, baseY: y, phase: Math.random() * 6.28 });
+}
+function removeDropPickup(uid) {
+  const dp = dropPickups.get(uid);
+  if (!dp) return;
+  scene.remove(dp.spin);
+  scene.remove(dp.light);
+  const ix = Interactables.indexOf(dp.inter);
+  if (ix >= 0) Interactables.splice(ix, 1);
+  dropPickups.delete(uid);
 }
 
 /* interaction prompt */
@@ -1487,21 +1901,31 @@ let toolMesh = null;
 function attachTool(id) {
   detachTool();
   toolMesh = id === 'sword' ? buildSwordMesh() : id === 'gun' ? buildGunMesh() : buildAppleMesh();
-  toolMesh.rotation.x = id === 'gun' ? Math.PI / 2 : 0;   // barrel forward when the arm is out
+  toolMesh.rotation.x = (id === 'gun' && !cam.fp) ? Math.PI / 2 : 0;   // hand: barrel along the arm; FP: upright
   toolMesh.traverse(o => { if (o.isMesh) o.userData.tool = true; });   // stays visible in first person
   if (cam.fp) applyFPToolPose();
   (cam.fp ? fpTool : toolAnchor).add(toolMesh);
 }
 function detachTool() { if (toolMesh) { toolMesh.removeFromParent(); toolMesh = null; } }
 
-/* first-person viewmodel placement per tool (the sword keeps its tuned
-   pose + swing; the gun sits lower-right and aims where the crosshair
-   points, kicking up on each shot) */
+/* first-person viewmodel placement per tool. v11: the grip is placed
+   by FRACTIONS OF THE FRUSTUM (placeFPTool does the math below), so
+   the tool sits at the same spot on screen at ANY field of view
+   (30–110) and any aspect (portrait phone to ultrawide) — at 60 FOV
+   the old fixed-stud sword fell off the right edge and vanished.
+   The sword is still scaled DOWN — a hand-scale blade reads enormous
+   when it rides a stud from the camera; the gun sits lower-right and
+   aims where the crosshair points, kicking up on each shot. */
+let fpPose = { fx: 0.55, fy: 0.74, d: 1.5 };   // grip: fractions of the screen half-extents + depth
 function applyFPToolPose(kick = 0) {
   const it = Inventory.current();
   if (it && it.id === 'gun') {
-    fpTool.position.set(0.42, -0.34, -0.85);
-    fpTool.rotation.set(0.05 + kick * 0.55, -0.14, 0);   // kick tilts the muzzle up
+    /* upright gun, muzzle toward the crosshair: a half-turn on Y
+       (sights up, grip down, barrel into the screen) + a slight
+       inward cant; the kick tilts the muzzle up */
+    if (toolMesh) { toolMesh.scale.setScalar(1); toolMesh.rotation.x = 0; }
+    fpPose = { fx: 0.42, fy: 0.60, d: 1.05 };
+    fpTool.rotation.set(kick * 0.55, Math.PI, 0.08);
   } else {
     let fx = -Math.PI / 2 + 0.1, fz = -0.1;
     if (it && it.id === 'sword' && swingT >= 0) {
@@ -1509,9 +1933,30 @@ function applyFPToolPose(kick = 0) {
       if (k < 0.28) { const u = k / 0.28; fx -= u * 0.6; fz -= u * 0.3; }
       else { const u = (k - 0.28) / 0.72; fx += -0.6 + easeOut(u) * 1.5; fz += 0.3 * u; }
     }
-    fpTool.position.set(0.58, -0.5, -1.3);
-    fpTool.rotation.set(fx - kick * 0.5, -0.45, fz);
+    /* the classic viewmodel: a smaller blade held low at the right
+       edge, mostly vertical — it must never cover the face */
+    if (toolMesh) toolMesh.scale.setScalar(it && it.id === 'sword' ? 0.32 : 1);
+    fpPose = { fx: 0.55, fy: 0.74, d: 1.5 };
+    fpTool.rotation.set(fx - kick * 0.5, -0.2, fz - 0.18);
   }
+  placeFPTool();
+}
+
+/* FOV MATH — where the grip goes. At viewmodel depth d the visible
+   half-height is tan(vFov/2)·d and the half-width is
+   tan(hFov/2)·d, so a FRACTION of each puts the grip at the same
+   spot on screen for every FOV and aspect. Re-run every frame while
+   in first person, so dragging the FOV slider re-places the tool live. */
+function placeFPTool() {
+  fpCam.fov = camera.fov;                              // the viewmodel camera must match
+  fpCam.aspect = camera.aspect;                       // the world camera's frustum
+  fpCam.updateProjectionMatrix();
+  const vHalf = camera.fov * Math.PI / 360;            // half of the vertical FOV, radians
+  const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);   // half of the horizontal FOV
+  fpTool.position.set(
+    fpPose.fx * Math.tan(hHalf) * fpPose.d,            // right, a fraction of the half-width
+    -fpPose.fy * Math.tan(vHalf) * fpPose.d,           // down, a fraction of the half-height
+    -fpPose.d);                                        // in front of the camera
 }
 
 /* using tools — triggered by a quick TAP on the canvas (§4).
@@ -1572,6 +2017,7 @@ function pvpHit(to, dmg, nx, nz) {
 const GUN_RANGE = 220, GUN_COOLDOWN = 0.26;
 let gunCd = 0, gunKickT = 0;
 const _gv = new THREE.Vector3();
+const _mz = new THREE.Vector3();   // muzzle world position
 
 /* short-lived visual effects: tracers, muzzle flash, impact sparks */
 const FX = [];
@@ -1596,9 +2042,70 @@ function updateFX(dt) {
   for (let i = FX.length - 1; i >= 0; i--) {
     const f = FX[i];
     f.life -= dt;
-    if (f.life <= 0) { scene.remove(f.mesh); f.mesh.geometry.dispose(); f.mesh.material.dispose(); FX.splice(i, 1); continue; }
-    f.mesh.material.opacity = (f.life / f.max) * (f.kind === 't' ? 0.95 : 1);
-    if (f.kind === 'f') f.mesh.scale.setScalar(1 + (1 - f.life / f.max) * 1.6);
+    if (f.life <= 0) {
+      scene.remove(f.mesh);
+      if (f.mesh.geometry) f.mesh.geometry.dispose();
+      if (f.mesh.material) f.mesh.material.dispose();
+      FX.splice(i, 1); continue;
+    }
+    const k = f.life / f.max;
+    if (f.kind === 't') f.mesh.material.opacity = k * 0.95;
+    else if (f.kind === 'f') { f.mesh.material.opacity = k; f.mesh.scale.setScalar(1 + (1 - k) * 1.6); }
+    else if (f.kind === 'l') f.mesh.material.opacity = Math.min(1, k * 1.6);            // lightning bolt
+    else if (f.kind === 'x') { f.mesh.material.opacity = k * 0.95; f.mesh.scale.setScalar(0.6 + (1 - k) * f.size); }   // fireball
+    else if (f.kind === 'd') {                                                           // debris chunks
+      f.vy -= 42 * dt;
+      f.mesh.position.x += f.vx * dt; f.mesh.position.y += f.vy * dt; f.mesh.position.z += f.vz * dt;
+      f.mesh.rotation.x += f.rx * dt; f.mesh.rotation.z += f.rz * dt;
+      f.mesh.material.opacity = Math.min(1, k * 2);
+    }
+    else if (f.kind === 'L') f.mesh.intensity = 60 * k;                                  // fading light
+  }
+}
+
+/* ---- SMITE FX (admin Players tab): a jagged bolt from the sky, a
+   fireball that swells to `size` studs, flying debris and a hot
+   flash of light — every screen runs the same recipe from the
+   event data, so the strike looks identical everywhere ---- */
+function spawnLightning(x, y, z) {
+  const H = 40, pts = [new THREE.Vector3(x, y + 2, z)];
+  for (let i = 1; i <= 5; i++) {           // jittered waypoints, straighter near the ground
+    const t = i / 6;
+    pts.push(new THREE.Vector3(
+      x + (Math.random() - 0.5) * 5 * t,
+      y + 2 + H * t * (0.86 + Math.random() * 0.22),
+      z + (Math.random() - 0.5) * 5 * t));
+  }
+  pts.push(new THREE.Vector3(x + (Math.random() - 0.5) * 3, y + 2 + H, z + (Math.random() - 0.5) * 3));
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], len = a.distanceTo(b);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, len),
+      new THREE.MeshBasicMaterial({ color: 0xeaf4ff, transparent: true, opacity: 1, depthWrite: false }));
+    m.position.copy(a).add(b).multiplyScalar(0.5);
+    m.lookAt(b);
+    scene.add(m);
+    FX.push({ mesh: m, life: 0.38, max: 0.38, kind: 'l' });
+  }
+}
+function spawnExplosionFX(x, y, z, size) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffb054, transparent: true, opacity: 0.95, depthWrite: false }));
+  m.position.set(x, y, z);
+  scene.add(m);
+  FX.push({ mesh: m, life: 0.42, max: 0.42, kind: 'x', size: size });
+  const light = new THREE.PointLight(0xffc873, 60, Math.max(12, size * 3.5), 2);
+  light.position.set(x, y + 1, z);
+  scene.add(light);
+  FX.push({ mesh: light, life: 0.3, max: 0.3, kind: 'L' });
+  for (let i = 0; i < 14; i++) {          // dirt / char chunks flung outward
+    const d = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35),
+      new THREE.MeshBasicMaterial({ color: i % 3 ? 0x8a5a2b : 0x55483a, transparent: true, opacity: 1 }));
+    d.position.set(x, y, z);
+    scene.add(d);
+    const a = Math.random() * Math.PI * 2;
+    FX.push({ mesh: d, life: 0.85, max: 0.85, kind: 'd',
+      vx: Math.cos(a) * (4 + Math.random() * 10), vy: 6 + Math.random() * 14, vz: Math.sin(a) * (4 + Math.random() * 10),
+      rx: (Math.random() - 0.5) * 9, rz: (Math.random() - 0.5) * 9 });
   }
 }
 
@@ -1635,13 +2142,24 @@ function fireGun(cx, cy) {
   }
   const ex = px + dx * bestT, ey = py + dy * bestT, ez = pz + dz * bestT;
 
-  /* muzzle — in FP just in front of the camera; in 3rd person from the
-     character, who snaps to face the shot (exactly like Roblox) */
+  /* muzzle — FROM THE GUN ITSELF, never the face.
+     FP: the viewmodel's barrel tip (its live world matrix, kick and
+     all); 3rd person: the right hand's spot in front of the chest,
+     offset to the arm's side, while the character snaps to face the
+     shot (exactly like Roblox). */
   let mx, my, mz;
-  if (cam.fp) { mx = px + dx * 0.9; my = py + dy * 0.9 - 0.1; mz = pz + dz * 0.9; }
-  else {
+  if (cam.fp && toolMesh) {
+    toolMesh.updateWorldMatrix(true, false);          // fpCam -> fpTool -> gun (view space)
+    _mz.set(0, 0.12, 1.95).applyMatrix4(toolMesh.matrixWorld);   // barrel tip, view space
+    _mz.applyMatrix4(camera.matrixWorld);             // view space -> world space
+    mx = _mz.x; my = _mz.y; mz = _mz.z;
+  } else if (cam.fp) {
+    mx = px + dx * 0.9; my = py + dy * 0.9 - 0.1; mz = pz + dz * 0.9;
+  } else {
     yaw = Math.atan2(dx, dz);
-    mx = player.x + dx * 1.5; my = player.y + 3.35; mz = player.z + dz * 1.5;
+    mx = player.x + dx * 1.4 - Math.cos(yaw) * 1.15;   // out along the shot,
+    my = player.y + 3.3;                               // over the right hand
+    mz = player.z + dz * 1.4 + Math.sin(yaw) * 1.15;
   }
   spawnTracer(mx, my, mz, ex, ey, ez);
   spawnFlash(mx, my, mz, 0.8);
@@ -1694,8 +2212,436 @@ function updateInteractables() {
 }
 
 /* ================================================================
+   §9.5 WORLDS (v12) — multi-world support
+   ----------------------------------------------------------------
+   The game talks to the worker's world API:
+     GET /api/worlds         → [{id, name, desc}]  (the manifest)
+     GET /api/worlds/<id>    → the world recipe (JSON)
+   A recipe is a small data file that the terrain interpreter
+   below turns into a full world (see worlds/WORLDS-SPEC.md in
+   the worker repo). The built-in template world needs no file.
+
+   Boot order: Worlds.boot() resolves which world this session
+   plays (stored id, or the default), fetches + validates its
+   recipe, then builds either buildTemplateWorld() or
+   buildRecipeWorld(). If the worker is unreachable the game
+   silently falls back to the built-in Baseplate World — solo,
+   exactly like before worlds existed.
+
+   Switching worlds = save my spot per world + reload. The relay
+   side is one Durable Object room PER WORLD (?room=world-<id>,
+   the template world keeps the legacy 'baseplate-world' room so
+   stored room rules survive). The registry instance pushes a
+   global presence list ('gp') to every room, so the player list
+   shows everyone everywhere; admins can Go To / Bring players
+   across worlds ('x' bring routing + 'forceworld' messages).
+================================================================ */
+const WORKER_URL = 'wss://robloxmultiplayer.kadharri-minecraft.workers.dev/ws';
+const API_BASE = WORKER_URL.replace(/^ws/, 'http').replace(/\/ws$/, '');
+
+/* day/night palette (moved up from §14 — recipe worlds retint
+   the two day colors at build time) */
+const SKY_DAY_TOP = new THREE.Color(0x5c9fd6), SKY_DAY_BOT = new THREE.Color(0xd8e7f3);
+const SKY_NGT_TOP = new THREE.Color(0x0a1024), SKY_NGT_BOT = new THREE.Color(0x1b2440);
+const SKY_DUSK = new THREE.Color(0xe8935a);
+const SUN_WARM = new THREE.Color(0xff8a3c), SUN_DAY = new THREE.Color(0xfff4e0);
+
+/* world-content handles — the template world builder (below)
+   fills these in; recipe worlds leave them null and every
+   consumer guards on them */
+let LADDER = null, CHAIR = null, door = null, chest = null, lamp = null, button = null,
+    swordPickup = null, gunPickup = null, MGR = null, SWING = null, DYNAMIC = new Set();
+let WORLDS_SPAWN = { x: 0, y: 0.5, z: 0 };   // respawn anchor (set per world)
+
+/* shared world builders (template + recipe worlds both use them) */
+function addTree(x, z, s = 1, leafM = leafMat, trunkM = trunkMat, baseY = 0) {
+  solid(1.4 * s, 7 * s, 1.4 * s, trunkM, x, baseY + 3.5 * s, z);
+  box(5 * s, 3.4 * s, 5 * s, leafM, x, baseY + 7.6 * s, z);
+  box(3.6 * s, 2.6 * s, 3.6 * s, leafM, x, baseY + 10.1 * s, z);
+  box(2.2 * s, 1.8 * s, 2.2 * s, leafM, x, baseY + 12 * s, z);
+}
+function brick(w, h, d, color, x, y, z, ry = 0) {
+  const m = new THREE.Mesh(geo(w, h, d, w, d), studMats(color, 0.45));
+  m.position.set(x, y, z); m.rotation.y = ry;
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+  World.addBox(x, y, z, w, h, d);
+}
+
+const DEFAULT_WORLD_META = { id: 'baseplate', name: 'Baseplate World', desc: 'The classic template world.' };
+
+const Worlds = {
+  online: false,          // did the worker answer /api/worlds?
+  list: [DEFAULT_WORLD_META],   // manifest (id/name/desc)
+  id: 'baseplate',        // active world id
+  recipe: null,           // active recipe (null = template world)
+  bootNote: null,         // one-shot banner after boot
+
+  meta(id) { return this.list.find(w => w && w.id === id) || null; },
+  name() { const m = this.meta(this.id); return m ? m.name : this.id; },
+  roomName() { return this.id === 'baseplate' ? 'baseplate-world' : 'world-' + this.id; },
+
+  /* resolve + load the session's world. Never throws — every
+     failure path lands on the built-in template world. */
+  async boot() {
+    let stored = null;
+    try { stored = localStorage.getItem('baseplate.world.v1'); } catch (e) {}
+    let manifest = null;
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 3500);
+      const res = await fetch(API_BASE + '/api/worlds', { signal: ctl.signal });
+      clearTimeout(to);
+      if (res.ok) manifest = await res.json();
+    } catch (e) { /* worker unreachable → offline */ }
+    if (!Array.isArray(manifest) || !manifest.length) {          // offline / broken manifest
+      this.list = [DEFAULT_WORLD_META];
+      return;                                                   // id stays 'baseplate'
+    }
+    this.list = manifest.filter(w => w && typeof w.id === 'string' && typeof w.name === 'string');
+    this.online = true;
+    const target = this.list.find(w => w.id === stored);
+    if (!stored || !target || target.id === 'baseplate') {
+      if (stored && !target) {                                   // world was removed from the repo
+        try { localStorage.removeItem('baseplate.world.v1'); } catch (e) {}
+        this.bootNote = '"' + stored + '" is no longer on the world server — back on Baseplate World.';
+      }
+      return;                                                    // default world
+    }
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 3500);
+      const res = await fetch(API_BASE + '/api/worlds/' + encodeURIComponent(target.id), { signal: ctl.signal });
+      clearTimeout(to);
+      if (!res.ok) throw new Error('server said ' + res.status);
+      const recipe = await res.json();
+      const err = validateRecipe(recipe, target.id);
+      if (err) throw new Error(err);
+      this.id = recipe.id; this.recipe = recipe;
+    } catch (e) {
+      this.bootNote = 'Could not load "' + target.name + '" — starting on Baseplate World instead.';
+      try { localStorage.removeItem('baseplate.world.v1'); } catch (e2) {}
+      console.error('[worlds] recipe load failed:', e);
+    }
+  }
+};
+
+/* recipe validation — mirrors worlds/WORLDS-SPEC.md §3. Returns an
+   error string, or null when the recipe is safe to build. */
+function validateRecipe(w, expectId) {
+  const hex = s => typeof s === 'string' && /^#[0-9a-fA-F]{6}$/.test(s);
+  const num = (v, lo, hi) => typeof v === 'number' && isFinite(v) && v >= lo && v <= hi;
+  if (!w || typeof w !== 'object' || Array.isArray(w)) return 'not an object';
+  if (w.id !== expectId) return 'id mismatch';
+  if (!/^[a-z0-9][a-z0-9-]{2,31}$/.test(String(w.id))) return 'bad id';
+  if (w.kind === 'template') return null;               // template worlds carry no terrain
+  if (w.kind !== 'terrain') return 'bad kind';
+  const T = w.terrain;
+  if (!T || typeof T !== 'object') return 'missing terrain';
+  if (!Array.isArray(T.size) || T.size.length !== 2 || !num(T.size[0], 64, 400) || !num(T.size[1], 64, 400))
+    return 'bad size';
+  if (!num(T.base, 1, 200) || !num(T.oceanFloor, 0, 60)) return 'bad heights';
+  if (T.waterLevel != null && !num(T.waterLevel, 0, 60)) return 'bad waterLevel';
+  if (T.waterLevel != null && T.waterLevel >= T.base) return 'water above the island';
+  if (!Array.isArray(T.noise) || T.noise.length > 4) return 'bad noise';
+  for (const o of T.noise) if (!num(o.scale, 8, 400) || !num(o.amp, 0, 30)) return 'bad noise entry';
+  if (T.island) {
+    const I = T.island;
+    if (!num(I.radius, 8, 400) || !num(I.edge, 2, 200) || !num(I.rim, 0.3, 0.9)) return 'bad island';
+    if (I.radius + I.edge > Math.max(T.size[0], T.size[1]) / 2) return 'island bigger than the map';
+  }
+  const pal = T.palette || {};
+  for (const k in pal) if (!hex(pal[k])) return 'bad palette color "' + k + '"';
+  if (w.spawn && (!num(w.spawn.x, -T.size[0] / 2 + 8, T.size[0] / 2 - 8) ||
+                  !num(w.spawn.z, -T.size[1] / 2 + 8, T.size[1] / 2 - 8))) return 'spawn out of bounds';
+  if (w.scatter) {
+    if (!Array.isArray(w.scatter) || w.scatter.length > 8) return 'bad scatter';
+    for (const s of w.scatter) {
+      if (!s || (s.type !== 'tree' && s.type !== 'rock')) return 'bad scatter type';
+      if (!num(s.per, 4, 5000)) return 'bad scatter per';
+      if (s.on && !['grass', 'dirt', 'sand', 'stone'].includes(s.on)) return 'bad scatter on';
+    }
+  }
+  if (w.sky) { if (w.sky.dayTop && !hex(w.sky.dayTop)) return 'bad sky'; if (w.sky.dayBottom && !hex(w.sky.dayBottom)) return 'bad sky'; }
+  return null;
+}
+
+/* ---- global presence (v12): everyone, every world — the registry
+   pushes this list through the room as 'gp' messages ---- */
+const GLOBAL = { players: new Map(), at: 0 };
+function onPresence(list) {
+  GLOBAL.players.clear();
+  for (const e of list) {
+    if (!e || typeof e.i !== 'string') continue;
+    GLOBAL.players.set(e.i, {
+      id: e.i, name: String(e.n || 'Player').slice(0, 20), admin: !!e.a,
+      world: String(e.w || 'baseplate'), x: +e.x || 0, y: +e.y || 0, z: +e.z || 0
+    });
+  }
+  GLOBAL.at = elapsed;
+  MP.paintOnline();
+  renderWorldsTab();
+  if (typeof menuOpen !== 'undefined' && menuOpen && isAdmin && !adminPlayerMenuTarget) buildAdminPlayers();
+}
+function worldNameOf(id) {
+  if (id === Worlds.id) return Worlds.name();
+  const m = Worlds.meta(id);
+  return m ? m.name : id;
+}
+/* cross-world players (excluding me + anyone already in this room) */
+function crossWorldPlayers() {
+  const out = [];
+  for (const p of GLOBAL.players.values())
+    if (p.id !== MP.id && !MP.remotes.has(p.id) && p.world !== Worlds.id) out.push(p);
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/* ---- switching worlds (reload-based: the whole world rebuilds
+   cleanly — rides, zombies, interactables, terrain) ---- */
+function saveWorldPos() {
+  try {
+    localStorage.setItem('baseplate.pos.' + Worlds.id,
+      JSON.stringify({ x: +player.x.toFixed(1), y: +player.y.toFixed(1), z: +player.z.toFixed(1) }));
+  } catch (e) {}
+}
+function switchWorld(id, tp) {
+  try {
+    saveWorldPos();
+    localStorage.setItem('baseplate.world.v1', id);
+    if (tp && typeof tp.x === 'number') localStorage.setItem('baseplate.pending-tp', JSON.stringify(tp));
+    else localStorage.removeItem('baseplate.pending-tp');
+    localStorage.setItem('baseplate.world-toast', 'Entering ' + worldNameOf(id) + '…');
+  } catch (e) {}
+  location.reload();
+}
+/* an admin in ANOTHER world brought me to them (relay v5 routes
+   this to my room, which sends it to exactly this socket) */
+function onForceWorld(m) {
+  if (!m || typeof m.w !== 'string') return;
+  if (m.w === Worlds.id) {                    // already here → plain teleport
+    player.x = +m.x || 0; player.y = (+m.y || 0) + 0.6; player.z = +m.z || 0;
+    player.vy = 0; climbing = false;
+    adminBanner('Teleported by ' + (m.by || 'an admin'));
+    return;
+  }
+  switchWorld(m.w, { x: +m.x || 0, y: (+m.y || 0) + 0.6, z: +m.z || 0, by: m.by || 'an admin' });
+}
+/* after the world + player exist: apply the cross-world teleport
+   (or my saved spot in this world), then show the boot toast */
+function applyBootPosition() {
+  let tp = null;
+  try { tp = JSON.parse(localStorage.getItem('baseplate.pending-tp') || 'null'); } catch (e) {}
+  if (tp && typeof tp.x === 'number' && typeof tp.z === 'number') {
+    player.x = tp.x; player.y = (+tp.y || 0) + 0.6; player.z = tp.z;
+    player.vx = player.vy = player.vz = 0;
+    try { localStorage.removeItem('baseplate.pending-tp'); } catch (e) {}
+    if (tp.by) setTimeout(() => adminBanner('Teleported by ' + tp.by), 700);
+  } else {
+    let pos = null;
+    try { pos = JSON.parse(localStorage.getItem('baseplate.pos.' + Worlds.id) || 'null'); } catch (e) {}
+    if (pos && typeof pos.x === 'number' && pos.y > -40 && isFinite(pos.y)) {
+      player.x = pos.x; player.y = pos.y + 0.4; player.z = pos.z;
+      player.vx = player.vy = player.vz = 0;
+    }
+  }
+  let toast = null;
+  try { toast = localStorage.getItem('baseplate.world-toast'); localStorage.removeItem('baseplate.world-toast'); } catch (e) {}
+  const note = toast || Worlds.bootNote; Worlds.bootNote = null;
+  if (note) setTimeout(() => adminBanner(note), 450);
+}
+addEventListener('beforeunload', saveWorldPos);
+
+/* ================================================================
+   §9.6 RECIPE TERRAIN — the data-driven world interpreter
+   ----------------------------------------------------------------
+   Turns a world recipe (JSON from the worker's worlds/ folder)
+   into geometry + colliders. Deterministic by construction: a
+   seeded integer hash drives the noise + scatter, so every
+   client builds the identical world without syncing a byte.
+
+     1. 1×1-stud column grid over terrain.size, centered on 0,0
+     2. island mask t: 1 on the plateau, 0 at the seabed
+     3. column height = round(lerp(oceanFloor, base+noise, t))
+     4. surface block: underwater → beach → edge ring → default
+     5. render = 2 InstancedMeshes (studded caps + bodies) —
+        2 draw calls for the whole terrain
+     6. physics = one grid-indexed collider per column
+     7. water = one translucent walkable block at waterLevel
+     8. scatter = hash-tested trees/rocks, kept off spawn
+================================================================ */
+const TERRAIN_BLOCKS = ['grass', 'dirt', 'sand', 'stone'];
+const UNDER_OF = { grass: 'dirt', dirt: 'dirt', sand: 'sand', stone: 'stone' };
+const DEFAULT_TERRAIN_COLORS = {
+  grass: '#58a94f', dirt: '#8a5f3b', sand: '#e0d29a', stone: '#8d9298',
+  water: '#2f7fbf', leaves: '#3f8f3f', trunk: '#6b4a2b'
+};
+
+function worldHash(x, z, seed) {
+  let n = (x * 374761393 + z * 668265263 + seed * 974711) | 0;
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967295;      // 0..1
+}
+function worldNoise(seed) {                 // smooth value noise, 0..1
+  const sm = t => t * t * (3 - 2 * t);
+  return (x, z, scale) => {
+    const fx = x / scale, fz = z / scale;
+    const ix = Math.floor(fx), iz = Math.floor(fz);
+    const tx = sm(fx - ix), tz = sm(fz - iz);
+    const a = worldHash(ix, iz, seed), b = worldHash(ix + 1, iz, seed),
+          c = worldHash(ix, iz + 1, seed), d = worldHash(ix + 1, iz + 1, seed);
+    return a + (b - a) * tx + (c - a) * tz + (a - b - c + d) * tx * tz;
+  };
+}
+
+function buildRecipeWorld(w) {
+  const T = w.terrain;
+  const pal = Object.assign({}, DEFAULT_TERRAIN_COLORS, T.palette || {});
+  const colOf = {};
+  for (const k in DEFAULT_TERRAIN_COLORS) colOf[k] = new THREE.Color(pal[k]);
+  const sx = Math.round(T.size[0]), sz = Math.round(T.size[1]);
+  const x0 = -Math.floor(sx / 2), z0 = -Math.floor(sz / 2);
+  const seed = (T.seed >>> 0) || 1;
+  const noise = worldNoise(seed);
+  const isl = T.island || null;
+  const R = isl ? isl.radius + isl.edge : 1;
+  const waterY = T.waterLevel != null ? T.waterLevel : 0;
+
+  /* ---- 1. generate the column grid (heights + surface blocks) ---- */
+  const N = sx * sz;
+  const hArr = new Int16Array(N), sArr = new Uint8Array(N), tArr = new Float32Array(N);
+  const bIdx = n => Math.max(0, TERRAIN_BLOCKS.indexOf(n));
+  const surf = T.surface || {};
+  const defB = bIdx(surf.default);
+  const edgeB = surf.edge ? bIdx(surf.edge.block) : -1;
+  const edgeBelow = surf.edge ? +surf.edge.below : -1;
+  const beachB = surf.beach ? bIdx(surf.beach.block) : -1;
+  const beachBelow = surf.beach ? +surf.beach.below : -Infinity;
+  const uwB = surf.underwater ? bIdx(surf.underwater.block) : bIdx('sand');
+  let ampTot = 0;
+  for (let i = 0; i < N; i++) {
+    const ix = i % sx, iz = (i / sx) | 0;
+    const cx = x0 + ix + 0.5, cz = z0 + iz + 0.5;
+    let t = 1;
+    if (isl) {
+      const d = Math.hypot(cx / R, cz / R);            // 0 center → 1 outer edge
+      const raw = clamp((1 - d) / (1 - isl.rim), 0, 1);
+      t = raw * raw * (3 - 2 * raw);                   // smooth 1 → 0 across the rim
+    }
+    let n = 0; ampTot = 0;
+    for (const o of T.noise) { n += (noise(cx, cz, o.scale) * 2 - 1) * o.amp; ampTot += o.amp; }
+    const hRaw = (T.base + n) * t + T.oceanFloor * (1 - t);
+    const h = Math.round(clamp(hRaw, T.oceanFloor, T.base + ampTot + 4));
+    hArr[i] = h; tArr[i] = t;
+    let s = defB;                                       // first match wins, top-down:
+    if (h < waterY) s = uwB;                            //   underwater floor
+    else if (h <= beachBelow && beachB >= 0) s = beachB; //   shore band
+    else if (t < edgeBelow && edgeB >= 0) s = edgeB;    //   rim ring (the dirt edge)
+    sArr[i] = s;
+  }
+
+  /* ---- 2. render: studded caps + bodies (2 draw calls total) ---- */
+  const unit = new THREE.BoxGeometry(1, 1, 1);
+  const capSide = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 });
+  const capTop = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, map: studTex });
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
+  const caps = new THREE.InstancedMesh(unit, [capSide, capSide, capTop, capSide, capSide, capSide], N);
+  const bodies = new THREE.InstancedMesh(unit, bodyMat, N);
+  caps.receiveShadow = bodies.receiveShadow = true;
+  caps.frustumCulled = bodies.frustumCulled = false;    // the terrain IS the world
+  const m4 = new THREE.Matrix4(), q0 = new THREE.Quaternion(), v3 = new THREE.Vector3(), sc3 = new THREE.Vector3();
+  const cTmp = new THREE.Color();
+  const jitter = (out, base, x, z, sd) => out.copy(base).multiplyScalar(0.93 + worldHash(x, z, sd ^ 0x5bd1) * 0.13);
+  const hAt = (ix, iz) => (ix < 0 || iz < 0 || ix >= sx || iz >= sz) ? -1 : hArr[iz * sx + ix];
+  let bi = 0;
+  for (let i = 0; i < N; i++) {
+    const ix = i % sx, iz = (i / sx) | 0;
+    const cx = x0 + ix + 0.5, cz = z0 + iz + 0.5;
+    const h = hArr[i], sName = TERRAIN_BLOCKS[sArr[i]];
+    m4.compose(v3.set(cx, h - 0.5, cz), q0, sc3.set(1, 1, 1));          // the studded cap
+    caps.setMatrixAt(i, m4);
+    caps.setColorAt(i, jitter(cTmp, colOf[sName], ix, iz, seed));
+    /* body below the cap — skipped when all 4 neighbours are at least as
+       tall (every side fully hidden: flat ocean floor, island interior) */
+    if (h - 1 > 0 && (hAt(ix - 1, iz) < h || hAt(ix + 1, iz) < h ||
+                      hAt(ix, iz - 1) < h || hAt(ix, iz + 1) < h)) {
+      m4.compose(v3.set(cx, (h - 1) / 2, cz), q0, sc3.set(1, h - 1, 1));
+      bodies.setMatrixAt(bi, m4);
+      bodies.setColorAt(bi, jitter(cTmp, colOf[UNDER_OF[sName]], iz, ix, seed + 7));
+      bi++;
+    }
+    World.addBox(cx, h / 2, cz, 1, h, 1);                               // physics column
+  }
+  bodies.count = bi;
+  scene.add(caps, bodies);
+
+  /* ---- 3. water: one translucent block, walkable on top ---- */
+  if (waterY > 0) {
+    const wdepth = Math.max(2, waterY - T.oceanFloor);
+    const water = new THREE.Mesh(new THREE.BoxGeometry(sx, wdepth, sz),
+      new THREE.MeshStandardMaterial({ color: colOf.water, transparent: true, opacity: 0.55, roughness: 0.18 }));
+    water.position.y = waterY - wdepth / 2;             // surface at waterLevel
+    scene.add(water);
+    World.addBox(0, waterY - wdepth / 2, 0, sx, wdepth, sz);
+  }
+
+  /* ---- 4. spawn pad + respawn anchor ---- */
+  const spx = w.spawn && typeof w.spawn.x === 'number' ? w.spawn.x : 0;
+  const spz = w.spawn && typeof w.spawn.z === 'number' ? w.spawn.z : 0;
+  const six = clamp(Math.floor(spx - x0), 0, sx - 1), siz = clamp(Math.floor(spz - z0), 0, sz - 1);
+  const sh = hArr[siz * sx + six];
+  const pad = new THREE.Mesh(geo(6.5, 0.2, 6.5, 6.5, 6.5), studMats(0x90969c));
+  pad.position.set(spx, sh + 0.1, spz);
+  pad.receiveShadow = true;
+  scene.add(pad);
+  World.addBox(spx, sh + 0.1, spz, 6.5, 0.2, 6.5);
+  WORLDS_SPAWN = { x: spx, y: sh + 0.3, z: spz };
+
+  /* ---- 5. scatter: hash-tested trees + rocks (never on spawn) ---- */
+  const trunkM = mat(colOf.trunk.getHex(), 0.95), leafM2 = mat(colOf.leaves.getHex(), 0.9),
+        rockM = mat(colOf.stone.getHex(), 0.95);
+  for (const cfg of (Array.isArray(w.scatter) ? w.scatter : [])) {
+    if (!cfg || typeof cfg.per !== 'number') continue;
+    const per = clamp(cfg.per, 4, 5000), minT = clamp(+cfg.min || 0, 0, 1);
+    const on = bIdx(cfg.on);
+    const sr = Array.isArray(cfg.scale) && cfg.scale.length === 2 ? cfg.scale : [1, 1];
+    for (let i = 0; i < N; i++) {
+      if (sArr[i] !== on || tArr[i] < minT) continue;
+      const ix = i % sx, iz = (i / sx) | 0;
+      const cx = x0 + ix + 0.5, cz = z0 + iz + 0.5;
+      if (Math.hypot(cx - spx, cz - spz) < 5) continue;
+      if (worldHash(ix * 3 + 11, iz * 5 + 7, seed ^ 0x9e37) > 1 / per) continue;
+      const h = hArr[i];
+      if (cfg.type === 'tree') {
+        const s = sr[0] + worldHash(ix, iz, seed ^ 0x77aa) * Math.max(0, sr[1] - sr[0]);
+        addTree(cx, cz, s, leafM2, trunkM, h);
+      } else if (cfg.type === 'rock') {
+        const s = 1 + worldHash(ix, iz, seed ^ 0x1234) * 1.6;
+        solid(1.6 * s, 1.2 * s, 1.6 * s, rockM, cx, h + 0.6 * s, cz);
+      }
+    }
+  }
+
+  /* ---- 6. sky tint (day/night still runs on top of it) ---- */
+  if (w.sky && w.sky.dayTop) SKY_DAY_TOP.set(w.sky.dayTop);
+  if (w.sky && w.sky.dayBottom) SKY_DAY_BOT.set(w.sky.dayBottom);
+}
+
+/* ================================================================
    §10 WORLD
 ================================================================ */
+/* ---- build the session's world (v12: template or recipe) ---- */
+await Worlds.boot();
+if (Worlds.recipe) {
+  try { buildRecipeWorld(Worlds.recipe); }
+  catch (e) {
+    console.error('[worlds] recipe build failed — falling back to the template world:', e);
+    Worlds.recipe = null;
+    buildTemplateWorld();
+  }
+} else buildTemplateWorld();
+{ const wl = document.getElementById('world-loading'); if (wl) wl.remove(); }
+
+function buildTemplateWorld() {
 /* baseplate (fall off the edge → the void → respawn) */
 {
   const plate = new THREE.Mesh(geo(120, 1.2, 120, 120, 120), studMats(0x6d7075, 0.95));
@@ -1710,14 +2656,7 @@ function updateInteractables() {
   m.position.y = -0.08; m.receiveShadow = true; scene.add(m);
   World.addBox(0, -0.08, 0, 6.5, 0.2, 6.5);
 }
-/* classic studded bricks (solid + auto-steppable) */
-function brick(w, h, d, color, x, y, z, ry = 0) {
-  const m = new THREE.Mesh(geo(w, h, d, w, d), studMats(color, 0.45));
-  m.position.set(x, y, z); m.rotation.y = ry;
-  m.castShadow = m.receiveShadow = true;
-  scene.add(m);
-  World.addBox(x, y, z, w, h, d);
-}
+/* classic studded bricks + trees: shared builders §9.5 (brick / addTree) */
 brick(4.8, 1.44, 2.4, 0xC4281C, 9.6, 0.72, 4.2, 0.15);
 brick(2.4, 1.44, 2.4, 0x0D69AC, 10.4, 2.16, 4.5, 0.15);
 brick(2.4, 1.44, 4.8, 0xF5CD30, -6, 0.72, -6, 0.5);
@@ -1725,13 +2664,8 @@ brick(2.4, 1.44, 2.4, 0x4B974B, -4.6, 0.72, -7.6, -0.2);
 brick(2.4, 1.44, 2.4, 0x0D69AC, 2, 0.72, 16, 1.1);
 brick(2.4, 1.44, 2.4, 0xF5CD30, -18, 0.72, 2, 0.4);
 
-/* trees (trunk solid, foliage decorative) */
-function addTree(x, z, s = 1) {
-  solid(1.4 * s, 7 * s, 1.4 * s, trunkMat, x, 3.5 * s, z);
-  box(5 * s, 3.4 * s, 5 * s, leafMat, x, 7.6 * s, z);
-  box(3.6 * s, 2.6 * s, 3.6 * s, leafMat, x, 10.1 * s, z);
-  box(2.2 * s, 1.8 * s, 2.2 * s, leafMat, x, 12 * s, z);
-}
+/* trees (trunk solid, foliage decorative) — the shared addTree()
+   from §9.5 lands them on y=0, which is the plate top here */
 addTree(-14, -13); // sword tree
 addTree(-5, -18, 1.15);
 addTree(23, 7, 0.9);
@@ -1752,7 +2686,7 @@ solid(0.3, 0.9, 7.4, woodMat, -8.15, 13.45, 11.9);
 for (const sx of [-0.85, 0.85]) box(0.18, 13.6, 0.18, darkWood, -12 + sx, 6.8, 16.15);
 for (let y = 0.9; y <= 13.4; y += 1.25) box(1.7, 0.14, 0.14, woodMat, -12, y, 16.15);
 
-const LADDER = {
+LADDER = {
   x: -12,
   faceZ: 16.15,        // the plane the rungs sit on
   southZ: 16.85,       // snap point when climbing the OUTSIDE (+z) face —
@@ -1795,7 +2729,7 @@ box(17.6, 0.45, 0.9, roofMat, 14, 9.28, -8);
 }
 
 /* DOOR: hinged pivot + a collider that toggles when open */
-const door = { open: false, anim: 0, pivot: new THREE.Group(), collider: null };
+door = { open: false, anim: 0, pivot: new THREE.Group(), collider: null };
 door.pivot.position.set(12.3, 0.05, -2);
 scene.add(door.pivot);
 box(3.4, 6.3, 0.28, darkWood, 1.7, 3.15, 0, 0, door.pivot);
@@ -1812,7 +2746,7 @@ addInteractable({
 solid(3.4, 2.6, 2.2, darkWood, 11, 1.3, -9);
 box(3.6, 0.35, 2.4, woodMat, 11, 2.5, -9);
 
-const lamp = {
+lamp = {
   on: false,
   light: new THREE.PointLight(0xffd9a0, 0, 18, 2),
   bulbMat: new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffd9a0, emissiveIntensity: 0.05 }),
@@ -1841,7 +2775,7 @@ addInteractable({
 });
 
 /* chest — opens once, gives an Apple */
-const chest = { opened: false, anim: 0, lid: new THREE.Group() };
+chest = { opened: false, anim: 0, lid: new THREE.Group() };
 solid(2.2, 1.4, 1.3, darkWood, 20.4, 1.0, -12.6);
 box(2.3, 0.14, 1.4, goldMat, 20.4, 1.05, -12.6);
 chest.lid.position.set(20.4, 1.72, -13.25);
@@ -1863,7 +2797,7 @@ addInteractable({
 solid(1.6, 2.0, 1.6, woodMat, 13.6, 1.0, -9);
 box(1.5, 0.25, 1.5, woodMat, 13.6, 1.75, -9);
 box(0.22, 1.8, 1.5, woodMat, 14.3, 2.7, -9);
-const CHAIR = { sitX: 13.6, sitZ: -9, sitY: 3.05, yaw: -Math.PI / 2, standX: 15.4, standZ: -9, occ: null };
+CHAIR = { sitX: 13.6, sitZ: -9, sitY: 3.05, yaw: -Math.PI / 2, standX: 15.4, standZ: -9, occ: null };
 addInteractable({
   x: 13.6, y: 1.5, z: -9, radius: 3.5,
   label: 'Sit on Chair',
@@ -1881,7 +2815,7 @@ addInteractable({
 });
 
 /* zombie button */
-const button = { press: 0, mesh: null };
+button = { press: 0, mesh: null };
 solid(1.8, 1.4, 1.8, stoneMat, 5, 0.7, 9);
 {
   const b = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.25, 16),
@@ -1910,7 +2844,7 @@ addInteractable({
 });
 
 /* sword pickup (floating + spinning next to the tree) */
-const swordPickup = { taken: false, spin: new THREE.Group(), light: new THREE.PointLight(0x9fd8ff, 20, 7, 2) };
+swordPickup = { taken: false, spin: new THREE.Group(), light: new THREE.PointLight(0x9fd8ff, 20, 7, 2) };
 {
   const inner = buildSwordMesh();
   inner.rotation.x = -Math.PI / 2;   // blade up
@@ -1937,10 +2871,10 @@ addInteractable({
 });
 
 /* blaster pickup (floating on TOP of the watchtower — climb the ladder!) */
-const gunPickup = { taken: false, spin: new THREE.Group(), light: new THREE.PointLight(0xffd27a, 24, 9, 2) };
+gunPickup = { taken: false, spin: new THREE.Group(), light: new THREE.PointLight(0xffd27a, 24, 9, 2) };
 {
   const inner = buildGunMesh();
-  inner.scale.setScalar(2.4);                 // big enough to spot from the ground
+  inner.scale.setScalar(1.6);                 // a display-sized blaster, still easy to spot
   gunPickup.spin.add(inner);
   gunPickup.spin.position.set(-12, 14.9, 11.5);
   scene.add(gunPickup.spin);
@@ -1977,10 +2911,10 @@ addInteractable({
    occupant player-ids; sit/stand hop as world events.
    Sitting still goes through the seatCtl interface (§12).
 ================================================================ */
-const DYNAMIC = new Set([button.mesh]);   // meshes that animate after freezeStatics()
+DYNAMIC = new Set([button.mesh]);   // meshes that animate after freezeStatics()
 
 /* ---- the BIG tree + a swing you can actually pump ---- */
-const SWING = {
+SWING = {
   pivot: { x: -25.5, y: 9.8, z: -22 }, L: 6.8,
   state: { angle: 0, vel: 0 },            // sitter-authoritative (§12.6)
   net: null,                              // latest broadcast {a, v, at}
@@ -2050,7 +2984,7 @@ addInteractable({
 });
 
 /* ---- MERRY-GO-ROUND with a rocket booster ---- */
-const MGR = {
+MGR = {
   center: { x: 28, z: 24 }, R: 7.8, seatR: 5.9,
   state: { angle: 0, angVel: 0, rocketOn: false },       // leader-authoritative (§12.6)
   net: null,                                              // latest broadcast {a, w, r, at}
@@ -2206,9 +3140,11 @@ const MGR = {
     }
   });
 }
+} /* ---- end buildTemplateWorld ---- */
 
 const RIDE_SYNC = { t: 0 };   // shared 10 Hz broadcast timer
 function updateRides(dt) {
+  if (!SWING || !MGR) return;               // rides exist on template worlds only (v12)
   const sw = SWING.state, mg = MGR.state;
 
   /* ---- who simulates what (deterministic — see §12.6) ---- */
@@ -2354,17 +3290,18 @@ function buildZombieRig() {
 
 function spawnZombie(x, z, zid, owner) {
   if (zombies.length >= MAX_ZOMBIES) return false;
+  const gy = Math.max(0.5, World.groundAt(x, z) + 0.5);   // v12: land on any world's surface
   const rig = buildZombieRig();
-  rig.group.position.set(x, 0.5, z);
+  rig.group.position.set(x, gy, z);
   rig.group.scale.setScalar(0.01);
   scene.add(rig.group);
   const mine = !owner || owner === MP.id;
   zombies.push({
     ...rig,
-    body: { x, y: 0.5, z, vx: 0, vy: 0, vz: 0, hw: 0.7, h: 5.2, grounded: false, impact: 0 },
+    body: { x, y: gy, z, vx: 0, vy: 0, vz: 0, hw: 0.7, h: 5.2, grounded: false, impact: 0 },
     zid: zid || (MP.id + ':' + (++zSeq)),   // unique world id (§12.6)
     owner: owner || MP.id, ghost: !mine,    // ghosts follow their owner's broadcast
-    tx: x, ty: 0.5, tz: z, tyaw: 0, pgx: x, pgz: z,
+    tx: x, ty: gy, tz: z, tyaw: 0, pgx: x, pgz: z,
     hp: V.zombieHealth, walk: Math.random() * 6, hurtT: 0, attackT: 0, lungeT: 0, atkMe: 0,
     spawnT: 0, dead: false, deathT: 0
   });
@@ -2503,9 +3440,12 @@ function updateZombies(dt) {
    integrate with moveBody() -> fall damage -> pick animation.
 ================================================================ */
 /* initial spawn is scattered on the same 2-6 stud ring respawn() uses —
-   multiplayer players never start inside each other at world center */
+   multiplayer players never start inside each other at world center.
+   (v12: WORLDS_SPAWN comes from the active world; a saved spot or a
+   cross-world teleport replaces it right after.) */
 const _spawnA = Math.random() * Math.PI * 2, _spawnR = 2 + Math.random() * 4;
-const player = { x: Math.sin(_spawnA) * _spawnR, y: 0.5, z: Math.cos(_spawnA) * _spawnR, vx: 0, vy: 0, vz: 0, hw: 0.75, h: 5.4, grounded: false, impact: 0 };
+const player = { x: WORLDS_SPAWN.x + Math.sin(_spawnA) * _spawnR, y: WORLDS_SPAWN.y, z: WORLDS_SPAWN.z + Math.cos(_spawnA) * _spawnR, vx: 0, vy: 0, vz: 0, hw: 0.75, h: 5.4, grounded: false, impact: 0 };
+applyBootPosition();   // v12: resume my saved spot / land where an admin brought me
 
 let yaw = 0, speed = 0, phase = 0, land = 0, climbPhase = 0;
 let climbing = false, seated = false, seatCtl = null, ladderLatch = 0, climbSide = 1;
@@ -2532,7 +3472,8 @@ function hurtPlayer(dmg, kbx = 0, kbz = 0) {
 }
 function respawn() {
   const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 4;   // spawn ring —
-  player.x = Math.sin(a) * r; player.z = Math.cos(a) * r; player.y = 0.5;   // players never stack in multiplayer
+  player.x = WORLDS_SPAWN.x + Math.sin(a) * r;                          // players never stack in multiplayer
+  player.z = WORLDS_SPAWN.z + Math.cos(a) * r; player.y = WORLDS_SPAWN.y;
   player.vx = player.vy = player.vz = 0;
   health = V.maxHealth; timeSinceHurt = 99;
   if (seatCtl && seatCtl.detach) seatCtl.detach();   // leave any ride seat cleanly
@@ -2577,7 +3518,8 @@ function updateMovement(dt) {
       } else seatCtl.update(dt);
       return;
     }
-    if (Math.abs(iF) > 0.35 || Math.abs(iS) > 0.35 || keys[' '] || touchJump) {
+    if (!CHAIR) { seated = false; stopEmote(); }        // v12: world without the scripted chair
+    else if (Math.abs(iF) > 0.35 || Math.abs(iS) > 0.35 || keys[' '] || touchJump) {
       seated = false; stopEmote();
       CHAIR.occ = null;
       WS.emit('stand', {});
@@ -2629,6 +3571,7 @@ function updateMovement(dt) {
      jump while pulling away from the rungs. ladderLatch
      prevents instantly re-grabbing after leaving. */
   if (ladderLatch > 0) ladderLatch -= dt;
+  if (LADDER) {                                        // template worlds only (v12)
   const onLadder = aabbOverlap(playerAABB(), LADDER.trigger);
   const side = player.z >= LADDER.faceZ ? 1 : -1;   // which face we're on
   const push = tmpV.z * side;                        // <0 = into the rungs, >0 = away
@@ -2646,7 +3589,7 @@ function updateMovement(dt) {
   }
 
   if (climbing) {
-    const climbSpd = Math.max(5.5, run ? V.runSpeed : V.walkSpeed);  // ladder speed follows walk/run
+    const climbSpd = Math.max(5.5, (run ? V.runSpeed : V.walkSpeed) * mySpd);  // ladder speed follows walk/run × my multiplier
     if (jumpEdge && offLadder) {      // SPACE while pulling away: leap off
       climbing = false; ladderLatch = 0.45;
       player.vy = 16; player.vz = 7 * climbSide; player.vx = 0;
@@ -2677,13 +3620,14 @@ function updateMovement(dt) {
       if (!onLadder && player.y < LADDER.topY - 2) climbing = false; // safety
     }
   }
+  }
 
   if (!climbing) {
     /* normal locomotion */
     if (moving) {
       const heading = Math.atan2(tmpV.x, tmpV.z);
       yaw += angWrap(heading - yaw) * Math.min(1, dt * 12);
-      const target = (run ? V.runSpeed : V.walkSpeed) * Math.min(1, len);
+      const target = (run ? V.runSpeed : V.walkSpeed) * mySpd * Math.min(1, len) * mySzScale();   // room rule × my multiplier × size scaling
       speed += (target - speed) * Math.min(1, dt * (target > speed ? 8 : 11));
       player.vx = (tmpV.x / len) * speed;
       player.vz = (tmpV.z / len) * speed;
@@ -2692,7 +3636,7 @@ function updateMovement(dt) {
       player.vx *= Math.max(0, 1 - dt * 14);
       player.vz *= Math.max(0, 1 - dt * 14);
     }
-    if ((keys[' '] || touchJump) && player.grounded) player.vy = JUMPV;
+    if ((keys[' '] || touchJump) && player.grounded) player.vy = JUMPV * myJmp * (mySzScale() ? Math.sqrt(myScale) : 1);   // my multiplier × size (sqrt: a mini player can still hop a block)
     player.vy -= GRAV * dt;
     if (player.vy < -120) player.vy = -120;
   }
@@ -2785,6 +3729,7 @@ function updateAnim(dt, t) {
 /* ---- keyboard ---- */
 addEventListener('keydown', e => {
   if (chatFocused || userModalOpen) return;
+  if (confirmOpen) { if (e.key === 'Escape') { e.preventDefault(); closeConfirm(); } return; }   // v11: the confirm dialog swallows input
   const k = e.key.toLowerCase();
   if (k === 'escape') {                    // Roblox-style: Esc opens the menu
     if (!document.fullscreenElement) openMenu(!menuOpen);
@@ -2853,7 +3798,7 @@ if (isTouch) {
    and the live player list, and the game retries in the
    background with a backoff.
 ================================================================ */
-const WORKER_URL = 'wss://robloxmultiplayer.kadharri-minecraft.workers.dev/ws';
+/* WORKER_URL + API_BASE now live in §9.5 (worlds need them at boot) */
 const ADMIN_CODE = 'Jesusisthebom';
 const CROWN = '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:#f5c542;vertical-align:-1px"><path d="M3 17.5 L3 7.5 L8.2 11.2 L12 4 L15.8 11.2 L21 7.5 L21 17.5 Z"/></svg>';
 const ANIM_OK = ['idle', 'walk', 'run', 'jump', 'climb', 'sit', 'wave', 'dance', 'salute'];
@@ -2954,7 +3899,8 @@ function createRemote(id, name, admin, x, y, z) {
   const r = {
     id, name, admin, pivots, tag,
     x, y, z, tx: x, ty: y, tz: z, px: x, pz: z, yaw: 0, yawT: 0,
-    anim: 'idle', pAnim: '', animT: 0, phase: 0, vy: 0,
+    anim: 'idle', pAnim: '', animT: 0, phase: 0, vy: 0, scale: 1,
+    sm: 1, jm: 1, sc: -1,                          // v11: their stat multipliers (-1 = follow the room rule)
     tool: '', toolMesh: null, toolMeshId: '', sw: -1, gunKick: 0, lastSeen: elapsed,
     ch: { torsoRx: 0, torsoRy: 0, torsoRz: 0, headRx: 0, headRy: 0, headRz: 0,
       armLx: 0, armLz: 0, armRx: 0, armRz: 0, legLx: 0, legRx: 0, rootY: 0 }
@@ -2965,6 +3911,10 @@ function createRemote(id, name, admin, x, y, z) {
      day so their sky matches everyone else's immediately (§12.6) */
   if (MP.connected && worldLeader() === MP.id)
     WS.emit('day', { t: +(+V.dayTime).toFixed(2), s: +(+V.daySpeed).toFixed(2) });
+  /* an admin re-announces the room rules when somebody joins, so even
+     a brand-new player (or one who missed an update) gets them; the
+     v4 relay stores + re-sends them on its own as well */
+  if (isAdmin && MP.connected) queueRuleSync(1100);
   return r;
 }
 
@@ -2987,7 +3937,8 @@ function removeRemote(id) {
 
      1. STATIC GEOMETRY (bricks, towers, a whole new map you build):
         needs NO sync — every player opens the same file, so the
-        map is identical everywhere by construction.
+        map is identical everywhere by construction. (v12: same
+        file AND same world — switching worlds reloads the map.)
      2. DISCRETE EVENTS:   WS.emit(kind, data)  sends one message;
         WS.on(kind, fn) runs the same handler on every client.
         One-shot things: sit/stand, rocket fire, zombie spawn,
@@ -3000,6 +3951,12 @@ function removeRemote(id) {
         on / spawned the thing), so every screen independently
         agrees who owns what — the worker stays a dumb relay and
         never needs game-specific logic.
+     4. WORLDS (v12): each world is its own relay room, so all of
+        the above is scoped to one world. On top of that the relay
+        pushes 'gp' (global presence — everyone, every world) and
+        'forceworld' (an admin brought me across worlds); admin
+        cross-world brings go out as {t:'x'} control messages
+        that the sender's room validates + routes (never relayed).
 
    Wire format (relayed by the worker as t:'w'):  {t:'w', k:kind, d:data}
    Kinds used by the base world:
@@ -3007,7 +3964,11 @@ function removeRemote(id) {
      mgrE {on}                         swg {a,v}    mgr {a,w,r}
      zspawn {i,x,z}  zst {l:[[id,x,y,z,yaw,hurt]…]}  zdmg {i,d,ax,az}
      zdie {i}         pvp {to,d,x,z}   gshot {a:[…],b:[…]}
-     day {t,s}
+     day {t,s}        drop {i,x,y,z,u}  pick {u}
+     tp {to,x,y,z}   kick {to}        bc {m}
+     rrules {…room rules…}             psize {id,s}
+     pstat {id,sm,jm,sc}               pgive {id,it}
+     smite {id,x,y,z,dm,sz,pw,sp,rd}
 ================================================================ */
 const WS = {
   handlers: {},
@@ -3028,9 +3989,9 @@ function worldLeader() {
    zombies to the new leader (everyone computes the same one, so
    exactly one screen adopts and starts simulating + broadcasting) */
 function onPlayerLeft(id) {
-  if (SWING.occupant === id) SWING.occupant = null;
-  for (const s of MGR.seats) if (s.occupant === id) s.occupant = null;
-  if (CHAIR.occ === id) CHAIR.occ = null;
+  if (SWING && SWING.occupant === id) SWING.occupant = null;
+  if (MGR) for (const s of MGR.seats) if (s.occupant === id) s.occupant = null;
+  if (CHAIR && CHAIR.occ === id) CHAIR.occ = null;
   for (const z of zombies)
     if (z.owner === id && !z.dead) {
       if (worldLeader() === MP.id) { z.owner = MP.id; z.ghost = false; z.hp = Math.max(1, z.hp); }
@@ -3039,18 +4000,18 @@ function onPlayerLeft(id) {
 
 /* ---- the world event handlers (see the table above) ---- */
 WS.on('sit', (d, from) => {
-  if (d.r === 'swg') SWING.occupant = from;
-  else if (d.r === 'mgr' && MGR.seats[d.s]) MGR.seats[d.s].occupant = from;
-  else if (d.r === 'chair') CHAIR.occ = from;
+  if (d.r === 'swg' && SWING) SWING.occupant = from;
+  else if (d.r === 'mgr' && MGR && MGR.seats[d.s]) MGR.seats[d.s].occupant = from;
+  else if (d.r === 'chair' && CHAIR) CHAIR.occ = from;
 });
 WS.on('stand', (d, from) => {
-  if (SWING.occupant === from) SWING.occupant = null;
-  for (const s of MGR.seats) if (s.occupant === from) s.occupant = null;
-  if (CHAIR.occ === from) CHAIR.occ = null;
+  if (SWING && SWING.occupant === from) SWING.occupant = null;
+  if (MGR) for (const s of MGR.seats) if (s.occupant === from) s.occupant = null;
+  if (CHAIR && CHAIR.occ === from) CHAIR.occ = null;
 });
-WS.on('mgrE', d => { MGR.state.rocketOn = !!d.on; });
-WS.on('swg', d => { SWING.net = { a: +d.a || 0, v: +d.v || 0, at: elapsed }; });
-WS.on('mgr', d => { MGR.net = { a: +d.a || 0, w: +d.w || 0, r: !!d.r, at: elapsed };
+WS.on('mgrE', d => { if (MGR) MGR.state.rocketOn = !!d.on; });
+WS.on('swg', d => { if (SWING) SWING.net = { a: +d.a || 0, v: +d.v || 0, at: elapsed }; });
+WS.on('mgr', d => { if (!MGR) return; MGR.net = { a: +d.a || 0, w: +d.w || 0, r: !!d.r, at: elapsed };
   if (!MGR.state.rocketOn && MGR.net.r) MGR.state.rocketOn = true; });
 WS.on('zspawn', (d, from) => { spawnZombie(+d.x || 0, +d.z || 0, d.i, from); });
 WS.on('zst', d => {
@@ -3086,6 +4047,147 @@ WS.on('gshot', (d, from) => {
   if (r) r.gunKick = 0.22;                         // their arm kicks on my screen
 });
 WS.on('day', d => { V.dayTime = +d.t || 0; V.daySpeed = Math.max(0, +d.s || 0); });
+
+/* ---- admin player powers (§14 Admin → Players tab). Trust check:
+     the target only obeys if the sender is a KNOWN admin (their state
+     broadcast carries the admin flag), so regular players can't spoof
+     these events at each other. ---- */
+WS.on('tp', (d, from) => {                      // an admin brought me somewhere
+  const r = MP.remotes.get(from);
+  if (!r || !r.admin || d.to !== MP.id) return;
+  player.x = +d.x || 0; player.y = (+d.y || 0) + 0.6; player.z = +d.z || 0;
+  player.vy = 0; climbing = false;
+  adminBanner('Teleported by ' + r.name);
+});
+WS.on('kick', (d, from) => {                    // an admin removed me
+  const r = MP.remotes.get(from);
+  if (!r || !r.admin || d.to !== MP.id) return;
+  MP.kick(r.name);
+});
+WS.on('bc', (d, from) => {                      // admin broadcast -> banner + chat
+  const self = from === MP.id;                  // WS.act runs it locally first
+  if (!self) {
+    const r = MP.remotes.get(from);
+    if (!r || !r.admin || !d.m) return;
+  } else if (!isAdmin || !d.m) return;
+  const name = self ? USERNAME : MP.remotes.get(from).name;
+  const msg = String(d.m).slice(0, 120);
+  adminBanner('[Server] ' + name + ': ' + msg);
+  addChat('[Server]', msg, true);
+});
+
+/* ---- room rules (v10 Rules tab): broadcast on every admin edit,
+     remembered by relay v4 for whoever joins later ---- */
+WS.on('rrules', (d, from) => {
+  const self = from === MP.id;                     // WS.act ran it locally already
+  if (!self) {
+    const r = MP.remotes.get(from);
+    if (!r || !r.admin) return;                    // rules only come from admins
+  } else if (!isAdmin) return;
+  applyRoomRules(d);
+});
+
+/* ---- SMITE (admin Players tab): lightning + explosion at the
+     target's feet; the target is yeeted in a random direction with
+     real velocity, takes the damage, and anyone (players + zombies)
+     inside the splash radius feels it too ---- */
+WS.on('smite', (d, from) => {
+  const self = from === MP.id;
+  if (!self) {
+    const r = MP.remotes.get(from);
+    if (!r || !r.admin) return;                    // smites only land from admins
+  }
+  const x = +d.x || 0, y = +d.y || 0, z = +d.z || 0;
+  const dm = Math.max(0, +d.dm || 0);
+  const sz = clamp(+d.sz || 4, 0.5, 24);
+  const pw = clamp(+d.pw || 0, 0, 110);
+  const sp = !!d.sp, rd = clamp(+d.rd || 8, 1, 60);
+  spawnLightning(x, y, z);
+  spawnExplosionFX(x, y + 1.2, z, sz);
+  if (d.id === MP.id) {                            // the bolt found ME
+    const a = Math.random() * Math.PI * 2;         // yeet: random direction, hard
+    player.vx += Math.cos(a) * pw * 0.8;
+    player.vz += Math.sin(a) * pw * 0.8;
+    player.vy = Math.max(player.vy, pw * 0.95);
+    climbing = false;
+    if (dm > 0) hurtPlayer(dm);                    // god mode still gets the ride
+    adminBanner(self ? 'You smote yourself.' : 'Smitten by ' + (MP.remotes.get(from) || { name: 'an admin' }).name);
+  } else if (sp) {                                 // splash: am I close enough?
+    const dist = Math.hypot(player.x - x, player.y + 2.6 - y, player.z - z);
+    if (dist < rd) {
+      const k = clamp(1.2 - dist / rd, 0.25, 1);
+      const dx = player.x - x, dz = player.z - z, dl = Math.hypot(dx, dz) || 1;
+      hurtPlayer(dm * k, dx / dl * pw * 0.5, dz / dl * pw * 0.5);
+    }
+  }
+  for (const zb of zombies) {                      // zombies near the blast too
+    if (zb.dead || zb.owner !== MP.id) continue;   // exactly one screen counts it (like 'zdmg')
+    if (Math.hypot(zb.body.x - x, zb.body.z - z) < Math.max(rd, sz))
+      damageZombie(zb, Math.max(1, dm * 0.8), x, z);
+  }
+});
+
+/* ---- player SIZE (admin Players tab): mini or huge, instantly ---- */
+WS.on('psize', (d, from) => {
+  const self = from === MP.id;
+  if (!self) {
+    const r = MP.remotes.get(from);
+    if (!r || !r.admin) return;                    // only admins resize players
+  }
+  const s = clamp(+d.s || 1, 0.25, 3);
+  if (d.id === MP.id) {
+    setMyScale(s);
+    if (!self) adminBanner('Resized by ' + MP.remotes.get(from).name);
+  } else {
+    const r = MP.remotes.get(d.id);
+    if (r) r.scale = s;
+  }
+});
+
+/* ---- player STATS (v11 player menu): per-player speed / jump
+     multipliers and the size-scales-stats override, riding on top of
+     the room rules. Only a known admin's events are obeyed. ---- */
+WS.on('pstat', (d, from) => {
+  const self = from === MP.id;
+  if (!self) {
+    const r = MP.remotes.get(from);
+    if (!r || !r.admin) return;                    // only admins retune players
+  } else if (!isAdmin) return;
+  if (d.id === MP.id) {
+    setMyStats(d);
+    if (!self) adminBanner('An admin changed your stats.');
+  } else {
+    const r = MP.remotes.get(d.id);
+    if (r) {
+      if (d.sm != null) r.sm = clamp(+d.sm, 0.25, 4);
+      if (d.jm != null) r.jm = clamp(+d.jm, 0.25, 4);
+      if (d.sc != null) r.sc = +d.sc;
+    }
+  }
+});
+
+/* ---- GIVE (v11 player menu): an admin drops an item straight into
+     someone's hotbar — works on yourself too ---- */
+WS.on('pgive', (d, from) => {
+  const self = from === MP.id;
+  if (!self) {
+    const r = MP.remotes.get(from);
+    if (!r || !r.admin) return;                    // only admins give items
+  } else if (!isAdmin) return;
+  if (d.id !== MP.id || !ITEM_DEFS[d.it]) return;  // only the named player receives
+  const nm = ITEM_DEFS[d.it].name;
+  const ok = Inventory.give(d.it) >= 0;
+  addSys(self ? 'You gave yourself the <b>' + nm + '</b>.' :
+    'An admin gave you the <b>' + nm + '</b>' + (ok ? '.' : ' — but your hotbar is full!'));
+});
+
+/* ---- dropped items (§7 hold-to-drop): everyone spawns / removes the
+     same floating pickups; whoever's E lands first takes it ---- */
+WS.on('drop', d => {
+  if (!d || !d.u || !ITEM_DEFS[d.i]) return;
+  spawnDropPickup(d.i, +d.x || 0, +d.y || 0, +d.z || 0, d.u);
+});
+WS.on('pick', d => { if (d && d.u) removeDropPickup(d.u); });
 
 /* ---- remote animation (mirrors the §6 poses, per-rig channels) ---- */
 function remotePose(r, t) {
@@ -3211,31 +4313,52 @@ const mpCountEl = document.getElementById('mp-count');
 const mpPlayersEl = document.getElementById('mp-players');
 const MP = {
   ws: null, connected: false, state: 'off', retry: 0, retryTO: null, sendTO: 0, pingTO: 25,
+  kicked: false,
   id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)),
   remotes: new Map(),
 
   paintOnline() {
-    if (this.state === 'on') { mpStatusEl.className = 'mp-status on'; mpStatusTxt.textContent = 'Connected'; }
+    if (this.state === 'on') { mpStatusEl.className = 'mp-status on'; mpStatusTxt.textContent = 'Connected · ' + Worlds.name(); }
     else if (this.state === 'wait') { mpStatusEl.className = 'mp-status'; mpStatusTxt.textContent = 'Connecting…'; }
+    else if (this.state === 'kicked') { mpStatusEl.className = 'mp-status err'; mpStatusTxt.textContent = 'Removed by an admin'; }
     else if (!hasStoredName) { mpStatusEl.className = 'mp-status'; mpStatusTxt.textContent = 'Waiting for username…'; }
     else { mpStatusEl.className = 'mp-status err'; mpStatusTxt.textContent = 'Offline · retrying'; }
-    const n = this.remotes.size + 1;
-    mpCountEl.textContent = n === 1 ? 'Players in this world — just you' : 'Players in this world (' + n + ')';
-    const rows = [{ name: USERNAME, admin: isAdmin, self: true, col: '#0D69AC' }];
+    const rejoinRow = document.getElementById('mp-rejoin-row');
+    if (rejoinRow) rejoinRow.style.display = this.state === 'kicked' ? 'flex' : 'none';
+
+    /* v12: the list is EVERYONE, EVERYWHERE — same-world players
+       first (they're the ones you actually see + interact with),
+       then everyone in other worlds with a world chip. */
+    const rows = [{ name: USERNAME, admin: isAdmin, self: true, col: '#0D69AC', world: Worlds.id, live: true }];
     for (const r of this.remotes.values()) {
       const h = [...r.id].reduce((a, c) => a + c.charCodeAt(0), 0);
-      rows.push({ name: r.name, admin: r.admin, self: false,
+      rows.push({ name: r.name, admin: r.admin, self: false, world: Worlds.id, live: true,
         col: '#' + REMOTE_TORSO_COLORS[h % REMOTE_TORSO_COLORS.length].toString(16).padStart(6, '0') });
     }
-    rows.sort((a, b) => (a.self ? -1 : b.self ? 1 : a.name.localeCompare(b.name)));
+    if (Worlds.online) {
+      for (const p of GLOBAL.players.values()) {
+        if (p.id === this.id || this.remotes.has(p.id)) continue;      // already listed
+        rows.push({ name: p.name, admin: p.admin, self: false, world: p.world, live: false,
+          col: '#8d97a3' });
+      }
+    }
+    rows.sort((a, b) => (a.self ? -1 : b.self ? 1 :
+      (a.live !== b.live ? (a.live ? -1 : 1) :
+       a.live ? a.name.localeCompare(b.name) : (a.world.localeCompare(b.world) || a.name.localeCompare(b.name)))));
+    const nHere = this.remotes.size + 1, nAll = rows.length;
+    mpCountEl.textContent = !Worlds.online
+      ? (nHere === 1 ? 'Players in this world — just you' : 'Players in this world (' + nHere + ')')
+      : (nAll === 1 ? 'Players online — just you'
+        : 'Players online — ' + nAll + (nHere < nAll ? ' (' + nHere + ' in this world)' : ''));
     mpPlayersEl.innerHTML = rows.map(p =>
       `<div class="mp-player"><span class="swatch" style="background:${p.col}"></span>` +
       `<div><div class="nm${p.admin ? ' admin' : ''}">${p.admin ? CROWN : ''}${esc(p.name)}</div>` +
-      `<div class="tag">@${slug(p.name)}</div></div>` +
-      (p.self ? '<span class="you">YOU</span>' : '') + '</div>').join('');
+      `<div class="tag">${p.live ? '@' + slug(p.name) : 'in ' + esc(worldNameOf(p.world))}</div></div>` +
+      (p.self ? '<span class="you">YOU</span>' : p.live ? '' : `<span class="wchip">${esc(worldNameOf(p.world))}</span>`) + '</div>').join('');
   },
 
   connect() {
+    if (this.kicked) { this.state = 'kicked'; this.paintOnline(); return; }   // stay out until they rejoin
     clearTimeout(this.retryTO);
     if (this.ws) {                      // drop any stale socket first
       try { this.ws.onclose = null; this.ws.close(); } catch (e) {}
@@ -3244,7 +4367,7 @@ const MP = {
     if (!('WebSocket' in window)) { this.state = 'off'; this.paintOnline(); return; }
     this.state = 'wait'; this.paintOnline();
     let ws;
-    try { ws = new WebSocket(WORKER_URL); } catch (e) { this._down(); return; }
+    try { ws = new WebSocket(WORKER_URL + (WORKER_URL.includes('?') ? '&' : '?') + 'room=' + encodeURIComponent(Worlds.roomName())); } catch (e) { this._down(); return; }
     this.ws = ws;
     ws.onopen = () => {
       if (this.ws !== ws) return;
@@ -3258,10 +4381,23 @@ const MP = {
   },
 
   _down() {
-    this.ws = null; this.connected = false; this.state = 'off'; this.paintOnline();
+    this.ws = null; this.connected = false;
+    if (this.kicked) { this.state = 'kicked'; this.paintOnline(); return; }
+    this.state = 'off'; this.paintOnline();
     const wait = Math.min(15000, 800 * Math.pow(2, this.retry++));
     clearTimeout(this.retryTO);
     this.retryTO = setTimeout(() => this.connect(), wait);
+  },
+
+  /* removed by an admin (§12.6 'kick'): drop the socket, drop the
+     room, and DON'T auto-retry — the Online tab grows a Rejoin button */
+  kick(by) {
+    this.kicked = true;
+    try { if (this.ws) { this.ws.onclose = null; this.ws.close(); } } catch (e) {}
+    this.ws = null; this.connected = false; this.state = 'kicked';
+    for (const id of [...this.remotes.keys()]) removeRemote(id);
+    this.paintOnline();
+    adminBanner('An admin removed you from the world');
   },
 
   _send(o) { if (this.connected) { try { this.ws.send(JSON.stringify(o)); } catch (e) {} } },
@@ -3275,6 +4411,9 @@ const MP = {
       addChat(String(m.n || 'Player'), String(m.x || ''), !!m.a);
     }
     else if (m.t === 'w' && m.id && m.id !== this.id) WS.recv(m.k, m.d, m.id);   // world events (§12.6)
+    else if (m.t === 'rrules') applyRoomRules(m.d);   // stored room rules — relay v4 sends these on join
+    else if (m.t === 'gp' && Array.isArray(m.p)) onPresence(m.p);   // v12: everyone, every world
+    else if (m.t === 'forceworld') onForceWorld(m);                 // v12: an admin brought me across worlds
     else if (m.t === 'bye') removeRemote(m.id);
   },
 
@@ -3292,6 +4431,10 @@ const MP = {
     r.anim = ANIM_OK.includes(m.an) ? m.an : 'idle';
     r.tool = (m.tl === 'sword' || m.tl === 'apple' || m.tl === 'gun') ? m.tl : '';
     r.sw = typeof m.sw === 'number' ? m.sw : -1;
+    if (m.sz != null) r.scale = clamp(+m.sz || 1, 0.25, 3);   // their size rides the state (late joiners)
+    if (m.sm != null) r.sm = clamp(+m.sm || 1, 0.25, 4);      // v11: their stat multipliers too
+    if (m.jm != null) r.jm = clamp(+m.jm || 1, 0.25, 4);
+    if (m.sc === -1 || m.sc === 0 || m.sc === 1) r.sc = m.sc;  // -1 = follows the room rule
     r.lastSeen = elapsed;
   },
 
@@ -3308,7 +4451,9 @@ const MP = {
           t: 's', id: this.id, n: USERNAME, a: isAdmin ? 1 : 0,
           x: +player.x.toFixed(2), y: +player.y.toFixed(2), z: +player.z.toFixed(2),
           yw: +(climbing ? (climbSide > 0 ? Math.PI : 0) : yaw).toFixed(2),
-          an: animId, tl: it ? it.id : '', sw: +(swingT < 0 ? -1 : swingT).toFixed(2)
+          an: animId, tl: it ? it.id : '', sw: +(swingT < 0 ? -1 : swingT).toFixed(2),
+          sz: +myScale.toFixed(2),
+          sm: +mySpd.toFixed(2), jm: +myJmp.toFixed(2), sc: mySzSc == null ? -1 : (mySzSc ? 1 : 0)   // v11 stat multipliers (late joiners)
         });
       }
       this.pingTO -= dt;
@@ -3338,6 +4483,7 @@ const MP = {
       const c = r.ch, p = r.pivots;
       p.g.position.set(r.x, r.y + c.rootY, r.z);
       p.g.rotation.y = r.yaw;
+      p.g.scale.setScalar(r.scale || 1);         // admin size (v10)
       p.torsoPivot.rotation.set(c.torsoRx, c.torsoRy, c.torsoRz);
       p.neckPivot.rotation.set(c.headRx, c.headRy, c.headRz);
       p.armL.rotation.set(c.armLx, 0, c.armLz);
@@ -3351,7 +4497,7 @@ const MP = {
      never lag a frame behind the world */
   projectTags() {
     for (const r of this.remotes.values()) {
-      tmpV.set(r.x, r.y + 5.6, r.z).project(camera);
+      tmpV.set(r.x, r.y + 5.6 * (r.scale || 1), r.z).project(camera);
       if (tmpV.z < 1) {
         r.tag.style.display = 'block';
         r.tag.style.left = ((tmpV.x * 0.5 + 0.5) * innerWidth) + 'px';
@@ -3374,30 +4520,42 @@ const clock = new THREE.Clock();
 let elapsed = 0, frames = 0, fpsTime = 0, scriptErrored = false;
 
 function updateWorldAnims(dt, t) {
-  const dT = door.open ? 1 : 0;
-  door.anim += clamp(dT - door.anim, -dt * 2.2, dt * 2.2);
-  door.pivot.rotation.y = sstep(door.anim, 0, 1) * 1.95;
-  door.collider.enabled = door.anim < 0.25;
+  if (door) {                                          // template world props (v12 guards)
+    const dT = door.open ? 1 : 0;
+    door.anim += clamp(dT - door.anim, -dt * 2.2, dt * 2.2);
+    door.pivot.rotation.y = sstep(door.anim, 0, 1) * 1.95;
+    door.collider.enabled = door.anim < 0.25;
+  }
 
-  const cT = chest.opened ? 1 : 0;
-  chest.anim += clamp(cT - chest.anim, -dt * 2.5, dt * 2.5);
-  chest.lid.rotation.x = -sstep(chest.anim, 0, 1) * 1.85;
+  if (chest) {
+    const cT = chest.opened ? 1 : 0;
+    chest.anim += clamp(cT - chest.anim, -dt * 2.5, dt * 2.5);
+    chest.lid.rotation.x = -sstep(chest.anim, 0, 1) * 1.85;
+  }
 
-  if (button.press > 0) button.press -= dt;
-  const bp = clamp(button.press, 0, 0.3) / 0.3;
-  button.mesh.position.y = 1.52 - Math.sin(bp * Math.PI) * 0.12;
+  if (button) {
+    if (button.press > 0) button.press -= dt;
+    const bp = clamp(button.press, 0, 0.3) / 0.3;
+    button.mesh.position.y = 1.52 - Math.sin(bp * Math.PI) * 0.12;
+  }
 
-  if (!swordPickup.taken) {
+  if (swordPickup && !swordPickup.taken) {
     swordPickup.spin.rotation.y += dt * 1.2;
     swordPickup.spin.position.y = 2.0 + Math.sin(t * 2) * 0.15;
   }
-  if (!gunPickup.taken) {
+  if (gunPickup && !gunPickup.taken) {
     gunPickup.spin.rotation.y += dt * 1.1;
     gunPickup.spin.position.y = 14.9 + Math.sin(t * 1.8 + 1) * 0.18;
+  }
+  /* dropped items (§7 hold-to-drop) spin + bob like the pickups */
+  for (const dp of dropPickups.values()) {
+    dp.spin.rotation.y += dt * 1.3;
+    dp.spin.position.y = dp.baseY + Math.sin(t * 2 + dp.phase) * 0.14;
   }
 }
 
 function loop() {
+  if (gameLeft) return;            // v11: Leave Game stopped the loop
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), 0.05);
   elapsed += dt;
@@ -3454,11 +4612,16 @@ function loop() {
   }
 
   updateCamera(dt); // outside the try: camera must never stop
+  /* refresh the camera's world matrix NOW — tags project with THIS
+     frame's pose instead of the previous render's, so remote nametags
+     never wobble while the camera swings (Vector3.project reads
+     camera.matrixWorldInverse, which otherwise lags one frame) */
+  camera.updateMatrixWorld();
 
   // nametag projection (hidden in first person)
   if (cam.fp) nametag.style.display = 'none';
   else {
-    tmpV.set(player.x, player.y + 5.6, player.z).project(camera);   // just above the head
+    tmpV.set(player.x, player.y + 5.6 * myScale, player.z).project(camera);   // just above the head (size-aware)
     if (tmpV.z < 1) {
       nametag.style.display = 'block';
       nametag.style.left = ((tmpV.x * 0.5 + 0.5) * innerWidth) + 'px';
@@ -3469,6 +4632,19 @@ function loop() {
   MP.projectTags();   // remote nametags (camera is updated now — no lag)
 
   renderer.render(scene, camera); // also outside the try
+
+  /* v11 FIRST-PERSON VIEWMODEL PASS — the held tool renders from its
+     own scene ON TOP of the world: clearDepth() means no floor, wall
+     or prop can ever occlude it (a mini player looking straight down
+     used to bury the sword in the baseplate). placeFPTool re-runs
+     every frame so FOV / aspect changes re-position the grip live. */
+  if (cam.fp && toolMesh && toolMesh.parent === fpTool) {
+    placeFPTool();
+    renderer.autoClear = false;
+    renderer.clearDepth();
+    renderer.render(fpScene, fpCam);
+    renderer.autoClear = true;
+  }
 }
 
 addEventListener('resize', () => {
@@ -3480,7 +4656,7 @@ addEventListener('resize', () => {
 /* ---- hint + welcome ---- */
 const hint = document.getElementById('hint');
 hint.textContent = isTouch
-  ? 'Stick to move (full tilt = run) · tap the button to jump · drag anywhere to look · pinch to zoom (fully in = first person) · ☰ for menu'
+  ? 'Stick to move (full tilt = run) · tap the button to jump · drag anywhere to look · spread to zoom in (all the way = first person) · ☰ for menu'
   : 'WASD move · SHIFT run · SPACE jump · E interact · CLICK use tool · ESC menu · drag camera · scroll zoom (fully in = first person) · / chat';
 setTimeout(() => { hint.style.opacity = '0'; }, 12000);
 
@@ -3496,7 +4672,7 @@ setTimeout(() => { hint.style.opacity = '0'; }, 12000);
    live here too.
 ================================================================ */
 const menuOverlay = document.getElementById('menu-overlay');
-let menuOpen = false, adminBuilt = false;
+let menuOpen = false, adminBuilt = false, adminLiveTO = null;
 
 function openMenu(open) {
   menuOpen = open;
@@ -3507,23 +4683,85 @@ function openMenu(open) {
     joyFwd = joySide = joyMag = 0; touchJump = false;
     chatInput.blur();
     emoteMenuEl.classList.remove('open');
+    cancelDropHold();                          // a held slot can't drop behind the menu
     if (!adminBuilt) { buildAdminTab(); adminBuilt = true; }
     MP.paintOnline();          // the Online tab is live the moment the menu opens
     refreshValues();
     refreshIcons();
+    /* admin live stats (players / zombies / connection) tick while open */
+    clearInterval(adminLiveTO);
+    if (isAdmin) adminLiveTO = setInterval(() => {
+      adminLiveFns.forEach(f => f()); adminPlayerLiveFns.forEach(f => f());
+    }, 1000);
+  } else {
+    clearInterval(adminLiveTO);
+    adminLiveTO = null;
   }
 }
 document.getElementById('menu-fab').addEventListener('click', () => openMenu(!menuOpen));
 document.getElementById('menu-close').addEventListener('click', () => openMenu(false));
 menuOverlay.addEventListener('pointerdown', e => { if (e.target === menuOverlay) openMenu(false); });
+document.getElementById('mp-rejoin').addEventListener('click', () => {
+  MP.kicked = false; MP.retry = 0; MP.state = 'off'; MP.connect();
+});
 
 document.querySelectorAll('#menu-rail .mtab[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#menu-rail .mtab').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.mtabpane').forEach(p => p.classList.toggle('active', p.dataset.tab === btn.dataset.tab));
     if (btn.dataset.tab === 'online') MP.paintOnline();   // refresh status + list
+    if (btn.dataset.tab === 'worlds') renderWorldsTab();   // v12: refresh the world list
   });
 });
+
+/* ---- WORLDS tab (v12): the world list, who's in each, Join ---- */
+function renderWorldsTab() {
+  const el = document.getElementById('worlds-list');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!Worlds.online) {
+    el.append(mkEl('div', 'mrow',
+      '<div class="mrow-top"><div class="mlabel">World</div>' +
+      '<div class="mp-status"><span class="dot" style="background:#9aa4ae"></span>' +
+      '<span style="font-weight:800;font-size:12px">' + esc(Worlds.name()) + '</span></div></div>'));
+    el.append(mkEl('div', 'woff',
+      "Can't reach the world server right now, so you're on the built-in Baseplate World — everything " +
+      'works solo. The world list + switching come back on their own once the server answers.'));
+    return;
+  }
+  /* who's where, from the global presence list */
+  const per = new Map();
+  for (const p of GLOBAL.players.values()) {
+    if (!per.has(p.world)) per.set(p.world, []);
+    per.get(p.world).push(p);
+  }
+  for (const w of Worlds.list) {
+    if (!w || typeof w.id !== 'string') continue;
+    const here = (per.get(w.id) || []).sort((a, b) => (a.id === MP.id ? -1 : b.id === MP.id ? 1 : a.name.localeCompare(b.name)));
+    const isCur = w.id === Worlds.id;
+    const card = mkEl('div', 'wcard' + (isCur ? ' cur' : ''));
+    card.append(mkEl('div', 'wicon', '<i data-lucide="' + (w.id === 'baseplate' ? 'square' : 'mountain') + '"></i>'));
+    const txt = mkEl('div', 'wtxt');
+    txt.append(mkEl('div', 'wnm', esc(w.name || w.id) + (isCur ? '<span class="here">YOU ARE HERE</span>' : '')));
+    if (w.desc) txt.append(mkEl('div', 'wdesc', esc(String(w.desc).slice(0, 120))));
+    if (here.length) {
+      const who = mkEl('div', 'who');
+      who.append(mkEl('span', null, here.length + ' online:'));
+      for (const p of here) who.append(mkEl('span', 'pchip', (p.admin ? CROWN : '') + esc(p.name) + (p.id === MP.id ? ' (you)' : '')));
+      txt.append(who);
+    }
+    card.append(txt);
+    if (!isCur) {
+      const btn = mkEl('button', 'abtn mini', 'Join');
+      btn.addEventListener('click', () => askConfirm('Join ' + esc(w.name || w.id) + '?',
+        'You will leave this world and load <b>' + esc(w.name || w.id) + '</b>. Your spot here is remembered — switch back any time.',
+        'Join', () => { openMenu(false); switchWorld(w.id); }));
+      card.append(btn);
+    }
+    el.append(card);
+  }
+  refreshIcons();
+}
 
 /* ---- tiny DOM + control builders (Settings & Admin share them) ---- */
 function mkEl(tag, cls, html) {
@@ -3547,6 +4785,9 @@ function setVal(key, val) {
     case 'dayTime': case 'daySpeed': daySync(); break;   // world event — the sky follows on every screen (§12.6)
   }
   syncConsts();
+  /* room rules (v10): every admin edit rides out to the whole room and
+     is remembered by the relay for whoever joins later */
+  if (isAdmin && !applyingRoomRules && RULE_KEYS.indexOf(key) >= 0) queueRuleSync();
 }
 
 /* broadcast the time of day (throttled so slider drags don't spam) */
@@ -3704,9 +4945,177 @@ function actBtn(label, fn, cls) {
   return b;
 }
 
+/* ---- v11: the confirm dialog — reset / kick / leave all ask first.
+     A tiny modal (same look as the username card), NOT window.confirm,
+     so it works identically embedded or fullscreen. ---- */
+let confirmOpen = false, confirmFn = null;
+const confirmModalEl = document.getElementById('confirm-modal');
+function askConfirm(title, text, yesLabel, fn) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent = text;
+  document.getElementById('confirm-yes').textContent = yesLabel || 'Yes';
+  confirmFn = fn;
+  confirmOpen = true;
+  confirmModalEl.classList.add('open');
+}
+function closeConfirm() {
+  confirmOpen = false;
+  confirmFn = null;
+  confirmModalEl.classList.remove('open');
+}
+document.getElementById('confirm-no').addEventListener('click', closeConfirm);
+confirmModalEl.addEventListener('pointerdown', e => { if (e.target === confirmModalEl) closeConfirm(); });
+document.getElementById('confirm-yes').addEventListener('click', () => {
+  const fn = confirmFn;
+  closeConfirm();
+  if (fn) fn();
+});
+
+/* ---- v11: LEAVE GAME — disconnects from the relay and closes the
+     file. window.close() works when the browser allows it; otherwise
+     the page is replaced with a quiet goodbye so the game is over
+     either way. ---- */
+let gameLeft = false;
+function leaveGame() {
+  if (gameLeft) return;
+  gameLeft = true;
+  try { if (MP.ws) { MP.ws.onclose = null; MP.ws.close(); } } catch (e) {}   // relay tells everyone else
+  MP.connected = false;
+  try { window.close(); } catch (e) {}
+  setTimeout(() => {
+    try {
+      document.open();
+      document.write('<!DOCTYPE html><html><head><title>Baseplate</title></head>' +
+        '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
+        'background:#0b0e13;color:#8b98a8;font:700 15px \'Nunito Sans\',system-ui,sans-serif">' +
+        'You left the game — you can close this tab.</body></html>');
+      document.close();
+    } catch (e) { try { location.href = 'about:blank'; } catch (e2) {} }
+  }, 200);
+}
+document.getElementById('mp-leave').addEventListener('click', () =>
+  askConfirm('Leave the game?', 'This disconnects you from the world and closes the game.', 'Leave', leaveGame));
+
 function refreshValues() {
   document.querySelectorAll('#settings-list .mrow, #admin-list .mrow')
     .forEach(r => r._sync && r._sync());
+}
+
+/* ---- v11: PER-VALUE controls — same look + touch / keyboard UX as
+   bindSlider / bindToggle, but they read and write through getter /
+   setter callbacks instead of a V key. The admin player menu uses
+   these for per-player values (size, speed, jump…). ---- */
+function mkPSlider(label, range, get, set, fmt, sub) {
+  const min = range[0], max = range[1], step = range[2] || 1;
+  const row = mkEl('div', 'mrow');
+  const top = mkEl('div', 'mrow-top');
+  top.append(mkEl('span', 'mlabel', label));
+  const val = mkEl('span', 'mval');
+  top.append(val);
+  row.append(top);
+  if (sub) row.append(mkEl('div', 'msub', sub));
+  const fmtVal = v => fmt ? fmt(v) : (step < 1 ? (+v).toFixed(2) : String(Math.round(v)));
+  let editing = false, dragging = false;
+  const paint = () => {
+    if (editing || dragging) return;
+    const v = clamp(get(), min, max);
+    const pct = (v - min) / (max - min) * 100;
+    row.querySelector('.sfill').style.width = pct + '%';
+    row.querySelector('.sthumb').style.left = pct + '%';
+    val.innerHTML = fmtVal(v);
+  };
+  const apply = v => {
+    v = Math.round(clamp(+v, min, max) / step) * step;
+    set(+v.toFixed(4));
+    if (!editing) { const vv = clamp(get(), min, max); const pct = (vv - min) / (max - min) * 100;
+      row.querySelector('.sfill').style.width = pct + '%'; row.querySelector('.sthumb').style.left = pct + '%';
+      val.innerHTML = fmtVal(vv); }
+  };
+  /* the control: [−] track [+] — drag is RELATIVE (a stray tap never
+     jumps the value), vertical swipes scroll the panel (touch-action) */
+  const sld = mkEl('div', 'sld'); sld.tabIndex = 0;
+  const minus = mkEl('button', 'sbtn', '−');
+  const plus = mkEl('button', 'sbtn', '+');
+  const track = mkEl('div', 'strack');
+  const fill = mkEl('div', 'sfill');
+  const thumb = mkEl('div', 'sthumb');
+  track.append(fill, thumb);
+  sld.append(minus, track, plus);
+  row.append(sld);
+  let drag = null;
+  track.addEventListener('pointerdown', e => {
+    drag = { x: e.clientX, v: get(), on: false };
+    dragging = true;
+    try { track.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  track.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.on) { if (Math.abs(dx) < 6) return; drag.on = true; }
+    apply(drag.v + dx / (track.clientWidth || 1) * (max - min));
+  });
+  const dragEnd = () => { drag = null; dragging = false; };
+  track.addEventListener('pointerup', dragEnd);
+  track.addEventListener('pointercancel', dragEnd);
+  const hookStep = (b, dir) => {
+    let t1 = null, t2 = null;
+    const stop = () => { clearTimeout(t1); clearInterval(t2); };
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      apply(get() + dir * step);
+      t1 = setTimeout(() => { t2 = setInterval(() => apply(get() + dir * step), 70); }, 380);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  };
+  hookStep(minus, -1); hookStep(plus, +1);
+  sld.addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === 'Home') { e.preventDefault(); apply(min); return; }
+    if (k === 'End') { e.preventDefault(); apply(max); return; }
+    const d = k === 'ArrowLeft' || k === 'ArrowDown' ? -1 : k === 'ArrowRight' || k === 'ArrowUp' ? 1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    apply(get() + d * step);
+  });
+  val.addEventListener('click', () => {              // type an exact value
+    if (editing) return;
+    editing = true;
+    const inp = document.createElement('input');
+    inp.className = 'mval-in'; inp.type = 'number';
+    inp.min = min; inp.max = max; inp.step = step; inp.value = get();
+    val.innerHTML = '';
+    val.append(inp);
+    inp.focus(); inp.select();
+    const done = ok => {
+      editing = false;
+      if (ok) { const n = parseFloat(inp.value); if (!isNaN(n)) apply(n); }
+      else paint();
+    };
+    inp.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') done(true);
+      else if (e.key === 'Escape') done(false);
+    });
+    inp.addEventListener('blur', () => done(true));
+  });
+  paint();
+  row._sync = paint;
+  return row;
+}
+
+function mkPToggle(label, sub, get, set) {
+  const row = mkEl('div', 'mrow');
+  const top = mkEl('div', 'mrow-top');
+  top.append(mkEl('span', 'mlabel', label));
+  const t = mkEl('button', 'tgl');
+  top.append(t);
+  row.append(top);
+  if (sub) row.append(mkEl('div', 'msub', sub));
+  const paint = () => t.classList.toggle('on', !!get());
+  t.addEventListener('click', () => { set(!get()); paint(); });
+  paint();
+  row._sync = paint;
+  return row;
 }
 
 function buildSettingsTab() {
@@ -3724,10 +5133,13 @@ function buildSettingsTab() {
       ? Math.round(SHADOW_SD) + ' of ' + Math.round(v) : Math.round(v) + ' studs'));
   list.append(mkEl('div', 'msection', 'Camera'));
   list.append(bindSlider('camSensitivity', 'Camera Sensitivity', [0.2, 3, 0.05], v => (+v).toFixed(2) + '&times;'));
+  list.append(bindSlider('fov', 'Field of View', [30, 110, 1], v => Math.round(v) + '&deg;'));   // v10: everyone's, not just admin
   list.append(bindToggle('invertY', 'Invert Camera Y', 'Flip the up/down drag direction.'));
   list.append(bindToggle('occlusion', 'Camera Occlusion', 'Pull the camera in when a wall blocks the view.'));
   list.append(mkEl('div', 'msection', 'Display'));
   list.append(bindToggle('showFps', 'Show FPS &amp; Draw Calls'));
+  list.append(bindSlider('fogDistance', 'Fog / View Distance', [0, 300, 10],
+    v => v === 0 ? 'Auto' : String(Math.round(v))));
   list.append(mkEl('div', 'msection', 'Identity'));
   const ibr = mkEl('div', 'btnrow');
   ibr.append(actBtn('Change Username', () => { openMenu(false); showNameModal(); }));
@@ -3739,21 +5151,348 @@ function buildSettingsTab() {
       else document.documentElement.requestFullscreen();
     } catch (e) {}
   }));
-  br.append(actBtn('Reset Character', () => { openMenu(false); respawn(); }, 'danger'));
+  br.append(actBtn('Reset Character', () => askConfirm('Reset your character?',
+    'This respawns you and restores your default size, speed and jump.', 'Reset',
+    () => { openMenu(false); resetMyCharacter(); }), 'danger'));   // v11: asks first, resets stats too
   list.append(br);
 }
 
 function rebuildAdminTab() {
   const list = document.getElementById('admin-list');
   list.innerHTML = '';
+  adminLiveFns.length = 0;
+  adminPlayerLiveFns = [];
+  adminPlayersPane = null;
   buildAdminTab();
   refreshValues();
   refreshIcons();
 }
 
+/* ---- admin feedback banner (top of screen, auto-hides) ---- */
+let bannerTO = null;
+function adminBanner(text) {
+  const b = document.getElementById('admin-banner');
+  b.textContent = text;
+  b.classList.add('show');
+  clearTimeout(bannerTO);
+  bannerTO = setTimeout(() => b.classList.remove('show'), 2600);
+}
+
+/* ---- little builders for the tabbed panel ---- */
+const adminLiveFns = [];        // live stat rows — ticked while the menu is open
+var adminPlayerLiveFns = [];    // per-player-row live widgets — rebuilt with the list
+function srvRow(label, fn) {    // "label ........ value", value keeps itself fresh
+  const row = mkEl('div', 'srvrow');
+  const b = mkEl('b');
+  row.append(mkEl('span', null, label), b);
+  const upd = () => { b.textContent = fn(); };
+  upd();
+  adminLiveFns.push(upd);
+  return row;
+}
+var adminPlayersPane = null;    // the Players tab list — rebuilt on room changes
+var adminPlayerMenuPane = null; // v11: the drill-down pane (one player's full controls)
+var adminPlayerMenuTarget = null;   // {mode:'self'} | {mode:'remote',id} | {mode:'everyone'}
+var adminSetTab = null;         // switches the admin sub-tabs (set in buildAdminTab)
+
+function stateBtn(key, label) {       // mini toggle that tracks V[key] live (God / Fly)
+  const b = mkEl('button', 'abtn mini');
+  const paint = () => {
+    b.classList.toggle('on', !!V[key]);
+    b.textContent = label + (V[key] ? ' · ON' : ' · OFF');
+  };
+  b.addEventListener('click', () => { setVal(key, !V[key]); paint(); });
+  paint();
+  adminPlayerLiveFns.push(paint);
+  return b;
+}
+
+function buildAdminPlayers() {       // the LIST view: Everyone, YOU, everyone else (v11)
+  if (!adminPlayersPane || !isAdmin) return;
+  /* if the player whose menu is open left, drop back to the list */
+  if (adminPlayerMenuTarget && adminPlayerMenuTarget.mode === 'remote' &&
+      adminPlayerMenuPane && !MP.remotes.get(adminPlayerMenuTarget.id)) {
+    adminPlayerMenuTarget = null;
+    adminSetTab && adminSetTab('players');
+  }
+  const pane = adminPlayersPane;
+  pane.innerHTML = '';
+  adminPlayerLiveFns = [];             // fresh batch — the old rows are gone
+  const remotes = [...MP.remotes.values()].sort((a, b) => a.name.localeCompare(b.name));
+
+  const card = (html, cls, fn) => {
+    const c = mkEl('button', 'pcard' + (cls ? ' ' + cls : ''));
+    c.innerHTML = html;
+    c.addEventListener('click', fn);
+    pane.append(c);
+  };
+
+  /* Everyone — apply anything to the whole room at once */
+  if (remotes.length) {
+    card('<span class="pavatar everyone"><i data-lucide="users"></i></span>' +
+      '<div class="pcard-txt"><div class="pcard-nm">Everyone</div>' +
+      '<div class="pcard-sub">' + remotes.length + ' player' + (remotes.length === 1 ? '' : 's') +
+      ' + you — give, smite, resize… all at once</div></div>' +
+      '<i data-lucide="chevron-right" class="pchev"></i>', 'everyone',
+      () => openPlayerMenu({ mode: 'everyone' }));
+  }
+
+  /* YOU */
+  card('<span class="pavatar"><i data-lucide="user"></i></span>' +
+    '<div class="pcard-txt"><div class="pcard-nm">' + CROWN + esc(USERNAME) +
+    '<span class="pyou">YOU</span></div>' +
+    '<div class="pcard-sub">@' + slug(USERNAME) + ' · ' + myScale.toFixed(2) + '× size</div></div>' +
+    '<i data-lucide="chevron-right" class="pchev"></i>', null,
+    () => openPlayerMenu({ mode: 'self' }));
+
+  /* everyone else */
+  remotes.forEach(r => {
+    const h = [...r.id].reduce((a, c) => a + c.charCodeAt(0), 0);
+    const col = '#' + REMOTE_TORSO_COLORS[h % REMOTE_TORSO_COLORS.length].toString(16).padStart(6, '0');
+    card('<span class="pavatar" style="background:' + col + '">' +
+      esc(r.name.slice(0, 1).toUpperCase()) + '</span>' +
+      '<div class="pcard-txt"><div class="pcard-nm">' + (r.admin ? CROWN : '') + esc(r.name) + '</div>' +
+      '<div class="pcard-sub">@' + slug(r.name) + ' · ' + r.scale.toFixed(2) + '× size</div></div>' +
+      '<i data-lucide="chevron-right" class="pchev"></i>', null,
+      () => openPlayerMenu({ mode: 'remote', id: r.id }));
+  });
+
+  if (!remotes.length) {
+    pane.append(mkEl('div', 'apinfo',
+      'Nobody else is in the world right now.<br>Share the game file — new players show up here the moment they join.'));
+  }
+
+  /* players in OTHER worlds (v12) — Go To / Bring work across worlds */
+  const cross = crossWorldPlayers();
+  if (cross.length) {
+    pane.append(mkEl('div', 'msection', 'In other worlds'));
+    for (const p of cross) {
+      const row = mkEl('div', 'btnrow');
+      row.style.margin = '0 0 6px';
+      row.append(mkEl('div', 'apinfo',
+        (p.admin ? CROWN : '') + '<b>' + esc(p.name) + '</b> — in <b>' + esc(worldNameOf(p.world)) + '</b>' +
+        ' <span class="pid">@' + slug(p.name) + '</span>'));
+      const bts = mkEl('div', 'btnrow');
+      bts.append(actBtn('Go To ' + esc(p.name), () => askConfirm('Join ' + esc(p.name) + '?',
+        'You will switch to <b>' + esc(worldNameOf(p.world)) + '</b> and teleport next to <b>' + esc(p.name) + '</b>.',
+        'Go', () => { openMenu(false); switchWorld(p.world, { x: p.x, y: p.y + 0.6, z: p.z }); })));
+      bts.append(actBtn('Bring Here', () => {          // relay v5 routes it across rooms
+        MP._send({ t: 'x', id: MP.id, k: 'bring', tg: p.id,
+          x: +player.x.toFixed(1), y: +player.y.toFixed(1), z: +player.z.toFixed(1) });
+        adminBanner('Bringing ' + p.name + ' here from ' + worldNameOf(p.world) + '…');
+      }));
+      row.append(bts);
+      pane.append(row);
+    }
+  }
+
+  /* reset + leave — both ask "are you sure" first (v11) */
+  const foot = mkEl('div', 'btnrow foot');
+  foot.append(actBtn('Reset My Character', () => askConfirm('Reset your character?',
+    'This respawns you and restores your default size, speed and jump.', 'Reset',
+    () => { openMenu(false); resetMyCharacter(); }), 'danger'));
+  foot.append(actBtn('Leave Game', () => askConfirm('Leave the game?',
+    'This disconnects you from the world and closes the game.', 'Leave', leaveGame), 'danger'));
+  pane.append(foot);
+  refreshIcons();
+}
+
+/* ---- v11 THE PLAYER MENU — one place for EVERYTHING an admin can do
+   to one player: give items, smite (with tuning), size, speed, jump,
+   teleport, kick, reset… Opens for yourself, for any remote player,
+   or for EVERYONE at once. 'psize' / 'pstat' / 'pgive' events carry
+   the changes; the target's own client applies them (trusted). ---- */
+function openPlayerMenu(t) {
+  if (!adminPlayerMenuPane || !isAdmin) return;
+  const remote = t.mode === 'remote' ? MP.remotes.get(t.id) : null;
+  if (t.mode === 'remote' && !remote) { buildAdminPlayers(); adminSetTab && adminSetTab('players'); return; }
+  adminPlayerMenuTarget = t;
+  adminSetTab && adminSetTab('pmenu');
+  const pane = adminPlayerMenuPane;
+  pane.innerHTML = '';
+  adminPlayerLiveFns = [];
+  const everyone = t.mode === 'everyone', self = t.mode === 'self';
+
+  /* run an action on the target — r === null means ME */
+  const each = fn => {
+    if (everyone) { fn(null); for (const r of MP.remotes.values()) fn(r); }
+    else if (self) fn(null);
+    else fn(remote);
+  };
+  /* live values (mine, or the remote's broadcast ones) */
+  const gv = {
+    size: () => self ? myScale : everyone ? myScale : remote.scale,
+    sm: () => self ? mySpd : everyone ? mySpd : remote.sm,
+    jm: () => self ? myJmp : everyone ? myJmp : remote.jm,
+    sc: () => (self || everyone) ? (mySzSc == null ? V.sizeScaleStats : mySzSc)
+      : (remote.sc === -1 ? V.sizeScaleStats : !!remote.sc)
+  };
+
+  /* ---- header ---- */
+  const head = mkEl('div', 'pmenu-head');
+  const back = mkEl('button', 'abtn mini', '&larr; Players');
+  back.addEventListener('click', () => { adminPlayerMenuTarget = null; adminSetTab('players'); });
+  head.append(back);
+  const n = MP.remotes.size;
+  head.append(mkEl('div', 'pmenu-title',
+    everyone ? 'Everyone <span class="pid">' + n + ' player' + (n === 1 ? '' : 's') + ' + you</span>' :
+    self ? CROWN + esc(USERNAME) + '<span class="pid">@' + slug(USERNAME) + '</span><span class="pyou">YOU</span>' :
+    (remote.admin ? CROWN : '') + esc(remote.name) + '<span class="pid">@' + slug(remote.name) + '</span>'));
+  pane.append(head);
+
+  /* ---- teleport (a remote's menu) / bring ---- */
+  if (remote) {
+    const nav = mkEl('div', 'btnrow');
+    nav.append(actBtn('Go To Player', () => {        // me -> them, a local hop
+      player.x = remote.x; player.y = remote.y + 0.6; player.z = remote.z;
+      player.vy = 0; climbing = false;
+      openMenu(false);
+      adminBanner('Teleported to ' + remote.name);
+    }));
+    nav.append(actBtn('Bring Player To Me', () => {  // them -> me, a world event
+      WS.emit('tp', { to: remote.id, x: +player.x.toFixed(1), y: +player.y.toFixed(1), z: +player.z.toFixed(1) });
+      adminBanner('Bringing ' + remote.name + ' to you…');
+    }));
+    pane.append(nav);
+  }
+  if (everyone) {
+    const nav = mkEl('div', 'btnrow');
+    nav.append(actBtn('Bring Everyone To Me (all worlds)', () => {   // v12: same-world 'tp' + cross-world 'x' routing
+      for (const r of MP.remotes.values())
+        WS.emit('tp', { to: r.id, x: +player.x.toFixed(1), y: +player.y.toFixed(1), z: +player.z.toFixed(1) });
+      for (const p of crossWorldPlayers())
+        MP._send({ t: 'x', id: MP.id, k: 'bring', tg: p.id,
+          x: +player.x.toFixed(1), y: +player.y.toFixed(1), z: +player.z.toFixed(1) });
+      adminBanner('Bringing everyone (every world) to you…');
+    }));
+    pane.append(nav);
+  }
+
+  /* ---- SMITE — lightning + explosion + yeet ---- */
+  pane.append(mkEl('div', 'msection', 'Smite — Lightning'));
+  const srow = mkEl('div', 'btnrow');
+  srow.append(actBtn(everyone ? 'Smite Everyone' : self ? 'Smite Me' : 'Smite ' + esc(remote.name), () => {
+    const hit = r => WS.act('smite', {
+      id: r ? r.id : MP.id, x: +(r ? r.x : player.x).toFixed(1), y: +(r ? r.y : player.y).toFixed(1),
+      z: +(r ? r.z : player.z).toFixed(1),
+      dm: +V.smiteDmg, sz: +V.smiteSize, pw: +V.smitePower, sp: !!V.smiteSplash, rd: +V.smiteRadius });
+    if (self) { hit(null); adminBanner('You smote yourself.'); }
+    else {
+      for (const r of (everyone ? MP.remotes.values() : [remote])) hit(r);
+      adminBanner(everyone ? 'Smote everyone.' : 'Smote ' + remote.name + '.');
+    }
+  }, 'smite'));
+  pane.append(srow);
+  pane.append(bindSlider('smiteDmg', 'Lightning Damage', [0, 150, 1]));
+  pane.append(bindSlider('smiteSize', 'Explosion Size (studs)', [1, 20, 0.5]));
+  pane.append(bindSlider('smitePower', 'Yeet Power', [0, 90, 1]));
+  pane.append(bindToggle('smiteSplash', 'Splash Damage', 'Players and zombies close to the blast take damage (and get pushed) too.'));
+  pane.append(bindSlider('smiteRadius', 'Splash Radius (studs)', [1, 30, 0.5]));
+
+  /* ---- SIZE — slider + the scale-stats toggle ---- */
+  pane.append(mkEl('div', 'msection', 'Size'));
+  let sizeTO = null, sizeV = gv.size();
+  pane.append(mkPSlider('Player Size', [0.25, 3, 0.05], gv.size, v => {
+    sizeV = v;
+    if (self || everyone) setMyScale(v);                  // applies instantly for me
+    if (remote) remote.scale = v;                         // optimistic — their state confirms
+    if (everyone) for (const r of MP.remotes.values()) r.scale = v;
+    clearTimeout(sizeTO);                                 // slider drags: one event per pause
+    sizeTO = setTimeout(() => each(r => WS.act('psize', { id: r ? r.id : MP.id, s: sizeV })), 120);
+  }, v => (+v).toFixed(2) + '&times;',
+    everyone ? 'Dragging sets EVERY player (you included) to the same size.' : null));
+  pane.append(mkPToggle('Speed &amp; Jump Scale With Size',
+    'On: a half-size player runs at half speed and jumps a smaller hop. Off: players at half size run full speed. ' +
+    '(The Rules tab sets the room-wide default; this overrides it for ' +
+    (everyone ? 'everyone.' : self ? 'you.' : 'them.') + ')',
+    gv.sc, v => {
+      const sc = v ? 1 : 0;
+      if (self || everyone) setMyStats({ sc });
+      if (remote) remote.sc = sc;
+      if (everyone) for (const r of MP.remotes.values()) r.sc = sc;
+      each(r => WS.act('pstat', { id: r ? r.id : MP.id, sc }));
+    }));
+
+  /* ---- SPEED & JUMP — per-player multipliers on top of the room rules ---- */
+  pane.append(mkEl('div', 'msection', 'Speed & Jump'));
+  let statTO = null, statD = {};
+  const setStats = d => {
+    Object.assign(statD, d);
+    if (self || everyone) setMyStats(d);
+    if (remote) { if (d.sm != null) remote.sm = clamp(+d.sm, 0.25, 4); if (d.jm != null) remote.jm = clamp(+d.jm, 0.25, 4); }
+    if (everyone) for (const r of MP.remotes.values()) {
+      if (d.sm != null) r.sm = clamp(+d.sm, 0.25, 4);
+      if (d.jm != null) r.jm = clamp(+d.jm, 0.25, 4); }
+    clearTimeout(statTO);
+    statTO = setTimeout(() => each(r => WS.act('pstat', Object.assign({ id: r ? r.id : MP.id }, statD))), 120);
+  };
+  pane.append(mkPSlider('Run / Walk Speed', [0.25, 4, 0.05], gv.sm,
+    v => setStats({ sm: v }), v => (+v).toFixed(2) + '&times;',
+    'A multiplier on top of the room\'s walk/run speeds. 1.00× = the room rule.'));
+  pane.append(mkPSlider('Jump Power', [0.25, 4, 0.05], gv.jm,
+    v => setStats({ jm: v }), v => (+v).toFixed(2) + '&times;',
+    'A multiplier on top of the room\'s jump power. 1.00× = the room rule.'));
+
+  /* ---- GIVE — items straight into the hotbar ---- */
+  pane.append(mkEl('div', 'msection', 'Give Items'));
+  pane.append(mkEl('div', 'msub',
+    (everyone ? 'Goes to every player in the world, you included.' :
+      self ? 'Straight into your hotbar.' :
+        'Straight into ' + esc(remote.name) + "'s hotbar — they see a note when it lands.") +
+    ' (Hotbar full? Hold a slot for about 2 s — the ring appears after a short delay — to drop something first.)'));
+  const gbtns = mkEl('div', 'btnrow');
+  [['sword', 'Give Sword'], ['gun', 'Give Blaster'], ['apple', 'Give Apple']].forEach(([it, label]) =>
+    gbtns.append(actBtn(label, () => each(r => WS.act('pgive', { id: r ? r.id : MP.id, it })))));
+  pane.append(gbtns);
+
+  /* ---- my character extras ---- */
+  if (self) {
+    pane.append(mkEl('div', 'msection', 'My Character'));
+    const cb = mkEl('div', 'btnrow');
+    cb.append(stateBtn('godMode', 'God'));
+    cb.append(stateBtn('flyMode', 'Fly'));
+    cb.append(actBtn('Heal', () => { health = V.maxHealth; adminBanner('Health restored.'); }, 'mini'));
+    cb.append(actBtn('Reset Character', () => askConfirm('Reset your character?',
+      'This respawns you and restores your default size, speed and jump.', 'Reset',
+      () => { openMenu(false); resetMyCharacter(); }), 'mini danger'));
+    pane.append(cb);
+  }
+
+  /* ---- reset / kick ---- */
+  pane.append(mkEl('div', 'msection', 'Reset'));
+  const rbtns = mkEl('div', 'btnrow');
+  rbtns.append(actBtn(everyone ? 'Reset Everyone To Defaults' :
+    'Reset ' + (self ? 'Me' : esc(remote.name)) + ' To Defaults', () => {
+    /* size 1×, speed 1×, jump 1×, back to following the room rule */
+    if (self || everyone) { setMyScale(1); setMyStats({ sm: 1, jm: 1, sc: -1 }); }
+    if (remote) { remote.scale = 1; remote.sm = remote.jm = 1; remote.sc = -1; }
+    if (everyone) for (const r of MP.remotes.values()) { r.scale = 1; r.sm = r.jm = 1; r.sc = -1; }
+    each(r => {
+      WS.act('psize', { id: r ? r.id : MP.id, s: 1 });
+      WS.act('pstat', { id: r ? r.id : MP.id, sm: 1, jm: 1, sc: -1 });
+    });
+    adminBanner(everyone ? 'Everyone is back to defaults.' :
+      self ? 'You are back to defaults.' : remote.name + ' is back to defaults.');
+  }, 'danger'));
+  pane.append(rbtns);
+  if (remote) {
+    const kb = mkEl('div', 'btnrow');
+    kb.append(actBtn('Kick ' + esc(remote.name), () => askConfirm('Kick ' + remote.name + '?',
+      'They are removed from the world and can rejoin if they want.', 'Kick', () => {
+        WS.emit('kick', { to: remote.id });
+        adminBanner('Kicked ' + remote.name + ' from the world.');
+      }), 'danger'));
+    pane.append(kb);
+  }
+  refreshIcons();
+}
+
+/* keep the admin Players tab live as people come and go */
+const _paintOnline = MP.paintOnline.bind(MP);
+MP.paintOnline = () => { _paintOnline(); buildAdminPlayers(); };
+
 function buildAdminTab() {
   const list = document.getElementById('admin-list');
-  const S = t => list.append(mkEl('div', 'msection', t));
 
   /* ---- locked: enter the admin code to unlock (once, forever) ---- */
   if (!isAdmin) {
@@ -3790,106 +5529,164 @@ function buildAdminTab() {
     return;
   }
 
-  const badge = mkEl('div');
-  badge.innerHTML = `<div class="adminbadge">${CROWN} Admin — world controls unlocked</div>`;
-  list.append(badge);
+  list.append(mkEl('div', null, `<div class="adminbadge">${CROWN} Admin — world controls unlocked</div>`));
 
-  S('Player');
-  list.append(bindSlider('maxHealth', 'Max Health', [1, 500, 1]));
-  list.append(bindSlider('healthRegen', 'Health Regen (per sec)', [0, 50, 0.5]));
-  list.append(bindSlider('regenDelay', 'Regen Delay (sec)', [0, 20, 0.5]));
-  list.append(bindToggle('godMode', 'God Mode', 'Take no damage of any kind.'));
-  list.append(bindToggle('flyMode', 'Fly Mode', 'Noclip flight — WASD to fly, SPACE up, C or CTRL down.'));
+  /* ---- the sub-tab bar: Rules / Players / Entities / Server ----
+     (v11: the Give tab merged into the Players cards) */
+  const TABS = [['rules', 'Rules'], ['players', 'Players'],
+    ['ents', 'Entities'], ['server', 'Server']];
+  const bar = mkEl('div', 'atab-bar');
+  adminSetTab = k => {          // 'pmenu' (a player's drill-down) keeps Players lit
+    bar.querySelectorAll('.atab').forEach(x =>
+      x.classList.toggle('on', x.dataset.atab === k || (k === 'pmenu' && x.dataset.atab === 'players')));
+    list.querySelectorAll('.apane').forEach(p => p.classList.toggle('on', p.dataset.apane === k));
+    if (k === 'players') buildAdminPlayers();
+  };
+  TABS.forEach(([k, label], i) => {
+    const b = mkEl('button', 'atab' + (i === 0 ? ' on' : ''), label);
+    b.dataset.atab = k;
+    b.addEventListener('click', () => adminSetTab(k));
+    bar.append(b);
+  });
+  list.append(bar);
 
-  S('Movement');
-  list.append(bindSlider('walkSpeed', 'Walk Speed', [0.5, 32, 0.05]));
-  list.append(bindSlider('runSpeed', 'Run Speed', [1, 48, 0.1]));
-  list.append(bindSlider('jumpPower', 'Jump Power', [5, 120, 1]));
-  list.append(bindSlider('gravity', 'Gravity', [20, 400, 5]));
-  list.append(bindSlider('stepHeight', 'Auto-Step Height', [0, 4, 0.1]));
-
-  S('Fall Damage');
-  list.append(bindToggle('fallDamage', 'Fall Damage', 'Damage from hitting the ground too fast.'));
-  list.append(bindSlider('fallSafeHeight', 'Safe Fall Height (studs)', [0, 50, 0.5]));
-  list.append(bindSlider('fallMultiplier', 'Damage per Stud', [0, 50, 0.5]));
-
-  S('Combat &amp; Zombies');
-  list.append(bindSlider('swordDamage', 'Sword Damage (vs zombies)', [0.5, 10, 0.5]));
-  list.append(bindSlider('swordPvpDamage', 'Sword Damage (vs players)', [5, 60, 1]));
-  list.append(bindSlider('gunDamage', 'Blaster Damage', [5, 60, 1]));
-  list.append(bindSlider('zombieHealth', 'Zombie Health', [1, 50, 1]));
-  list.append(bindSlider('zombieDamage', 'Zombie Damage', [0, 100, 1]));
-  list.append(bindSlider('zombieSpeed', 'Zombie Speed', [0, 12, 0.1]));
-  list.append(bindSlider('zombieCooldown', 'Zombie Attack Cooldown (sec)', [0.2, 5, 0.1]));
-  list.append(bindSlider('knockback', 'Sword Knockback Force', [0, 60, 1]));
-  list.append(bindSlider('maxZombies', 'Max Zombies', [1, 30, 1]));
-
-  S('Camera');
-  list.append(bindSlider('fov', 'Field of View', [30, 110, 1], v => Math.round(v) + '&deg;'));
-  list.append(bindSlider('zoomMin', 'Zoom Minimum', [1, 12, 0.5]));
-  list.append(bindSlider('zoomMax', 'Zoom Maximum', [10, 60, 1]));
-
-  S('Graphics (advanced)');
-  list.append(bindSlider('graphicsLevel', 'Graphics Level', [1, 5, 1],
-    n => ['', 'Potato', 'Low', 'Medium', 'High', 'Ultra'][n] || n));
-  list.append(bindSeg('shadowQuality', 'Shadow Quality', [-1, 0, 1024, 2048, 4096],
-    v => v === -1 ? 'Auto' : v === 0 ? 'Off' : v >= 4096 ? 'Ultra' : v >= 2048 ? 'High' : 'Low'));
-  list.append(bindSlider('fogDistance', 'Fog / View Distance', [0, 300, 10],
-    v => v === 0 ? 'Auto' : String(Math.round(v))));
-
-  S('World');
-  list.append(bindSlider('dayTime', 'Time of Day', [0, 24, 0.1], v => {
+  const pane = (key, info) => {          // one sub-tab pane (Rules starts visible)
+    const p = mkEl('div', 'apane' + (key === 'rules' ? ' on' : ''));
+    p.dataset.apane = key;
+    if (info) p.append(mkEl('div', 'apinfo', info));
+    list.append(p);
+    return p;
+  };
+  const sect = (p, title) => p.append(mkEl('div', 'msection', title));
+  const fmtClock = v => {
     const h = Math.floor(v) % 24, m = Math.round((v - Math.floor(v)) * 60);
     return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-  }));
-  list.append(bindSlider('daySpeed', 'Day Cycle Speed', [0, 2, 0.05],
-    v => v === 0 ? 'Frozen' : (+v).toFixed(2) + ' h/s'));
+  };
 
-  S('Actions');
-  const br = mkEl('div', 'btnrow');
-  br.append(actBtn('Heal', () => { health = V.maxHealth; addSys('Admin: health restored.'); }));
-  br.append(actBtn('Give Sword', () => {
-    if (Inventory.give('sword') >= 0) addSys('Admin: gave a Classic Sword.');
-    else addSys('Your inventory is full!', 'cerr');
-  }));
-  br.append(actBtn('Give Apple', () => {
-    if (Inventory.give('apple') >= 0) addSys('Admin: gave an Apple.');
-    else addSys('Your inventory is full!', 'cerr');
-  }));
-  br.append(actBtn('Spawn Zombie', () => {
+  /* ================= RULES — the whole room, now and for joiners ================= */
+  const wp = pane('rules', 'Room rules — these apply to EVERYONE in the world and to whoever joins later (the relay remembers them).');
+  wp.append(bindSlider('dayTime', 'Time of Day', [0, 24, 0.1], fmtClock));
+  wp.append(bindSlider('daySpeed', 'Day Cycle Speed', [0, 2, 0.05],
+    v => v === 0 ? 'Frozen' : (+v).toFixed(2) + ' h/s'));
+  const tbtns = mkEl('div', 'btnrow');
+  [['Dawn', 6], ['Noon', 12], ['Dusk', 18.5], ['Midnight', 0]].forEach(([n, v]) =>
+    tbtns.append(actBtn(n, () => setVal('dayTime', v))));
+  wp.append(tbtns);
+  sect(wp, 'Movement (everyone)');
+  wp.append(bindSlider('walkSpeed', 'Walk Speed', [0.5, 32, 0.05]));
+  wp.append(bindSlider('runSpeed', 'Run Speed', [1, 48, 0.1]));
+  wp.append(bindSlider('jumpPower', 'Jump Power', [5, 120, 1]));
+  wp.append(bindSlider('gravity', 'Gravity', [20, 400, 5]));
+  wp.append(bindSlider('stepHeight', 'Auto-Step Height', [0, 4, 0.1]));
+  sect(wp, 'Body (everyone)');
+  wp.append(bindSlider('maxHealth', 'Max Health', [1, 500, 1]));
+  wp.append(bindSlider('healthRegen', 'Health Regen (per sec)', [0, 50, 0.5]));
+  wp.append(bindSlider('regenDelay', 'Regen Delay (sec)', [0, 20, 0.5]));
+  sect(wp, 'Fall Damage (everyone)');
+  wp.append(bindToggle('fallDamage', 'Fall Damage', 'Damage from hitting the ground too fast.'));
+  wp.append(bindSlider('fallSafeHeight', 'Safe Fall Height (studs)', [0, 50, 0.5]));
+  wp.append(bindSlider('fallMultiplier', 'Damage per Stud', [0, 50, 0.5]));
+  sect(wp, 'Combat (everyone)');
+  wp.append(bindSlider('swordDamage', 'Sword Damage (vs zombies)', [0.5, 10, 0.5]));
+  wp.append(bindSlider('swordPvpDamage', 'Sword Damage (vs players)', [5, 60, 1]));
+  wp.append(bindSlider('gunDamage', 'Blaster Damage', [5, 60, 1]));
+  wp.append(bindSlider('knockback', 'Sword Knockback Force', [0, 60, 1]));
+  sect(wp, 'Camera Zoom (everyone)');
+  wp.append(bindSlider('zoomMin', 'Zoom Minimum', [1, 12, 0.5]));
+  wp.append(bindSlider('zoomMax', 'Zoom Out Limit', [10, 60, 1]));
+  sect(wp, 'Player Defaults (everyone)');   // v11: the room-wide default; per-player overrides live in the Players cards
+  wp.append(bindToggle('sizeScaleStats', 'Size Scales Speed &amp; Jump',
+    'On: a half-size player runs at half speed and jumps a smaller hop. Off: players at half size run full speed. ' +
+    'Each player can be overridden from their card in the Players tab.'));
+  const wbtns = mkEl('div', 'btnrow');
+  wbtns.append(actBtn('Reset World Rules', () => {         // factory rules for the whole room
+    RULE_KEYS.forEach(k => setVal(k, DEFAULTS[k]));
+    refreshValues();
+    adminBanner('World rules restored to defaults.');
+  }, 'danger'));
+  wp.append(wbtns);
+  sect(wp, 'Live');
+  wp.append(srvRow('Players online', () => String(MP.remotes.size + 1)));
+  wp.append(srvRow('Zombies alive', () => String(zombies.filter(z => !z.dead).length)));
+  wp.append(srvRow('Dropped items', () => String(dropPickups.size)));
+  wp.append(srvRow('World', () => Worlds.name() + (Worlds.online ? '' : ' (offline)')));
+  wp.append(srvRow('Room', () => Worlds.roomName()));
+  wp.append(srvRow('Connection', () =>
+    MP.connected ? 'Live' : MP.state === 'kicked' ? 'Removed by an admin' : 'Offline'));
+
+  /* ================= PLAYERS — cards: you, everyone else, everyone ================= */
+  const pp = pane('players',
+    'Click a player to open their controls — give items, smite, size, speed, jump, teleport, kick… everything in one place.');
+  adminPlayersPane = pp;
+  buildAdminPlayers();
+
+  /* the drill-down pane for ONE player (no tab of its own — reached from the cards) */
+  adminPlayerMenuPane = pane('pmenu');
+
+  /* ================= ENTITIES — zombies ================= */
+  const ep = pane('ents', 'Zombie horde control — the tuning below is part of the room rules, so everyone gets it.');
+  const ebtns = mkEl('div', 'btnrow');
+  ebtns.append(actBtn('Spawn Zombie Here', () => {
     if (!spawnZombie(player.x + 3 + Math.random() * 5, player.z + 3 + Math.random() * 5))
-      addSys('Too many zombies already!');
+      adminBanner('Too many zombies already!');
   }));
-  br.append(actBtn('Kill Zombies', () => {
+  ebtns.append(actBtn('Kill All Zombies', () => {
     let n = 0;
     zombies.forEach(z => { if (!z.dead) { z.dead = true; z.deathT = 0; n++; } });
-    addSys('Admin: removed ' + n + ' zombie' + (n === 1 ? '' : 's') + '.');
+    adminBanner('Removed ' + n + ' zombie' + (n === 1 ? '' : 's') + '.');
   }));
-  br.append(actBtn('Reset Character', () => { openMenu(false); respawn(); }));
-  br.append(actBtn('Restore Defaults', () => {
-    Object.keys(DEFAULTS).forEach(k => V[k] = DEFAULTS[k]);
+  ep.append(ebtns);
+  sect(ep, 'Zombies (everyone)');
+  ep.append(bindSlider('zombieHealth', 'Zombie Health', [1, 50, 1]));
+  ep.append(bindSlider('zombieDamage', 'Zombie Damage', [0, 100, 1]));
+  ep.append(bindSlider('zombieSpeed', 'Zombie Speed', [0, 12, 0.1]));
+  ep.append(bindSlider('zombieCooldown', 'Zombie Attack Cooldown (sec)', [0.2, 5, 0.1]));
+  ep.append(bindSlider('maxZombies', 'Max Zombies', [1, 30, 1]));
+
+  /* ================= SERVER — broadcasts + session ================= */
+  const vp = pane('server', 'Room-wide messages and this admin session.');
+  const bcIn = mkEl('input', 'ain');
+  bcIn.placeholder = 'Broadcast a message to every screen…';
+  bcIn.maxLength = 120; bcIn.autocomplete = 'off';
+  bcIn.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter') sendBc();
+  });
+  vp.append(bcIn);
+  const sendBc = () => {
+    const m = bcIn.value.trim();
+    if (!m) { bcIn.focus(); return; }
+    WS.act('bc', { m });          // local banner + everyone else's
+    bcIn.value = '';
+    adminBanner('Broadcast sent.');
+  };
+  vp.append(actBtn('Broadcast', sendBc));
+  sect(vp, 'Live');
+  vp.append(srvRow('Relay', () => WORKER_URL.replace(/^wss?:\/\//, '').split('/')[0]));
+  vp.append(srvRow('You', () => USERNAME + ' (@' + slug(USERNAME) + ')'));
+  vp.append(srvRow('Players online', () => String(MP.remotes.size + 1)));
+  vp.append(srvRow('Zombies alive', () => String(zombies.filter(z => !z.dead).length)));
+  vp.append(srvRow('Dropped items', () => String(dropPickups.size)));
+  const vbtns = mkEl('div', 'btnrow');
+  vbtns.append(actBtn('Restore Defaults', () => {   // everything — personal + room (broadcasts)
+    Object.keys(DEFAULTS).forEach(k => setVal(k, DEFAULTS[k]));
     adaptive.mult = 1; adaptive.lowStreak = adaptive.highStreak = 0;
-    queueSave(); syncConsts(); applyGraphics();
-    camera.fov = V.fov; camera.updateProjectionMatrix();
     health = V.maxHealth;
     fpsEl.style.display = V.showFps ? 'block' : 'none';
     refreshValues();
-    addSys('Admin: all settings restored to defaults.');
+    adminBanner('All settings restored to defaults.');
   }, 'danger'));
-  br.append(actBtn('Lock Admin', () => {
+  vbtns.append(actBtn('Lock Admin', () => {
     isAdmin = false;
     try { localStorage.removeItem('baseplate.admin.v1'); } catch (e) {}
     applyIdentityToHUD();
     rebuildAdminTab();
   }, 'danger'));
-  list.append(br);
+  vp.append(vbtns);
 }
 
-/* ---- day / night cycle (Admin: Time of Day / Day Cycle Speed) ---- */
-const SKY_DAY_TOP = new THREE.Color(0x5c9fd6), SKY_DAY_BOT = new THREE.Color(0xd8e7f3);
-const SKY_NGT_TOP = new THREE.Color(0x0a1024), SKY_NGT_BOT = new THREE.Color(0x1b2440);
-const SKY_DUSK = new THREE.Color(0xe8935a);
-const SUN_WARM = new THREE.Color(0xff8a3c), SUN_DAY = new THREE.Color(0xfff4e0);
+/* ---- day / night cycle (Admin: Time of Day / Day Cycle Speed) ----
+   (the sky palette lives in §9.5 — recipe worlds retint it) */
 const _cA = new THREE.Color(), _cB = new THREE.Color(), _cC = new THREE.Color();
 const _sunDir = new THREE.Vector3();
 
@@ -3920,6 +5717,12 @@ function updateDayNight(dt) {
   sun.color.copy(_cC);
   sun.intensity = 0.15 + dl * 2.35;
   hemi.intensity = 0.22 + dl * 0.8;
+  /* the first-person viewmodel rides its own scene (§8) — tint its
+     lights with the same day/night mix so a sword at midnight looks
+     like midnight, not high noon */
+  fpSun.color.copy(_cC);
+  fpSun.intensity = Math.max(0.3, sun.intensity * 0.85);
+  fpHemi.intensity = hemi.intensity;
 }
 
 /* ---- PERF: freeze the local matrices of every static mesh ----
@@ -3958,7 +5761,8 @@ updateDayNight(0);
 /* ---- console handle for tinkering / debugging ---- */
 window.BASEPLATE = {
   V, cam, MGR, SWING, Interactables, MP, WS,
-  debug: { scene, camera, character },   // console tinkering / automated tests
+  Worlds, GLOBAL, WORLDS_SPAWN, World, switchWorld, renderWorldsTab,
+  debug: { scene, camera, character, fpTool, fpCam, fpScene },   // console tinkering / automated tests
   get player() { return player; },
   get climbing() { return climbing; },
   get seated() { return seated; },
@@ -3966,8 +5770,12 @@ window.BASEPLATE = {
   get firstPerson() { return cam.fp; },
   get username() { return USERNAME; },
   get isAdmin() { return isAdmin; },
+  get myScale() { return myScale; },            // v11: per-player size + stat multipliers
+  get mySpd() { return mySpd; },
+  get myJmp() { return myJmp; },
+  get mySzSc() { return mySzSc; },
   zombies, keys,
-  Inventory, spawnZombie, respawn, setVal, applyGraphics
+  Inventory, spawnZombie, respawn, setVal, applyGraphics, openPlayerMenu, leaveGame
 };
 
 loop();   // started here so every §14 constant is initialized first
