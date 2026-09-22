@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Baseplate — v6</title>
+<title>Baseplate — v7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -239,15 +239,22 @@
     background:radial-gradient(ellipse at center, transparent 55%, rgba(180,20,10,0.55) 100%);
     transition:opacity .45s; }
 
-  /* ---------- multiplayer online chip (top-left, right of the
-     menu button — the spot the chat used to occupy) ---------- */
-  #mp-chip { position:fixed; top:19px; left:58px; z-index:22; display:flex; align-items:center; gap:7px;
-    padding:5px 11px; border-radius:99px; pointer-events:none;
-    background:rgba(13,17,23,0.45); backdrop-filter:blur(8px);
-    border:1px solid rgba(255,255,255,0.14); color:#fff; font-size:11px; font-weight:800; letter-spacing:.3px; }
-  #mp-chip .dot { width:7px; height:7px; border-radius:50%; background:#9aa4ae; flex:none; }
-  #mp-chip.on .dot { background:#62d76b; }
-  #mp-chip.err .dot { background:#ff7a70; }
+  /* ---------- ONLINE tab (menu → first tab): connection status +
+     the player list — replaces the old top-left online chip ---------- */
+  .mp-status { display:flex; align-items:center; gap:7px; font-weight:800; font-size:12px; }
+  .mp-status .dot { width:8px; height:8px; border-radius:50%; background:#9aa4ae; flex:none; }
+  .mp-status.on { color:#62d76b; }   .mp-status.on .dot { background:#62d76b; }
+  .mp-status.err { color:#ff7a70; }  .mp-status.err .dot { background:#ff7a70; }
+  #mp-players { display:flex; flex-direction:column; gap:6px; }
+  .mp-player { display:flex; align-items:center; gap:11px; padding:8px 12px; border-radius:10px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.06); }
+  .mp-player .swatch { width:24px; height:24px; border-radius:7px; flex:none;
+    border:1px solid rgba(255,255,255,0.28); }
+  .mp-player .nm { font-weight:800; font-size:13px; display:flex; align-items:center; gap:6px; line-height:1.15; }
+  .mp-player .nm.admin { color:#f5c542; }
+  .mp-player .tag { font-size:10.5px; color:rgba(255,255,255,0.45); font-weight:700; }
+  .mp-player .you { margin-left:auto; font-size:10px; font-weight:800; color:#01A2FF;
+    border:1px solid rgba(1,162,255,0.5); border-radius:99px; padding:2px 9px; flex:none; }
 
   /* ---------- remote player nametags (projected like #nametag) ---------- */
   .remote-tag { position:fixed; z-index:10; transform:translate(-50%,-100%); text-align:center; pointer-events:none; }
@@ -302,8 +309,6 @@
 
 <div id="menu-fab" title="Menu (Esc)"><i data-lucide="menu"></i></div>
 
-<div id="mp-chip"><span class="dot"></span><span id="mp-chip-txt">offline</span></div>
-
 <div id="user-modal">
   <div class="card">
     <h1>Welcome to Baseplate</h1>
@@ -319,14 +324,27 @@
   <div id="menu">
     <div id="menu-rail">
       <div class="rail-title">Baseplate</div>
-      <button class="mtab active" data-tab="settings"><i data-lucide="settings"></i><span>Settings</span></button>
+      <button class="mtab active" data-tab="online"><i data-lucide="globe"></i><span>Online</span></button>
+      <button class="mtab" data-tab="settings"><i data-lucide="settings"></i><span>Settings</span></button>
       <button class="mtab" data-tab="controls"><i data-lucide="keyboard"></i><span>Controls</span></button>
       <button class="mtab" data-tab="admin"><i data-lucide="shield"></i><span>Admin</span></button>
       <div class="rail-spacer"></div>
       <button class="mtab" id="menu-close"><i data-lucide="x"></i><span>Close</span></button>
     </div>
     <div id="menu-body">
-      <div class="mtabpane active" data-tab="settings"><div id="settings-list"></div></div>
+      <div class="mtabpane active" data-tab="online">
+        <div class="mrow">
+          <div class="mrow-top">
+            <div class="mlabel">Connection</div>
+            <div class="mp-status" id="mp-status"><span class="dot"></span><span id="mp-status-txt">Connecting…</span></div>
+          </div>
+          <div class="msub">World relay: robloxmultiplayer.kadharri-minecraft.workers.dev — everyone who opens
+            the game file joins this same world. Positions, animations and chat are shared live.</div>
+        </div>
+        <div class="msection" id="mp-count">Players in this world</div>
+        <div class="mrow"><div id="mp-players"></div></div>
+      </div>
+      <div class="mtabpane" data-tab="settings"><div id="settings-list"></div></div>
       <div class="mtabpane" data-tab="controls">
         <div class="crow"><span class="kbd">W A S D</span>Move</div>
         <div class="crow"><span class="kbd">Shift</span>Run</div>
@@ -2181,7 +2199,10 @@ function updateZombies(dt) {
    Each frame: read input -> seated? / ladder? / locomotion ->
    integrate with moveBody() -> fall damage -> pick animation.
 ================================================================ */
-const player = { x: 0, y: 0.5, z: 0, vx: 0, vy: 0, vz: 0, hw: 0.75, h: 5.4, grounded: false, impact: 0 };
+/* initial spawn is scattered on the same 2-6 stud ring respawn() uses —
+   multiplayer players never start inside each other at world center */
+const _spawnA = Math.random() * Math.PI * 2, _spawnR = 2 + Math.random() * 4;
+const player = { x: Math.sin(_spawnA) * _spawnR, y: 0.5, z: Math.cos(_spawnA) * _spawnR, vx: 0, vy: 0, vz: 0, hw: 0.75, h: 5.4, grounded: false, impact: 0 };
 
 let yaw = 0, speed = 0, phase = 0, land = 0, climbPhase = 0;
 let climbing = false, seated = false, seatCtl = null, ladderLatch = 0, climbSide = 1;
@@ -2528,10 +2549,11 @@ if (isTouch) {
        actually type (no system events — see §7)
 
    If the worker is unreachable the game keeps playing solo; the
-   little chip next to the menu button shows the status and it
-   retries in the background with a backoff.
+   ONLINE tab (first tab in the menu) shows the connection status
+   and the live player list, and the game retries in the
+   background with a backoff.
 ================================================================ */
-const WORKER_URL = 'wss://nexusaipro.kadharri-minecraft.workers.dev/ws';
+const WORKER_URL = 'wss://robloxmultiplayer.kadharri-minecraft.workers.dev/ws';
 const ADMIN_CODE = 'Jesusisthebom';
 const CROWN = '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:#f5c542;vertical-align:-1px"><path d="M3 17.5 L3 7.5 L8.2 11.2 L12 4 L15.8 11.2 L21 7.5 L21 17.5 Z"/></svg>';
 const ANIM_OK = ['idle', 'walk', 'run', 'jump', 'climb', 'sit', 'wave', 'dance', 'salute'];
@@ -2549,6 +2571,7 @@ function applyIdentityToHUD() {
   pname.classList.toggle('admin', isAdmin);
   nametag.innerHTML = `<div class="dn${isAdmin ? ' admin' : ''}">${isAdmin ? CROWN : ''}${esc(USERNAME)}</div>` +
                      `<div class="un">@${slug(USERNAME)}</div>`;
+  MP.paintOnline();          // the YOU row in the Online tab follows identity changes
 }
 const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'player';
 
@@ -2637,7 +2660,7 @@ function createRemote(id, name, admin, x, y, z) {
       armLx: 0, armLz: 0, armRx: 0, armRz: 0, legLx: 0, legRx: 0, rootY: 0 }
   };
   MP.remotes.set(id, r);
-  MP.paintChip();
+  MP.paintOnline();
   return r;
 }
 
@@ -2648,7 +2671,7 @@ function removeRemote(id) {
   scene.remove(r.pivots.g);
   r.tag.remove();
   MP.remotes.delete(id);
-  MP.paintChip();
+  MP.paintOnline();
 }
 
 /* ---- remote animation (mirrors the §6 poses, per-rig channels) ---- */
@@ -2762,18 +2785,37 @@ function remoteToolMesh(r) {
   }
 }
 
-/* ---- the multiplayer client ---- */
-const chipEl = document.getElementById('mp-chip');
-const chipTxt = document.getElementById('mp-chip-txt');
+/* ---- the multiplayer client ----
+   The ONLINE tab (menu → first tab) shows the connection status
+   and the live player list — paintOnline() refreshes it. */
+const mpStatusEl = document.getElementById('mp-status');
+const mpStatusTxt = document.getElementById('mp-status-txt');
+const mpCountEl = document.getElementById('mp-count');
+const mpPlayersEl = document.getElementById('mp-players');
 const MP = {
   ws: null, connected: false, state: 'off', retry: 0, retryTO: null, sendTO: 0, pingTO: 25,
   id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)),
   remotes: new Map(),
 
-  paintChip() {
-    if (this.state === 'on') { chipEl.className = 'on'; chipTxt.textContent = (this.remotes.size + 1) + ' online'; }
-    else if (this.state === 'wait') { chipEl.className = ''; chipTxt.textContent = 'connecting…'; }
-    else { chipEl.className = 'err'; chipTxt.textContent = 'offline · retrying'; }
+  paintOnline() {
+    if (this.state === 'on') { mpStatusEl.className = 'mp-status on'; mpStatusTxt.textContent = 'Connected'; }
+    else if (this.state === 'wait') { mpStatusEl.className = 'mp-status'; mpStatusTxt.textContent = 'Connecting…'; }
+    else if (!hasStoredName) { mpStatusEl.className = 'mp-status'; mpStatusTxt.textContent = 'Waiting for username…'; }
+    else { mpStatusEl.className = 'mp-status err'; mpStatusTxt.textContent = 'Offline · retrying'; }
+    const n = this.remotes.size + 1;
+    mpCountEl.textContent = n === 1 ? 'Players in this world — just you' : 'Players in this world (' + n + ')';
+    const rows = [{ name: USERNAME, admin: isAdmin, self: true, col: '#0D69AC' }];
+    for (const r of this.remotes.values()) {
+      const h = [...r.id].reduce((a, c) => a + c.charCodeAt(0), 0);
+      rows.push({ name: r.name, admin: r.admin, self: false,
+        col: '#' + REMOTE_TORSO_COLORS[h % REMOTE_TORSO_COLORS.length].toString(16).padStart(6, '0') });
+    }
+    rows.sort((a, b) => (a.self ? -1 : b.self ? 1 : a.name.localeCompare(b.name)));
+    mpPlayersEl.innerHTML = rows.map(p =>
+      `<div class="mp-player"><span class="swatch" style="background:${p.col}"></span>` +
+      `<div><div class="nm${p.admin ? ' admin' : ''}">${p.admin ? CROWN : ''}${esc(p.name)}</div>` +
+      `<div class="tag">@${slug(p.name)}</div></div>` +
+      (p.self ? '<span class="you">YOU</span>' : '') + '</div>').join('');
   },
 
   connect() {
@@ -2782,8 +2824,8 @@ const MP = {
       try { this.ws.onclose = null; this.ws.close(); } catch (e) {}
       this.ws = null; this.connected = false;
     }
-    if (!('WebSocket' in window)) { this.state = 'off'; this.paintChip(); return; }
-    this.state = 'wait'; this.paintChip();
+    if (!('WebSocket' in window)) { this.state = 'off'; this.paintOnline(); return; }
+    this.state = 'wait'; this.paintOnline();
     let ws;
     try { ws = new WebSocket(WORKER_URL); } catch (e) { this._down(); return; }
     this.ws = ws;
@@ -2791,7 +2833,7 @@ const MP = {
       if (this.ws !== ws) return;
       this.connected = true; this.state = 'on'; this.retry = 0;
       this.sendTO = 0; this.pingTO = 25;      // send a state right away
-      this.paintChip();
+      this.paintOnline();
     };
     ws.onmessage = ev => this._onmsg(ev.data);
     ws.onclose = () => { if (this.ws === ws) this._down(); };
@@ -2799,7 +2841,7 @@ const MP = {
   },
 
   _down() {
-    this.ws = null; this.connected = false; this.state = 'off'; this.paintChip();
+    this.ws = null; this.connected = false; this.state = 'off'; this.paintOnline();
     const wait = Math.min(15000, 800 * Math.pow(2, this.retry++));
     clearTimeout(this.retryTO);
     this.retryTO = setTimeout(() => this.connect(), wait);
@@ -2825,6 +2867,7 @@ const MP = {
     else if (r.name !== m.n || r.admin !== !!m.a) {  // renamed / promoted mid-session
       r.name = String(m.n || 'Player'); r.admin = !!m.a;
       r.tag.innerHTML = remoteTagHTML(r.name, r.admin);
+      MP.paintOnline();
     }
     r.tx = +m.x || 0; r.ty = +m.y || 0; r.tz = +m.z || 0;
     r.yawT = +m.yw || 0;
@@ -2898,7 +2941,7 @@ const MP = {
     }
   }
 };
-MP.paintChip();
+MP.paintOnline();
 
 /* ================================================================
    §13 MAIN LOOP — exception-guarded
@@ -3038,6 +3081,7 @@ function openMenu(open) {
     chatInput.blur();
     emoteMenuEl.classList.remove('open');
     if (!adminBuilt) { buildAdminTab(); adminBuilt = true; }
+    MP.paintOnline();          // the Online tab is live the moment the menu opens
     refreshValues();
     refreshIcons();
   }
@@ -3050,6 +3094,7 @@ document.querySelectorAll('#menu-rail .mtab[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#menu-rail .mtab').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.mtabpane').forEach(p => p.classList.toggle('active', p.dataset.tab === btn.dataset.tab));
+    if (btn.dataset.tab === 'online') MP.paintOnline();   // refresh status + list
   });
 });
 
