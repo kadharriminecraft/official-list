@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Baseplate — v7</title>
+<title>Baseplate — v8</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -351,7 +351,7 @@
         <div class="crow"><span class="kbd">Space</span>Jump · hop up ladders · hop off rides · fly up</div>
         <div class="crow"><span class="kbd">C / Ctrl</span>Fly down (in fly mode)</div>
         <div class="crow"><span class="kbd">E</span>Interact</div>
-        <div class="crow"><span class="kbd">Click</span>Use equipped tool</div>
+        <div class="crow"><span class="kbd">Click</span>Use equipped tool · fire the blaster (FP: crosshair, 3rd: where you click)</div>
         <div class="crow"><span class="kbd">1 – 9</span>Hotbar slots</div>
         <div class="crow"><span class="kbd">/</span>Open chat · Enter to send</div>
         <div class="crow"><span class="kbd">Esc / M</span>Open this menu</div>
@@ -444,6 +444,8 @@
      USERNAME / isAdmin                  your identity (§12.5)
      MP                                  multiplayer client — remote
                                         players + chat relay (§12.5)
+     WS                                  WorldSync — emit/on world events,
+                                        the generic replication layer (§12.6)
 
    PERFORMANCE NOTES (read before adding lots of objects):
      - All BoxGeometries and materials are CACHED and shared. Never
@@ -457,8 +459,9 @@
    KNOWN LIMITS (fine for most games, extend if needed):
      - Colliders are axis-aligned boxes only (no rotated/sloped solids).
      - Zombies walk in straight lines (no pathfinding).
-     - Multiplayer is a relay, not a server: every player simulates
-       their own local world — only players + chat are shared (§12.5).
+     - Multiplayer is a relay, not a server: every player runs the world
+       locally, but the WORLD itself follows everywhere — rides, zombies,
+       hits, day/night all replicate through WS (§12.6).
 ===================================================================== */
 
 /* ================================================================
@@ -525,7 +528,8 @@ const DEFAULTS = {
   // fall damage (free falls under 20 studs are safe, then gentle)
   fallDamage: true, fallSafeHeight: 20, fallMultiplier: 2.5,
   // combat
-  swordDamage: 1, zombieHealth: 2, zombieDamage: 10, zombieSpeed: 2.7,
+  swordDamage: 1, swordPvpDamage: 20, gunDamage: 15,
+  zombieHealth: 2, zombieDamage: 10, zombieSpeed: 2.7,
   zombieCooldown: 1.0, knockback: 16, maxZombies: 6,
   // camera
   fov: 60, camSensitivity: 1, invertY: false, zoomMin: 3, zoomMax: 28, occlusion: true,
@@ -911,7 +915,7 @@ function updateCamera(dt) {
 
 /* camera input: drag-orbit + wheel/pinch zoom + tap-to-use-tool */
 const pointers = new Map();
-let tapInfo = null, pinchDist = 0, pinchFP = 0;
+let tapInfo = null, pinchDist = 0;
 const dom = renderer.domElement;
 
 dom.addEventListener('pointerdown', e => {
@@ -941,26 +945,25 @@ dom.addEventListener('pointermove', e => {
     const [a, b] = [...pointers.values()];
     const d = Math.hypot(a.x - b.x, a.y - b.y);
     if (pinchDist > 0) {
-      if (cam.fp) {                                   // spreading fingers pops back out
-        pinchFP += d - pinchDist;
-        if (pinchFP > 12) { exitFP(); pinchFP = 0; }
-      } else if (cam.zoom > V.zoomMin + 0.01) {
-        cam.zoom = clamp(cam.zoom * pinchDist / d, V.zoomMin, V.zoomMax);
-        pinchFP = 0;
-      } else {                                        // pinched fully in -> first person
-        pinchFP += pinchDist - d;
-        if (pinchFP > 12) { enterFP(); pinchFP = 0; }
+      /* exactly like Roblox mobile: PINCH IN (fingers closing) moves the
+         camera CLOSER — all the way into first person; SPREAD (fingers
+         opening) pulls it back out. The old ratio was inverted, which made
+         zoom + first person feel flipped. */
+      if (cam.fp) {
+        if (d > pinchDist + 1.5) exitFP();                    // spreading pops back out
+      } else {
+        cam.zoom = clamp(cam.zoom * d / pinchDist, V.zoomMin, V.zoomMax);   // spread = out
+        if (d < pinchDist - 1.5 && cam.zoom <= V.zoomMin + 0.01) enterFP(); // pinched fully in
       }
     }
     pinchDist = d;
   }
 });
 function pointerEnd(e) {
-  if (tapInfo && pointers.size === 1 && performance.now() - tapInfo.t < 300) useEquipped();
+  if (tapInfo && pointers.size === 1 && performance.now() - tapInfo.t < 300) useEquipped(tapInfo.x, tapInfo.y);
   pointers.delete(e.pointerId);
   tapInfo = null;
   pinchDist = 0;
-  pinchFP = 0;
 }
 dom.addEventListener('pointerup', pointerEnd);
 dom.addEventListener('pointercancel', pointerEnd);
@@ -968,9 +971,9 @@ dom.addEventListener('wheel', e => {
   e.preventDefault();
   const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);  // lines/pages -> px
   if (cam.fp) { if (dy > 0) exitFP(); return; }                      // scroll out pops back out
-  if (dy < 0 && cam.zoom <= V.zoomMin + 0.05) { enterFP(); return; } // zoomed fully in
   cam.zoom = clamp(cam.zoom * Math.exp(dy * 0.0016), V.zoomMin, V.zoomMax);
-}, { passive: false });
+  if (dy < 0 && cam.zoom <= V.zoomMin + 0.01) enterFP();            // the SAME scroll that bottoms
+}, { passive: false });                                              // out pops into FP — no extra click
 
 /* ---- FIRST PERSON — exactly like Roblox: zoom in all the way and the
    camera pops into the head, the body hides (an equipped tool stays
@@ -995,8 +998,8 @@ function enterFP() {
 function exitFP() {
   if (!cam.fp) return;
   cam.fp = false;
-  cam.zoom = Math.max(V.zoomMin + 2.5, 4.5);   // a clearly-visible pop-out distance,
-  cam.dist = 2.2;                               // then the wheel keeps zooming from there
+  cam.zoom = V.zoomMin + 1.2;   // Roblox-style: pop out just past the head —
+  cam.dist = 1.0;               // the wheel/pinch keeps zooming from there
   applyFPVisibility();
   fpCross.style.display = 'none';
   updateFPHint();
@@ -1316,7 +1319,7 @@ function handleChat(v) {
     else addSys(`Unknown emote: ${esc(name)}`, 'cerr');
   } else if (v.toLowerCase() === '/help') {
     addSys('<b>Controls</b>: WASD move · SHIFT run · SPACE jump · E interact · click to use tool · 1-9 hotbar · drag camera · scroll zoom · /e wave, dance, sit, salute · ESC or M for menu');
-    addSys('<b>Things to try</b>: take the sword by the tree, press the red button, climb the watchtower ladder, open the chest, sit on the chair, toggle the lamp, pump the tree swing, ride the merry-go-round and fire its rocket (E).');
+    addSys('<b>Things to try</b>: take the sword by the tree, press the red button, climb the watchtower ladder for the <b>blaster</b>, open the chest, sit on the chair, toggle the lamp, pump the tree swing, ride the merry-go-round and fire its rocket (E). Everything you do shows on every screen.');
   } else if (v.startsWith('/')) {
     addSys('Unknown command. Try /help', 'cerr');
   } else {
@@ -1386,6 +1389,7 @@ function flashHurt() {
 ================================================================ */
 const ITEM_DEFS = {
   sword: { name: 'Classic Sword', icon: 'sword', type: 'tool' },
+  gun: { name: 'Blaster', icon: 'crosshair', type: 'tool' },
   apple: { name: 'Apple',         icon: 'apple', type: 'consumable' },
 };
 
@@ -1461,23 +1465,67 @@ function buildAppleMesh() {
   return g;
 }
 
+/* the BLASTER — a basic infinite-ammo pistol (no reload, short
+   cooldown). Modeled like the sword (grip at the hand, barrel along
+   +Z); the holder sites rotate it to point where the arm aims. */
+const gunDarkMat = mat(0x2b2f36, 0.45, 0.6, 0.55), gunAccentMat = mat(0xC4281C, 0.4, 0.6, 0.6);
+function buildGunMesh() {
+  const g = new THREE.Group();
+  part(0.34, 0.5, 1.15, gunDarkMat, 0, 0.12, 0.42, g);        // body
+  part(0.3, 0.34, 0.95, gunAccentMat, 0, 0.12, 0.98, g);       // barrel shroud
+  part(0.16, 0.16, 0.5, gunDarkMat, 0, 0.12, 1.62, g);         // barrel tip (muzzle ≈ z+1.9)
+  const grip = part(0.3, 0.75, 0.4, gunDarkMat, 0, -0.42, 0.1, g); // grip at the hand
+  grip.rotation.x = 0.28;
+  part(0.36, 0.14, 0.24, gunAccentMat, 0, 0.42, 0.34, g);      // top sight
+  part(0.1, 0.22, 0.1, gunAccentMat, 0, 0.45, 0.86, g);         // front post
+  return g;
+}
+
 let toolMesh = null;
+/* per-tool orientation: the sword's blade points up when the arm is
+   held out; the gun must point FORWARD along the arm's reach. */
 function attachTool(id) {
   detachTool();
-  toolMesh = id === 'sword' ? buildSwordMesh() : buildAppleMesh();
+  toolMesh = id === 'sword' ? buildSwordMesh() : id === 'gun' ? buildGunMesh() : buildAppleMesh();
+  toolMesh.rotation.x = id === 'gun' ? Math.PI / 2 : 0;   // barrel forward when the arm is out
   toolMesh.traverse(o => { if (o.isMesh) o.userData.tool = true; });   // stays visible in first person
+  if (cam.fp) applyFPToolPose();
   (cam.fp ? fpTool : toolAnchor).add(toolMesh);
 }
 function detachTool() { if (toolMesh) { toolMesh.removeFromParent(); toolMesh = null; } }
 
-/* using tools — triggered by a quick TAP on the canvas (§4) */
+/* first-person viewmodel placement per tool (the sword keeps its tuned
+   pose + swing; the gun sits lower-right and aims where the crosshair
+   points, kicking up on each shot) */
+function applyFPToolPose(kick = 0) {
+  const it = Inventory.current();
+  if (it && it.id === 'gun') {
+    fpTool.position.set(0.42, -0.34, -0.85);
+    fpTool.rotation.set(0.05 + kick * 0.55, -0.14, 0);   // kick tilts the muzzle up
+  } else {
+    let fx = -Math.PI / 2 + 0.1, fz = -0.1;
+    if (it && it.id === 'sword' && swingT >= 0) {
+      const k = swingT / 0.42;
+      if (k < 0.28) { const u = k / 0.28; fx -= u * 0.6; fz -= u * 0.3; }
+      else { const u = (k - 0.28) / 0.72; fx += -0.6 + easeOut(u) * 1.5; fz += 0.3 * u; }
+    }
+    fpTool.position.set(0.58, -0.5, -1.3);
+    fpTool.rotation.set(fx - kick * 0.5, -0.45, fz);
+  }
+}
+
+/* using tools — triggered by a quick TAP on the canvas (§4).
+   The gun gets the tap position so a 3rd-person shot flies exactly
+   where you clicked; first person always shoots the crosshair. */
 let swingT = -1, eatT = 0, swingHitSet = new Set();
 
-function useEquipped() {
+function useEquipped(cx, cy) {
   const it = Inventory.current();
   if (!it) return;
   if (it.id === 'sword') {
     if (swingT < 0 || swingT > 0.3) { swingT = 0; swingHitSet = new Set(); }
+  } else if (it.id === 'gun') {
+    fireGun(cx, cy);
   } else if (it.id === 'apple') {
     eatT = 0.5;
     health = Math.min(V.maxHealth, health + 30);
@@ -1495,7 +1543,119 @@ function doSwingHits() { // anything in a ~70° arc in front of the player
     if (d > 5.6) continue;
     if ((dx * fx + dz * fz) / (d || 1) < 0.35) continue;
     swingHitSet.add(z);
-    damageZombie(z, V.swordDamage);
+    /* remote-owned zombies are damaged through their owner (§12.6) */
+    if (z.ghost) WS.emit('zdmg', { i: z.zid, d: V.swordDamage, ax: +player.x.toFixed(1), az: +player.z.toFixed(1) });
+    else damageZombie(z, V.swordDamage);
+  }
+  /* OTHER PLAYERS — the victim's own client applies the hit (§12.6) */
+  for (const r of MP.remotes.values()) {
+    const key = 'p:' + r.id;
+    if (swingHitSet.has(key)) continue;
+    const dx = r.x - player.x, dz = r.z - player.z;
+    const d = Math.hypot(dx, dz);
+    if (d > 5.6) continue;
+    if ((dx * fx + dz * fz) / (d || 1) < 0.35) continue;
+    swingHitSet.add(key);
+    pvpHit(r.id, V.swordPvpDamage, dx / (d || 1), dz / (d || 1));
+  }
+}
+
+function pvpHit(to, dmg, nx, nz) {
+  if (!MP.connected) return;
+  WS.emit('pvp', { to, d: +dmg, x: +nx.toFixed(2), z: +nz.toFixed(2) });
+}
+
+/* ---- THE BLASTER — a basic hitscan gun: infinite ammo, no reload,
+   just a short cooldown. First person shoots the CROSSHAIR; third
+   person shoots exactly where you click. Damage is decided on the
+   shooter's screen and applied by the victim's (§12.6). ---- */
+const GUN_RANGE = 220, GUN_COOLDOWN = 0.26;
+let gunCd = 0, gunKickT = 0;
+const _gv = new THREE.Vector3();
+
+/* short-lived visual effects: tracers, muzzle flash, impact sparks */
+const FX = [];
+function spawnTracer(ax, ay, az, bx, by, bz) {
+  const len = Math.hypot(bx - ax, by - ay, bz - az);
+  if (len < 0.1) return;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, len),
+    new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.95, depthWrite: false }));
+  m.position.set((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2);
+  m.lookAt(bx, by, bz);
+  scene.add(m);
+  FX.push({ mesh: m, life: 0.09, max: 0.09, kind: 't' });
+}
+function spawnFlash(x, y, z, s = 1) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.26 * s, 8, 6),
+    new THREE.MeshBasicMaterial({ color: 0xfff3c0, transparent: true, opacity: 1, depthWrite: false }));
+  m.position.set(x, y, z);
+  scene.add(m);
+  FX.push({ mesh: m, life: 0.07, max: 0.07, kind: 'f' });
+}
+function updateFX(dt) {
+  for (let i = FX.length - 1; i >= 0; i--) {
+    const f = FX[i];
+    f.life -= dt;
+    if (f.life <= 0) { scene.remove(f.mesh); f.mesh.geometry.dispose(); f.mesh.material.dispose(); FX.splice(i, 1); continue; }
+    f.mesh.material.opacity = (f.life / f.max) * (f.kind === 't' ? 0.95 : 1);
+    if (f.kind === 'f') f.mesh.scale.setScalar(1 + (1 - f.life / f.max) * 1.6);
+  }
+}
+
+function fireGun(cx, cy) {
+  if (gunCd > 0 || userModalOpen) return;
+  gunCd = GUN_COOLDOWN; gunKickT = 0.14;
+
+  /* aim direction — FP: the crosshair ray; 3rd person: through the tap */
+  if (cam.fp) camera.getWorldDirection(_gv);
+  else {
+    _gv.set(((cx ?? innerWidth / 2) / innerWidth) * 2 - 1,
+            -((cy ?? innerHeight / 2) / innerHeight) * 2 + 1, 0.5)
+      .unproject(camera).sub(camera.position).normalize();
+  }
+  const dx = _gv.x, dy = _gv.y, dz = _gv.z;
+
+  /* hit-scan FROM THE CAMERA so the shot lands exactly on what you
+     clicked (the tracer is still drawn from the muzzle) */
+  const px = camera.position.x, py = camera.position.y, pz = camera.position.z;
+  let bestT = V.godMode ? GUN_RANGE : occlusionDist(camera.position, _gv, GUN_RANGE);
+  let vZ = null, vP = null;
+  for (const z of zombies) {
+    if (z.dead) continue;
+    const t = (z.body.x - px) * dx + (z.body.y + 2.6 - py) * dy + (z.body.z - pz) * dz;
+    if (t < 0.5 || t >= bestT) continue;
+    const ox = (z.body.x - px) - dx * t, oy = (z.body.y + 2.6 - py) - dy * t, oz = (z.body.z - pz) - dz * t;
+    if (Math.hypot(ox, oz) < 1.15 && Math.abs(oy) < 2.9) { bestT = t; vZ = z; vP = null; }
+  }
+  for (const r of MP.remotes.values()) {
+    const t = (r.x - px) * dx + (r.y + 2.7 - py) * dy + (r.z - pz) * dz;
+    if (t < 0.5 || t >= bestT) continue;
+    const ox = (r.x - px) - dx * t, oy = (r.y + 2.7 - py) - dy * t, oz = (r.z - pz) - dz * t;
+    if (Math.hypot(ox, oz) < 1.2 && Math.abs(oy) < 2.85) { bestT = t; vP = r; vZ = null; }
+  }
+  const ex = px + dx * bestT, ey = py + dy * bestT, ez = pz + dz * bestT;
+
+  /* muzzle — in FP just in front of the camera; in 3rd person from the
+     character, who snaps to face the shot (exactly like Roblox) */
+  let mx, my, mz;
+  if (cam.fp) { mx = px + dx * 0.9; my = py + dy * 0.9 - 0.1; mz = pz + dz * 0.9; }
+  else {
+    yaw = Math.atan2(dx, dz);
+    mx = player.x + dx * 1.5; my = player.y + 3.35; mz = player.z + dz * 1.5;
+  }
+  spawnTracer(mx, my, mz, ex, ey, ez);
+  spawnFlash(mx, my, mz, 0.8);
+  if (bestT < GUN_RANGE - 0.5) spawnFlash(ex, ey, ez, 1);
+
+  if (MP.connected)
+    WS.emit('gshot', { a: [+mx.toFixed(1), +my.toFixed(1), +mz.toFixed(1)], b: [+ex.toFixed(1), +ey.toFixed(1), +ez.toFixed(1)] });
+
+  if (vZ) {
+    if (vZ.ghost) WS.emit('zdmg', { i: vZ.zid, d: V.gunDamage, ax: +player.x.toFixed(1), az: +player.z.toFixed(1) });
+    else damageZombie(vZ, V.gunDamage);
+  } else if (vP) {
+    const hl = Math.hypot(dx, dz) || 1;
+    pvpHit(vP.id, V.gunDamage, dx / hl, dz / hl);
   }
 }
 
@@ -1703,18 +1863,20 @@ addInteractable({
 solid(1.6, 2.0, 1.6, woodMat, 13.6, 1.0, -9);
 box(1.5, 0.25, 1.5, woodMat, 13.6, 1.75, -9);
 box(0.22, 1.8, 1.5, woodMat, 14.3, 2.7, -9);
-const CHAIR = { sitX: 13.6, sitZ: -9, sitY: 3.05, yaw: -Math.PI / 2, standX: 15.4, standZ: -9 };
+const CHAIR = { sitX: 13.6, sitZ: -9, sitY: 3.05, yaw: -Math.PI / 2, standX: 15.4, standZ: -9, occ: null };
 addInteractable({
   x: 13.6, y: 1.5, z: -9, radius: 3.5,
   label: 'Sit on Chair',
   action: () => {
-    if (seated) return;
+    if (seated || CHAIR.occ) return;
     seated = true;
+    CHAIR.occ = MP.id;
     player.x = CHAIR.sitX; player.z = CHAIR.sitZ; player.y = CHAIR.sitY;
     player.vx = player.vy = player.vz = 0;
     Inventory.unequip();
     emote = { name: 'sit', t: 0 };
     setAnim('sit', 0.3);
+    WS.emit('sit', { r: 'chair' });
   }
 });
 
@@ -1734,9 +1896,13 @@ addInteractable({
   label: () => `Press Button — spawn zombie (${V.maxZombies - zombies.length} left)`,
   action: () => {
     button.press = 0.3;
-    if (!spawnZombie(5 + (Math.random() * 10 - 5), 13.5 + Math.random() * 3)) {
+    const zx = 5 + (Math.random() * 10 - 5), zz = 13.5 + Math.random() * 3;
+    const zid = MP.id + ':' + (++zSeq);
+    if (!spawnZombie(zx, zz, zid, MP.id)) {
       addSys('Too many zombies already!');
     } else {
+      /* world event — the zombie appears on every screen (§12.6) */
+      WS.emit('zspawn', { i: zid, x: +zx.toFixed(1), z: +zz.toFixed(1) });
       const hits = Math.max(1, Math.ceil(V.zombieHealth / Math.max(0.001, V.swordDamage)));
       addSys(`A zombie has spawned! <b>(${hits} sword hit${hits > 1 ? 's' : ''} to kill)</b>`);
     }
@@ -1770,24 +1936,54 @@ addInteractable({
   }
 });
 
+/* blaster pickup (floating on TOP of the watchtower — climb the ladder!) */
+const gunPickup = { taken: false, spin: new THREE.Group(), light: new THREE.PointLight(0xffd27a, 24, 9, 2) };
+{
+  const inner = buildGunMesh();
+  inner.scale.setScalar(2.4);                 // big enough to spot from the ground
+  gunPickup.spin.add(inner);
+  gunPickup.spin.position.set(-12, 14.9, 11.5);
+  scene.add(gunPickup.spin);
+  gunPickup.light.position.set(-12, 15.9, 11.5);
+  scene.add(gunPickup.light);
+}
+addInteractable({
+  x: -12, y: 14.5, z: 11.5, radius: 4.5,
+  label: 'Take the Blaster',
+  enabled: () => !gunPickup.taken,
+  action: () => {
+    if (gunPickup.taken) return;
+    const slot = Inventory.give('gun');
+    if (slot < 0) { addSys('Your inventory is full!'); return; }
+    gunPickup.taken = true;
+    scene.remove(gunPickup.spin);
+    scene.remove(gunPickup.light);
+    Inventory.equip(slot);
+    addSys('You got the <b>Blaster</b>! Infinite ammo, no reload — click to fire.');
+  }
+});
+
 /* ================================================================
    §10.5 RIDES — tree swing + rocket merry-go-round
    ----------------------------------------------------------------
-   Both rides keep ALL of their physics in a tiny plain object
-   (SWING.state / MGR.state — numbers only, JSON-serializable) so a
-   future MULTIPLAYER SERVER can own the simulation:
-     - the server replicates { angle, angVel, rocketOn } ~10x / sec
-     - clients keep integrating locally between snapshots
-     - seats track an occupant id ('local' for now), so a remote
-       player can claim a seat without touching the local rig
-   Sitting goes through the seatCtl interface consumed by §12.
+   MULTIPLAYER (§12.6 WorldSync): exactly ONE client simulates each
+   ride and broadcasts its state ~10x/sec; everyone else predicts
+   locally and gently corrects toward the broadcast.
+     - MERRY-GO-ROUND: owned by the room LEADER (smallest player id).
+     - SWING: owned by whoever is SITTING on it (they feel their own
+       pump instantly); the leader takes over when it is empty.
+   Ownership is deterministic, so every screen independently agrees
+   who simulates what — the worker stays a dumb relay. Seats hold
+   occupant player-ids; sit/stand hop as world events.
+   Sitting still goes through the seatCtl interface (§12).
 ================================================================ */
 const DYNAMIC = new Set([button.mesh]);   // meshes that animate after freezeStatics()
 
 /* ---- the BIG tree + a swing you can actually pump ---- */
 const SWING = {
   pivot: { x: -25.5, y: 9.8, z: -22 }, L: 6.8,
-  state: { angle: 0, vel: 0 },            // server-authoritative
+  state: { angle: 0, vel: 0 },            // sitter-authoritative (§12.6)
+  net: null,                              // latest broadcast {a, v, at}
   pump: 0, settleT: 0, occupant: null, group: null
 };
 {
@@ -1832,21 +2028,23 @@ const swingSeatCtl = {
     if (sp > 34) { vz *= 34 / sp; vy *= 34 / sp; }
     player.vx = 0; player.vy = vy; player.vz = vz;
     SWING.occupant = null; SWING.pump = 0;
+    WS.emit('stand', {});
   },
-  detach() { SWING.occupant = null; SWING.pump = 0; }   // respawn / cleanup — no fling
+  detach() { SWING.occupant = null; SWING.pump = 0; WS.emit('stand', {}); }   // respawn — no fling
 };
 addInteractable({
   x: SWING.pivot.x, y: 3.4, z: SWING.pivot.z, radius: 5.5,
   label: 'Sit on the Swing',
   action: () => {
     if (seated || SWING.occupant) return;
-    SWING.occupant = 'local';
+    SWING.occupant = MP.id;
     SWING.settleT = 1.4;
     yaw = 0;                                  // face down the swing axis (+Z)
     seated = true; seatCtl = swingSeatCtl;
     Inventory.unequip();
     emote = { name: 'sit', t: 0 };
     setAnim('sit', 0.3);
+    WS.emit('sit', { r: 'swg' });
     addSys('You sit on the swing — hold <b>W / S</b> to pump it, <b>SPACE</b> to hop off.');
   }
 });
@@ -1854,7 +2052,8 @@ addInteractable({
 /* ---- MERRY-GO-ROUND with a rocket booster ---- */
 const MGR = {
   center: { x: 28, z: 24 }, R: 7.8, seatR: 5.9,
-  state: { angle: 0, angVel: 0, rocketOn: false },       // server-authoritative
+  state: { angle: 0, angVel: 0, rocketOn: false },       // leader-authoritative (§12.6)
+  net: null,                                              // latest broadcast {a, w, r, at}
   ACC: 0.75, MAXW: 6.5,                                 // rad/s² torque, rad/s cap (rocket top speed)
   seats: [], spin: null, rocket: null
 };
@@ -1941,8 +2140,9 @@ const MGR = {
         if (sp > 36) { vx *= 36 / sp; vz *= 36 / sp; }
         player.vx = vx; player.vz = vz; player.vy = 11; player.y = 1.6;
         seat.occupant = null;
+        WS.emit('stand', {});
       },
-      detach() { seat.occupant = null; }
+      detach() { seat.occupant = null; WS.emit('stand', {}); }
     };
     seat.ix = addInteractable({
       x: MGR.center.x, y: 1.6, z: MGR.center.z, radius: 4,   // x/z go live in updateRides
@@ -1950,11 +2150,12 @@ const MGR = {
       enabled: () => !seat.occupant,
       action: () => {
         if (seated || seat.occupant) return;
-        seat.occupant = 'local';
+        seat.occupant = MP.id;
         seated = true; seatCtl = seat.ctl;
         Inventory.unequip();
         emote = { name: 'sit', t: 0 };
         setAnim('sit', 0.3);
+        WS.emit('sit', { r: 'mgr', s: i });
         addSys('You hop on the merry-go-round — <b>SPACE</b> to hop off. Try firing the <b>rocket</b> with <b>E</b>!');
       }
     });
@@ -1997,7 +2198,8 @@ const MGR = {
     x: MGR.center.x, y: 1.6, z: MGR.center.z, radius: 6.5,     // x/z go live in updateRides
     label: () => MGR.state.rocketOn ? 'Cut the Rocket' : 'Fire the Rocket!',
     action: () => {
-      MGR.state.rocketOn = !MGR.state.rocketOn;
+      /* a world event — the rocket fires on every screen at once (§12.6) */
+      WS.act('mgrE', { on: MGR.state.rocketOn ? 0 : 1 });
       addSys(MGR.state.rocketOn
         ? '<b>The rocket booster fires!</b> The merry-go-round is accelerating — hop off (SPACE) for a big fling!'
         : 'Rocket booster shut down.');
@@ -2005,22 +2207,61 @@ const MGR = {
   });
 }
 
+const RIDE_SYNC = { t: 0 };   // shared 10 Hz broadcast timer
 function updateRides(dt) {
-  /* swing: damped pendulum + player pumping (input set by seatCtl) */
-  const sw = SWING.state;
-  let acc = -(34 / SWING.L) * Math.sin(sw.angle) - sw.vel * 0.07;
-  if (SWING.pump && (SWING.pump * sw.vel > 0 || Math.abs(sw.vel) < 0.2)) acc += SWING.pump * 4.5;
-  sw.vel = clamp(sw.vel + acc * dt, -3.2, 3.2);
-  sw.angle += sw.vel * dt;
-  if (Math.abs(sw.angle) > 1.42) { sw.angle = clamp(sw.angle, -1.42, 1.42); sw.vel *= -0.3; }
+  const sw = SWING.state, mg = MGR.state;
+
+  /* ---- who simulates what (deterministic — see §12.6) ---- */
+  const iSimMgr = MP.connected && worldLeader() === MP.id;
+  const swOwner = SWING.occupant || (MP.connected ? worldLeader() : MP.id);
+  const iSimSwing = swOwner === MP.id;
+  const swFresh = SWING.net && (elapsed - SWING.net.at) < 0.4;
+  const mgFresh = MGR.net && (elapsed - MGR.net.at) < 0.4;
+
+  /* ---- swing: damped pendulum + player pumping ---- */
+  if (iSimSwing || !swFresh) {
+    // I own the sim (or nobody is broadcasting): full local physics.
+    // pump only feeds MY sim while I'm the one sitting.
+    let acc = -(34 / SWING.L) * Math.sin(sw.angle) - sw.vel * 0.07;
+    const pump = iSimSwing ? SWING.pump : 0;
+    if (pump && (pump * sw.vel > 0 || Math.abs(sw.vel) < 0.2)) acc += pump * 4.5;
+    sw.vel = clamp(sw.vel + acc * dt, -3.2, 3.2);
+    sw.angle += sw.vel * dt;
+    if (Math.abs(sw.angle) > 1.42) { sw.angle = clamp(sw.angle, -1.42, 1.42); sw.vel *= -0.3; }
+  } else {
+    // following the sitter: predict ahead, then gently correct onto it
+    sw.vel = SWING.net.v;
+    const pa = SWING.net.a + SWING.net.v * (elapsed - SWING.net.at);
+    sw.angle += (pa - sw.angle) * Math.min(1, dt * 10);
+  }
   SWING.group.rotation.x = -sw.angle;               // pendulum swings BACK AND FORTH (world Z)
 
-  /* merry-go-round: rocket torque vs friction */
-  const mg = MGR.state;
-  if (mg.rocketOn) mg.angVel = Math.min(MGR.MAXW, mg.angVel + MGR.ACC * dt);
-  else mg.angVel *= Math.exp(-0.22 * dt);
-  mg.angle += mg.angVel * dt;
+  /* ---- merry-go-round: rocket torque vs friction ---- */
+  if (iSimMgr) {
+    if (mg.rocketOn) mg.angVel = Math.min(MGR.MAXW, mg.angVel + MGR.ACC * dt);
+    else mg.angVel *= Math.exp(-0.22 * dt);
+    mg.angle = angWrap(mg.angle + mg.angVel * dt);
+  } else if (mgFresh) {
+    mg.angVel = MGR.net.w;
+    const pa = MGR.net.a + MGR.net.w * (elapsed - MGR.net.at);
+    mg.angle = angWrap(mg.angle + angWrap(pa - mg.angle) * Math.min(1, dt * 10));
+  } else {
+    mg.angVel *= Math.exp(-0.22 * dt);                // coast to rest between owners
+    mg.angle = angWrap(mg.angle + mg.angVel * dt);
+  }
   MGR.spin.rotation.y = mg.angle;
+
+  /* ---- the owner broadcasts state ~10x/sec (only while it matters) ---- */
+  if (MP.connected) {
+    RIDE_SYNC.t -= dt;
+    if (RIDE_SYNC.t <= 0) {
+      RIDE_SYNC.t = 0.1;
+      if (iSimSwing && (SWING.occupant === MP.id || Math.abs(sw.vel) > 0.04 || Math.abs(sw.angle) > 0.03))
+        WS.emit('swg', { a: +sw.angle.toFixed(3), v: +sw.vel.toFixed(3) });
+      if (iSimMgr && (Math.abs(mg.angVel) > 0.02 || mg.rocketOn))
+        WS.emit('mgr', { a: +mg.angle.toFixed(3), w: +mg.angVel.toFixed(3), r: mg.rocketOn ? 1 : 0 });
+    }
+  }
 
   /* live prompt positions — the seats and rocket revolve with the ride */
   for (const seat of MGR.seats) {
@@ -2046,14 +2287,22 @@ function updateRides(dt) {
    §11 ZOMBIES
    ----------------------------------------------------------------
    spawnZombie(x,z): blocky R6 zombie, 2 HP (two sword hits).
-   AI: walk straight at the player, attack when close (10 dmg, 1s
-   cooldown, knockback), same AABB physics as the player.
+   AI: walk straight at the NEAREST player (me or a remote — §12.5
+   knows where everyone is), attack when close, same AABB physics
+   as the player.
+   MULTIPLAYER (§12.6): whoever presses the button OWNS the zombie
+   and simulates it, broadcasting state 10x/sec; every other screen
+   renders a ghost that interpolates toward it. Damage to a ghost
+   goes to its owner as a zdmg event; death is a zdie event for
+   everyone. If an owner leaves, the room leader adopts their
+   zombies — the world keeps following.
    NOTE: materials are per-instance (hit flash + death fade), but
    geometry + face texture are shared. Rig refs: armL/armR are the
    shoulder pivots, legL/legR are the hip pivots.
 ================================================================ */
 let MAX_ZOMBIES = 6;   /* live-synced from V (§1.5) */
 const zombies = [];
+let zSeq = 0, zSyncT = 0;   /* zombie id counter + state-broadcast timer */
 
 function makeZombieFaceTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -2103,32 +2352,49 @@ function buildZombieRig() {
   return { group, deathPivot, torso, neck, armL: mkArm(1), armR: mkArm(-1), legL: mkLeg(1), legR: mkLeg(-1), matsList };
 }
 
-function spawnZombie(x, z) {
+function spawnZombie(x, z, zid, owner) {
   if (zombies.length >= MAX_ZOMBIES) return false;
   const rig = buildZombieRig();
   rig.group.position.set(x, 0.5, z);
   rig.group.scale.setScalar(0.01);
   scene.add(rig.group);
+  const mine = !owner || owner === MP.id;
   zombies.push({
     ...rig,
     body: { x, y: 0.5, z, vx: 0, vy: 0, vz: 0, hw: 0.7, h: 5.2, grounded: false, impact: 0 },
-    hp: V.zombieHealth, walk: Math.random() * 6, hurtT: 0, attackT: 0, lungeT: 0,
+    zid: zid || (MP.id + ':' + (++zSeq)),   // unique world id (§12.6)
+    owner: owner || MP.id, ghost: !mine,    // ghosts follow their owner's broadcast
+    tx: x, ty: 0.5, tz: z, tyaw: 0, pgx: x, pgz: z,
+    hp: V.zombieHealth, walk: Math.random() * 6, hurtT: 0, attackT: 0, lungeT: 0, atkMe: 0,
     spawnT: 0, dead: false, deathT: 0
   });
   return true;
 }
 
-function damageZombie(z, dmg) {
-  if (z.dead) return;
+function damageZombie(z, dmg, ax = player.x, az = player.z) {
+  if (z.dead || z.ghost) return;           // ghosts are damaged through zdmg events
   z.hp -= dmg;
   z.hurtT = 0.18;
-  const dx = z.body.x - player.x, dz = z.body.z - player.z, d = Math.hypot(dx, dz) || 1;
+  const dx = z.body.x - ax, dz = z.body.z - az, d = Math.hypot(dx, dz) || 1;
   z.body.vx += (dx / d) * V.knockback; z.body.vz += (dz / d) * V.knockback;
   if (z.body.grounded) z.body.vy = 8;
-  if (z.hp <= 0) { z.dead = true; z.deathT = 0; addSys('Zombie defeated!'); }
+  if (z.hp <= 0) { z.dead = true; z.deathT = 0; WS.emit('zdie', { i: z.zid }); addSys('Zombie defeated!'); }
 }
 
 function updateZombies(dt) {
+  /* the owner of each zombie broadcasts its state 10x/sec so the
+     ghost copies on every other screen can follow (§12.6) */
+  zSyncT -= dt;
+  if (zSyncT <= 0 && MP.connected) {
+    zSyncT = 0.1;
+    const mine = zombies.filter(q => q.owner === MP.id && !q.dead);
+    for (let c = 0; c < mine.length; c += 12) {          // ≤ 12 zombies per message
+      WS.emit('zst', { l: mine.slice(c, c + 12).map(q =>
+        [q.zid, +q.body.x.toFixed(1), +q.body.y.toFixed(1), +q.body.z.toFixed(1),
+         +q.group.rotation.y.toFixed(2), q.hurtT > 0 ? 1 : 0]) });
+    }
+  }
+
   for (let i = zombies.length - 1; i >= 0; i--) {
     const z = zombies[i];
 
@@ -2151,30 +2417,67 @@ function updateZombies(dt) {
       for (let m = 0; m < 4; m++) z.matsList[m].emissiveIntensity = flash;
     }
 
-    const dx = player.x - z.body.x, dz = player.z - z.body.z;
-    const dist = Math.hypot(dx, dz) || 0.001;
-    z.group.rotation.y = Math.atan2(dx, dz);
+    let moving;
+    if (z.ghost) {
+      /* REMOTE-OWNED GHOST: interpolate toward the owner's broadcast.
+         Attacks are decided locally — each screen only hurts ITSELF. */
+      const k = Math.min(1, dt * 10);
+      z.body.x += (z.tx - z.body.x) * k;
+      z.body.y += (z.ty - z.body.y) * k;
+      z.body.z += (z.tz - z.body.z) * k;
+      z.group.rotation.y += angWrap(z.tyaw - z.group.rotation.y) * k;
+      const mv = Math.hypot(z.body.x - z.pgx, z.body.z - z.pgz) / Math.max(dt, 0.001);
+      z.pgx = z.body.x; z.pgz = z.body.z;
+      moving = mv > 0.5;
+      z.walk += dt * (moving ? 4.6 : 0.4);
+      if (z.ty < -55) { scene.remove(z.group); zombies.splice(i, 1); continue; }  // fell off the world
 
-    let moving = false;
-    if (dist > 2.5) {
-      z.body.vx = (dx / dist) * V.zombieSpeed;
-      z.body.vz = (dz / dist) * V.zombieSpeed;
-      z.walk += dt * 4.6;
-      moving = true;
-    } else { z.body.vx *= 0.6; z.body.vz *= 0.6; }
-
-    z.body.vy -= GRAV * dt;
-    moveBody(z.body, dt);
-    if (z.body.y < -60) { scene.remove(z.group); zombies.splice(i, 1); continue; }
-
-    if (dist < 3.2) {
-      z.attackT += dt;
-      if (z.attackT >= V.zombieCooldown) {
-        z.attackT = 0; z.lungeT = 0.45;
-        hurtPlayer(V.zombieDamage, (dx / dist) * 14, (dz / dist) * 14);
-      }
+      const mdx = player.x - z.body.x, mdz = player.z - z.body.z;
+      const md = Math.hypot(mdx, mdz);
+      if (md < 3.2) {
+        z.atkMe += dt;
+        if (z.atkMe >= V.zombieCooldown) {
+          z.atkMe = 0; z.lungeT = 0.45;
+          hurtPlayer(V.zombieDamage, (mdx / (md || 1)) * 14, (mdz / (md || 1)) * 14);
+        }
+      } else z.atkMe = Math.max(0, z.atkMe - dt);
     } else {
-      z.attackT = Math.max(0, z.attackT - dt);
+      /* MINE: full sim — the AI chases the NEAREST player anywhere in
+         the world (remotes included, via their interpolated rigs) */
+      let tx = player.x, tz = player.z, targetIsMe = true, bd = Infinity;
+      for (const r of MP.remotes.values()) {
+        const dd = (r.x - z.body.x) ** 2 + (r.z - z.body.z) ** 2;
+        if (dd < bd) { bd = dd; tx = r.x; tz = r.z; targetIsMe = false; }
+      }
+      const dd0 = (player.x - z.body.x) ** 2 + (player.z - z.body.z) ** 2;
+      if (dd0 <= bd) { tx = player.x; tz = player.z; targetIsMe = true; }
+
+      const dx = tx - z.body.x, dz = tz - z.body.z;
+      const dist = Math.hypot(dx, dz) || 0.001;
+      z.group.rotation.y = Math.atan2(dx, dz);
+
+      moving = false;
+      if (dist > 2.5) {
+        z.body.vx = (dx / dist) * V.zombieSpeed;
+        z.body.vz = (dz / dist) * V.zombieSpeed;
+        z.walk += dt * 4.6;
+        moving = true;
+      } else { z.body.vx *= 0.6; z.body.vz *= 0.6; }
+
+      z.body.vy -= GRAV * dt;
+      moveBody(z.body, dt);
+      if (z.body.y < -60) { scene.remove(z.group); zombies.splice(i, 1); continue; }
+
+      if (dist < 3.2) {
+        z.attackT += dt;
+        if (z.attackT >= V.zombieCooldown) {
+          z.attackT = 0; z.lungeT = 0.45;
+          /* damage only MYSELF — a remote victim's own screen hurts them */
+          if (targetIsMe) hurtPlayer(V.zombieDamage, (dx / dist) * 14, (dz / dist) * 14);
+        }
+      } else {
+        z.attackT = Math.max(0, z.attackT - dt);
+      }
     }
     if (z.lungeT > 0) z.lungeT -= dt;
 
@@ -2276,6 +2579,8 @@ function updateMovement(dt) {
     }
     if (Math.abs(iF) > 0.35 || Math.abs(iS) > 0.35 || keys[' '] || touchJump) {
       seated = false; stopEmote();
+      CHAIR.occ = null;
+      WS.emit('stand', {});
       player.x = CHAIR.standX; player.z = CHAIR.standZ; player.y = 0.32;
       player.vx = player.vy = player.vz = 0;
     } else {
@@ -2460,6 +2765,9 @@ function updateAnim(dt, t) {
         }
       }
       out.armRx = rx; out.armRz = rz;
+    } else if (it.id === 'gun') {                  // arm out, blaster forward
+      out.armRx = -1.55 - (gunKickT > 0 ? (gunKickT / 0.14) * 0.3 : 0);
+      out.armRz = -0.1;
     } else if (it.id === 'apple') {
       if (eatT > 0) { out.armRx = -2.3; out.armRz = -0.35; }
       else { out.armRx = -0.32; out.armRz = -0.12; }
@@ -2467,17 +2775,9 @@ function updateAnim(dt, t) {
   }
 
   applyChannels(out);
-  /* first person: the tool is the camera-anchored viewmodel — play the
-     windup / chop on it so swinging reads right up close */
-  if (cam.fp) {
-    let fx = -Math.PI / 2 + 0.1, fz = -0.1;
-    if (it && it.id === 'sword' && swingT >= 0) {
-      const k = swingT / 0.42;
-      if (k < 0.28) { const u = k / 0.28; fx -= u * 0.6; fz -= u * 0.3; }
-      else { const u = (k - 0.28) / 0.72; fx += -0.6 + easeOut(u) * 1.5; fz += 0.3 * u; }
-    }
-    fpTool.rotation.x = fx; fpTool.rotation.z = fz;
-  }
+  /* first person: the tool is the camera-anchored viewmodel — per-tool
+     pose + swing / recoil math live in applyFPToolPose (§8) */
+  if (cam.fp) applyFPToolPose(gunKickT > 0 ? gunKickT / 0.14 : 0);
   character.position.y = player.y + out.rootY;
   CH.forEach(k => APPLIED[k] = out[k]);
 }
@@ -2655,12 +2955,16 @@ function createRemote(id, name, admin, x, y, z) {
     id, name, admin, pivots, tag,
     x, y, z, tx: x, ty: y, tz: z, px: x, pz: z, yaw: 0, yawT: 0,
     anim: 'idle', pAnim: '', animT: 0, phase: 0, vy: 0,
-    tool: '', toolMesh: null, toolMeshId: '', sw: -1, lastSeen: elapsed,
+    tool: '', toolMesh: null, toolMeshId: '', sw: -1, gunKick: 0, lastSeen: elapsed,
     ch: { torsoRx: 0, torsoRy: 0, torsoRz: 0, headRx: 0, headRy: 0, headRz: 0,
       armLx: 0, armLz: 0, armRx: 0, armRz: 0, legLx: 0, legRx: 0, rootY: 0 }
   };
   MP.remotes.set(id, r);
   MP.paintOnline();
+  /* welcome a new player: the leader sends them the world's time of
+     day so their sky matches everyone else's immediately (§12.6) */
+  if (MP.connected && worldLeader() === MP.id)
+    WS.emit('day', { t: +(+V.dayTime).toFixed(2), s: +(+V.daySpeed).toFixed(2) });
   return r;
 }
 
@@ -2671,8 +2975,117 @@ function removeRemote(id) {
   scene.remove(r.pivots.g);
   r.tag.remove();
   MP.remotes.delete(id);
+  onPlayerLeft(id);          // free their seats, adopt/follow their zombies (§12.6)
   MP.paintOnline();
 }
+
+/* ================================================================
+   §12.6 WORLDSYNC — the generic world-replication layer
+   ----------------------------------------------------------------
+   Everything that changes in the world flows through here, so
+   anything you add later follows on every screen automatically:
+
+     1. STATIC GEOMETRY (bricks, towers, a whole new map you build):
+        needs NO sync — every player opens the same file, so the
+        map is identical everywhere by construction.
+     2. DISCRETE EVENTS:   WS.emit(kind, data)  sends one message;
+        WS.on(kind, fn) runs the same handler on every client.
+        One-shot things: sit/stand, rocket fire, zombie spawn,
+        hits between players, day/night changes.
+     3. CONTINUOUS STATE (rides, zombies): exactly ONE client
+        simulates ("owns") the thing and broadcasts its state
+        ~10x/sec; everyone else predicts locally and gently
+        corrects toward the broadcast. Ownership is deterministic
+        (leader = smallest player id in the room; or whoever sits
+        on / spawned the thing), so every screen independently
+        agrees who owns what — the worker stays a dumb relay and
+        never needs game-specific logic.
+
+   Wire format (relayed by the worker as t:'w'):  {t:'w', k:kind, d:data}
+   Kinds used by the base world:
+     sit {r:'swg'|'mgr'|'chair', s?}   stand {}
+     mgrE {on}                         swg {a,v}    mgr {a,w,r}
+     zspawn {i,x,z}  zst {l:[[id,x,y,z,yaw,hurt]…]}  zdmg {i,d,ax,az}
+     zdie {i}         pvp {to,d,x,z}   gshot {a:[…],b:[…]}
+     day {t,s}
+================================================================ */
+const WS = {
+  handlers: {},
+  on(kind, fn) { (this.handlers[kind] || (this.handlers[kind] = [])).push(fn); },
+  emit(kind, d) { MP._send({ t: 'w', id: MP.id, k: kind, d: d || {} }); },  // to the others
+  act(kind, d) { this.recv(kind, d || {}, MP.id); this.emit(kind, d); },      // local + broadcast
+  recv(kind, d, from) { for (const fn of this.handlers[kind] || []) fn(d, from); }
+};
+
+/* deterministic room leader — every client computes the same answer */
+function worldLeader() {
+  let best = MP.id;
+  for (const id of MP.remotes.keys()) if (id < best) best = id;
+  return best;
+}
+
+/* a player left / went stale: free their seats and hand their
+   zombies to the new leader (everyone computes the same one, so
+   exactly one screen adopts and starts simulating + broadcasting) */
+function onPlayerLeft(id) {
+  if (SWING.occupant === id) SWING.occupant = null;
+  for (const s of MGR.seats) if (s.occupant === id) s.occupant = null;
+  if (CHAIR.occ === id) CHAIR.occ = null;
+  for (const z of zombies)
+    if (z.owner === id && !z.dead) {
+      if (worldLeader() === MP.id) { z.owner = MP.id; z.ghost = false; z.hp = Math.max(1, z.hp); }
+    }
+}
+
+/* ---- the world event handlers (see the table above) ---- */
+WS.on('sit', (d, from) => {
+  if (d.r === 'swg') SWING.occupant = from;
+  else if (d.r === 'mgr' && MGR.seats[d.s]) MGR.seats[d.s].occupant = from;
+  else if (d.r === 'chair') CHAIR.occ = from;
+});
+WS.on('stand', (d, from) => {
+  if (SWING.occupant === from) SWING.occupant = null;
+  for (const s of MGR.seats) if (s.occupant === from) s.occupant = null;
+  if (CHAIR.occ === from) CHAIR.occ = null;
+});
+WS.on('mgrE', d => { MGR.state.rocketOn = !!d.on; });
+WS.on('swg', d => { SWING.net = { a: +d.a || 0, v: +d.v || 0, at: elapsed }; });
+WS.on('mgr', d => { MGR.net = { a: +d.a || 0, w: +d.w || 0, r: !!d.r, at: elapsed };
+  if (!MGR.state.rocketOn && MGR.net.r) MGR.state.rocketOn = true; });
+WS.on('zspawn', (d, from) => { spawnZombie(+d.x || 0, +d.z || 0, d.i, from); });
+WS.on('zst', d => {
+  if (!Array.isArray(d.l)) return;
+  for (const e of d.l) {
+    if (!Array.isArray(e) || typeof e[0] !== 'string') continue;
+    let zb = zombies.find(q => q.zid === e[0]);
+    if (!zb) { if (zombies.length >= MAX_ZOMBIES) continue; zb = spawnZombie(+e[1] || 0, +e[3] || 0, e[0], 'net'); if (!zb) continue; }
+    zb.tx = +e[1] || 0; zb.ty = +e[2] || 0; zb.tz = +e[3] || 0; zb.tyaw = +e[4] || 0;
+    if (e[5] && zb.hurtT <= 0) zb.hurtT = 0.18;
+  }
+});
+WS.on('zdmg', (d, from) => {
+  const zb = zombies.find(q => q.zid === d.i);
+  if (!zb || zb.dead) return;
+  if (zb.owner === MP.id) damageZombie(zb, +d.d || 1, +d.ax || 0, +d.az || 0);
+  else if (zb.hurtT <= 0) zb.hurtT = 0.18;         // flash on every screen
+});
+WS.on('zdie', d => {
+  const zb = zombies.find(q => q.zid === d.i);
+  if (zb && !zb.dead) { zb.dead = true; zb.deathT = 0; }
+});
+WS.on('pvp', d => {
+  if (d.to !== MP.id) return;
+  hurtPlayer(+d.d || 0, (+d.x || 0) * V.knockback, (+d.z || 0) * V.knockback);
+});
+WS.on('gshot', (d, from) => {
+  if (Array.isArray(d.a) && Array.isArray(d.b)) {
+    spawnTracer(d.a[0], d.a[1], d.a[2], d.b[0], d.b[1], d.b[2]);
+    spawnFlash(d.a[0], d.a[1], d.a[2], 0.8);
+  }
+  const r = MP.remotes.get(from);
+  if (r) r.gunKick = 0.22;                         // their arm kicks on my screen
+});
+WS.on('day', d => { V.dayTime = +d.t || 0; V.daySpeed = Math.max(0, +d.s || 0); });
 
 /* ---- remote animation (mirrors the §6 poses, per-rig channels) ---- */
 function remotePose(r, t) {
@@ -2771,6 +3184,9 @@ function remotePose(r, t) {
       else { const u = (k - 0.28) / 0.72; rx = -2.77 + easeOut(u) * 1.9; rz = -0.56 + u * 0.62; }
     }
     c.armRx = rx; c.armRz = rz;
+  } else if (r.tool === 'gun') {                // arm out, blaster forward + recoil kick
+    c.armRx = -1.55 - (r.gunKick > 0 ? (r.gunKick / 0.22) * 0.35 : 0);
+    c.armRz = -0.1;
   } else if (r.tool === 'apple') {
     c.armRx = -0.32; c.armRz = -0.12;
   }
@@ -2779,7 +3195,8 @@ function remotePose(r, t) {
 function remoteToolMesh(r) {
   if (r.toolMesh && r.toolMeshId !== r.tool) { r.toolMesh.removeFromParent(); r.toolMesh = null; r.toolMeshId = ''; }
   if (r.tool && !r.toolMesh) {
-    r.toolMesh = r.tool === 'sword' ? buildSwordMesh() : buildAppleMesh();
+    r.toolMesh = r.tool === 'sword' ? buildSwordMesh() : r.tool === 'gun' ? buildGunMesh() : buildAppleMesh();
+    if (r.tool === 'gun') r.toolMesh.rotation.x = Math.PI / 2;   // barrel forward along the arm
     r.toolMeshId = r.tool;
     r.pivots.toolAnchor.add(r.toolMesh);
   }
@@ -2857,6 +3274,7 @@ const MP = {
       if (m.id === this.id) return;                 // never echo own chat back
       addChat(String(m.n || 'Player'), String(m.x || ''), !!m.a);
     }
+    else if (m.t === 'w' && m.id && m.id !== this.id) WS.recv(m.k, m.d, m.id);   // world events (§12.6)
     else if (m.t === 'bye') removeRemote(m.id);
   },
 
@@ -2872,7 +3290,7 @@ const MP = {
     r.tx = +m.x || 0; r.ty = +m.y || 0; r.tz = +m.z || 0;
     r.yawT = +m.yw || 0;
     r.anim = ANIM_OK.includes(m.an) ? m.an : 'idle';
-    r.tool = (m.tl === 'sword' || m.tl === 'apple') ? m.tl : '';
+    r.tool = (m.tl === 'sword' || m.tl === 'apple' || m.tl === 'gun') ? m.tl : '';
     r.sw = typeof m.sw === 'number' ? m.sw : -1;
     r.lastSeen = elapsed;
   },
@@ -2914,6 +3332,7 @@ const MP = {
       if (r.anim === 'walk' || r.anim === 'run') r.phase += dt * (4.5 + Math.min(moved, 24) * 1.3);
       else if (r.anim === 'climb') r.phase += r.vy * dt * 1.15;
       if (r.sw >= 0) { r.sw += dt; if (r.sw > 0.42) r.sw = -1; }          // their sword swing
+      if (r.gunKick > 0) r.gunKick -= dt;                                 // their gun recoil
       remoteToolMesh(r);
       remotePose(r, t);
       const c = r.ch, p = r.pivots;
@@ -2972,6 +3391,10 @@ function updateWorldAnims(dt, t) {
     swordPickup.spin.rotation.y += dt * 1.2;
     swordPickup.spin.position.y = 2.0 + Math.sin(t * 2) * 0.15;
   }
+  if (!gunPickup.taken) {
+    gunPickup.spin.rotation.y += dt * 1.1;
+    gunPickup.spin.position.y = 14.9 + Math.sin(t * 1.8 + 1) * 0.18;
+  }
 }
 
 function loop() {
@@ -2997,6 +3420,10 @@ function loop() {
     updateRides(dt);
     updateZombies(dt);
     MP.tick(dt, elapsed);      // multiplayer: relay + remote rigs (§12.5)
+
+    if (gunCd > 0) gunCd -= dt;                       // blaster cooldown (§8)
+    if (gunKickT > 0) gunKickT -= dt;
+    updateFX(dt);                                     // tracers / flashes
 
     if (swingT >= 0) {
       swingT += dt;
@@ -3117,8 +3544,18 @@ function setVal(key, val) {
     case 'showFps': fpsEl.style.display = val ? 'block' : 'none'; break;
     case 'graphicsLevel': case 'resMode': case 'resScale': case 'shadowQuality': case 'shadowDistance': case 'fogDistance':
       applyGraphics(); break;
+    case 'dayTime': case 'daySpeed': daySync(); break;   // world event — the sky follows on every screen (§12.6)
   }
   syncConsts();
+}
+
+/* broadcast the time of day (throttled so slider drags don't spam) */
+let daySyncTO = null;
+function daySync() {
+  if (!MP.connected) return;
+  clearTimeout(daySyncTO);
+  daySyncTO = setTimeout(() =>
+    WS.emit('day', { t: +(+V.dayTime).toFixed(2), s: +(+V.daySpeed).toFixed(2) }), 150);
 }
 
 function bindSlider(key, label, range, fmt) {
@@ -3377,7 +3814,9 @@ function buildAdminTab() {
   list.append(bindSlider('fallMultiplier', 'Damage per Stud', [0, 50, 0.5]));
 
   S('Combat &amp; Zombies');
-  list.append(bindSlider('swordDamage', 'Sword Damage', [0.5, 10, 0.5]));
+  list.append(bindSlider('swordDamage', 'Sword Damage (vs zombies)', [0.5, 10, 0.5]));
+  list.append(bindSlider('swordPvpDamage', 'Sword Damage (vs players)', [5, 60, 1]));
+  list.append(bindSlider('gunDamage', 'Blaster Damage', [5, 60, 1]));
   list.append(bindSlider('zombieHealth', 'Zombie Health', [1, 50, 1]));
   list.append(bindSlider('zombieDamage', 'Zombie Damage', [0, 100, 1]));
   list.append(bindSlider('zombieSpeed', 'Zombie Speed', [0, 12, 0.1]));
@@ -3518,7 +3957,7 @@ updateDayNight(0);
 
 /* ---- console handle for tinkering / debugging ---- */
 window.BASEPLATE = {
-  V, cam, MGR, SWING, Interactables, MP,
+  V, cam, MGR, SWING, Interactables, MP, WS,
   debug: { scene, camera, character },   // console tinkering / automated tests
   get player() { return player; },
   get climbing() { return climbing; },
