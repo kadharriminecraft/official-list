@@ -5,7 +5,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>GitHub v4</title>
+  <title>GitHub Manager</title>
   <style>
     * {
       margin: 0;
@@ -1293,6 +1293,589 @@
       border-radius: 50%;
     }
 
+  
+    /* ================================================================
+       v5 additions — requests inbox, diffs, repo management
+       ================================================================ */
+    @media (min-width: 900px) {
+      .main {
+        max-width: 1040px;
+        margin: 0 auto;
+      }
+    }
+
+    a.link, .link {
+      color: var(--text-link);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .link:hover { text-decoration: underline; }
+
+    code.inline {
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .muted { color: var(--text-secondary); }
+    .small { font-size: 12px; }
+
+    .pr-status, .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: capitalize;
+      color: #fff;
+      background: var(--bg-tertiary);
+      white-space: nowrap;
+    }
+
+    .pr-status.open, .status-pill.pending { background: var(--accent-green); }
+    .pr-status.closed, .status-pill.rejected { background: var(--accent-red); }
+    .pr-status.merged, .status-pill.applied, .status-pill.pr_opened { background: var(--accent-purple); }
+    .status-pill.changes_requested { background: var(--accent-orange); color: #0d1117; }
+    .status-pill.invalid { background: var(--border-color); }
+    .status-pill.outline {
+      text-transform: none;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--accent-blue);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .count-badge.muted-badge {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .bottom-nav-item { position: relative; }
+
+    .bottom-nav-item .count-badge {
+      position: absolute;
+      top: 6px;
+      left: calc(50% + 6px);
+    }
+
+    .nav-item .count-badge { margin-left: auto; }
+
+    .header-btn { position: relative; }
+    .header-btn .dot {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+    }
+
+    /* Stat grid */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 700px) {
+      .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 14px 16px;
+      cursor: default;
+    }
+
+    .stat-card.clickable { cursor: pointer; }
+    .stat-card.clickable:hover { border-color: var(--text-secondary); }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .stat-card.highlight { border-color: var(--accent-blue); }
+    .stat-card.highlight .stat-value { color: var(--text-link); }
+
+    /* Inbox hero */
+    .inbox-hero .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .row-between {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .req-item {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .req-item:last-child { border-bottom: none; }
+    .req-item:hover { background: var(--bg-tertiary); }
+
+    .req-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+    }
+
+    .req-icon svg { width: 16px; height: 16px; fill: var(--text-secondary); }
+    .req-icon.pending { border-color: var(--accent-green); }
+    .req-icon.pending svg { fill: var(--accent-green); }
+    .req-icon.changes_requested svg { fill: var(--accent-orange); }
+    .req-icon.applied svg, .req-icon.pr_opened svg { fill: var(--accent-purple); }
+    .req-icon.rejected svg { fill: var(--accent-red); }
+
+    .req-body { flex: 1; min-width: 0; }
+
+    .req-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .req-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: center;
+    }
+
+    /* Segmented control */
+    .segmented {
+      display: inline-flex;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .segmented button {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .segmented button.active {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      box-shadow: 0 0 0 1px var(--border-color);
+    }
+
+    .select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .select:focus { outline: none; border-color: var(--accent-blue); }
+
+    .kv {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .kv:last-child { border-bottom: none; }
+    .kv > span:first-child { color: var(--text-secondary); }
+
+    /* Diff */
+    .diff-file { overflow: hidden; }
+
+    .diff-file-header {
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .diff-file-path {
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 13px;
+      flex: 1;
+      min-width: 160px;
+      word-break: break-all;
+    }
+
+    .diff-stat { font-size: 12px; font-family: monospace; white-space: nowrap; }
+    .diff-stat .a { color: #3fb950; }
+    .diff-stat .d { color: #f85149; }
+
+    .action-pill {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .action-pill.create { color: #3fb950; border-color: rgba(63, 185, 80, 0.5); }
+    .action-pill.delete { color: #f85149; border-color: rgba(248, 81, 73, 0.5); }
+    .action-pill.update { color: var(--text-link); border-color: rgba(88, 166, 255, 0.5); }
+    .action-pill.rename { color: var(--accent-orange); border-color: rgba(210, 153, 34, 0.5); }
+
+    .diff-body {
+      overflow-x: auto;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      max-height: 560px;
+      overflow-y: auto;
+    }
+
+    .diff-line {
+      display: flex;
+      min-width: max-content;
+    }
+
+    .diff-num {
+      width: 44px;
+      flex-shrink: 0;
+      text-align: right;
+      padding-right: 8px;
+      color: var(--text-secondary);
+      user-select: none;
+      opacity: 0.7;
+    }
+
+    .diff-code {
+      white-space: pre;
+      padding: 0 12px 0 6px;
+      flex: 1;
+    }
+
+    .diff-line.add { background: rgba(46, 160, 67, 0.15); }
+    .diff-line.add .diff-code { color: #aff5b4; }
+    .diff-line.del { background: rgba(248, 81, 73, 0.15); }
+    .diff-line.del .diff-code { color: #ffdcd7; }
+    .diff-line.hunk {
+      background: rgba(56, 139, 253, 0.1);
+      color: var(--text-secondary);
+    }
+
+    .diff-empty {
+      padding: 16px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .warn-banner, .info-banner, .ok-banner {
+      padding: 10px 12px;
+      font-size: 13px;
+      border-radius: 6px;
+      margin: 10px 12px;
+      line-height: 1.5;
+    }
+
+    .warn-banner { background: rgba(210, 153, 34, 0.12); border: 1px solid rgba(210, 153, 34, 0.45); }
+    .info-banner { background: rgba(56, 139, 253, 0.1); border: 1px solid rgba(56, 139, 253, 0.4); }
+    .ok-banner { background: rgba(46, 160, 67, 0.12); border: 1px solid rgba(46, 160, 67, 0.45); }
+    .card > .warn-banner:first-child, .card > .info-banner:first-child { margin-top: 12px; }
+
+    .sticky-actions {
+      position: sticky;
+      bottom: 72px;
+      z-index: 40;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      margin-top: 16px;
+    }
+
+    .sticky-actions .spacer { flex: 1; }
+
+    /* Repo list management */
+    .repo-item { position: relative; }
+
+    .repo-item.selectable {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .repo-check {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: var(--accent-blue);
+    }
+
+    .repo-item.selected { background: rgba(56, 139, 253, 0.08); }
+
+    .repo-item-main { flex: 1; min-width: 0; }
+
+    .topic-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
+
+    .topic {
+      font-size: 12px;
+      color: var(--text-link);
+      background: rgba(56, 139, 253, 0.12);
+      padding: 2px 10px;
+      border-radius: 999px;
+    }
+
+    .bulk-bar {
+      position: sticky;
+      bottom: 72px;
+      z-index: 40;
+      background: var(--bg-secondary);
+      border: 1px solid var(--accent-blue);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      margin-top: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .toolbar .select { width: auto; min-width: 140px; padding: 8px 10px; }
+
+    .branch-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .branch-select {
+      max-width: 260px;
+      padding: 7px 10px;
+      font-size: 14px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    }
+
+    .staged-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: rgba(210, 153, 34, 0.1);
+      border: 1px solid rgba(210, 153, 34, 0.45);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .list-row {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .list-row:last-child { border-bottom: none; }
+    .list-row-main { flex: 1; min-width: 180px; }
+    .list-row-title { font-weight: 600; word-break: break-word; }
+    .list-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .run-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .run-dot.success { background: #3fb950; }
+    .run-dot.failure, .run-dot.cancelled, .run-dot.timed_out { background: #f85149; }
+    .run-dot.in_progress, .run-dot.queued, .run-dot.waiting, .run-dot.pending { background: var(--accent-orange); animation: pulse 1.4s ease-in-out infinite; }
+    .run-dot.skipped, .run-dot.neutral { background: var(--border-color); }
+
+    @keyframes pulse { 50% { opacity: 0.35; } }
+
+    .danger-zone { border-color: rgba(218, 54, 51, 0.6); }
+    .danger-zone .card-header { color: #f85149; }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0 16px;
+    }
+
+    @media (min-width: 700px) {
+      .settings-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .settings-grid .input-group { max-width: none; }
+
+    .modal.modal-lg { max-width: 820px; }
+
+    .commit-item.clickable { cursor: pointer; }
+    .commit-item.clickable:hover { background: var(--bg-tertiary); }
+
+    .sha {
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 12px;
+      color: var(--text-link);
+    }
+
+    details.diff-details > summary {
+      list-style: none;
+      cursor: pointer;
+    }
+
+    details.diff-details > summary::-webkit-details-marker { display: none; }
+
+    .chev { transition: transform 0.15s; display: inline-block; color: var(--text-secondary); }
+    details[open] > summary .chev { transform: rotate(90deg); }
+
+    .feedback-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 14px;
+    }
+
+    .feedback-item:last-child { border-bottom: none; }
+
+    .protocol pre {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border-color) 50%, var(--bg-tertiary) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s linear infinite;
+      border-radius: 4px;
+      height: 12px;
+    }
+
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .markdown ul, .markdown ol { padding-left: 22px; margin: 8px 0; }
+    .markdown li { margin: 3px 0; }
+    .markdown a { color: var(--text-link); }
+    .markdown blockquote {
+      border-left: 3px solid var(--border-color);
+      padding-left: 12px;
+      color: var(--text-secondary);
+      margin: 8px 0;
+    }
+    .markdown img { max-width: 100%; }
+    .markdown table { border-collapse: collapse; margin: 8px 0; display: block; overflow-x: auto; }
+    .markdown th, .markdown td { border: 1px solid var(--border-color); padding: 6px 10px; }
+
+    button:disabled, .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    :focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
+    .modal .select, .modal .input, .modal .textarea { width: 100%; max-width: none; }
+    .modal .input-group { max-width: none; }
+    a.btn, a.btn:hover { text-decoration: none; }
+
   </style>
 </head>
 
@@ -1300,6 +1883,7 @@
   <div id="app"></div>
   <div class="toast-container" id="toastContainer"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
   <script>
     // Token persistence: your token is saved to localStorage after a successful
     // sign-in and is reloaded automatically, so you stay signed in on this device.
@@ -1670,7 +2254,7 @@
                     <svg class="auth-logo" viewBox="0 0 16 16">
                         <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
                     </svg>
-                    <h1 class="auth-title">GitHub Mobile</h1>
+                    <h1 class="auth-title">GitHub Manager</h1>
                     <p class="auth-subtitle">Sign in with your Personal Access Token</p>
                     <div class="input-group">
                         <label class="input-label">Personal Access Token</label>
@@ -2571,15 +3155,9 @@
                 <button class="btn btn-secondary btn-sm" onclick="setSearchPage(${currentPage - 1})">← Previous</button>
               ` : ''}
               
-              ${Array.from({ length: totalPages }, (_, i) => i + 1).map(page => ` <
-          button class = "btn ${page === currentPage ? 'btn-primary' : 'btn-secondary'} btn-sm"
-        onclick = "setSearchPage(${page})"
-        style = "min-width: 40px;" >
-          $ {
-            page
-          } <
-          /button>
-        `).join('')}
+              ${Array.from({ length: totalPages }, (_, i) => i + 1).map(page => `
+                <button class="btn ${page === currentPage ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="setSearchPage(${page})" style="min-width: 40px;">${page}</button>
+              `).join('')}
               
               ${currentPage < totalPages ? `
                 <button class="btn btn-secondary btn-sm" onclick="setSearchPage(${currentPage + 1})">Next →</button>
@@ -4151,6 +4729,2569 @@
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+
+    // Storage wrapper (private browsing / embedded previews can throw)
+    const safeStorage = {
+      get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (e) { throw e; } },
+      remove(k) { try { localStorage.removeItem(k); } catch (e) {} }
+    };
+
+    // =====================================================================
+    //  v5 EXTENSIONS
+    //  - Change-request inbox (requests from Perplexity Computer + PRs)
+    //  - Line diffs, one-commit multi-file pushes via the Git Data API
+    //  - Branch switching, staging, repo settings, Actions, releases, bulk ops
+    // =====================================================================
+
+    const CR_LABEL = 'computer-request';
+    const INBOX_DEFAULT_NAME = 'computer-requests';
+
+    // ---------- small helpers ----------
+    function escFast(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    const escAttr = escFast;
+    function jsArg(v) { return escAttr(JSON.stringify(v)); }
+    function slugify(s) {
+      return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'change';
+    }
+    function plural(n, word) { return `${n} ${word}${n === 1 ? '' : 's'}`; }
+    function nowIso() { return new Date().toISOString(); }
+    function ghUrl(path) { return `https://github.com/${path}`; }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('Copied to clipboard', 'success');
+      } catch (e) {
+        window.prompt('Copy this:', text);
+      }
+    }
+
+    // Tiny, safe markdown renderer (input is escaped first)
+    function renderMarkdown(src) {
+      if (!src) return '';
+      const blocks = [];
+      let text = String(src).replace(/\r\n/g, '\n').replace(/```([\w-]*)\n([\s\S]*?)```/g, (m, lang, code) => {
+        blocks.push(`<pre><code>${escFast(code.replace(/\n$/, ''))}</code></pre>`);
+        return `\u0000${blocks.length - 1}\u0000`;
+      });
+      text = escFast(text);
+      const inline = s => s
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[\s(])_([^_]+)_(?=[\s).,!?]|$)/g, '$1<em>$2</em>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        .replace(/(^|\s)(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+      const out = [];
+      let list = null;
+      const flushList = () => { if (list) { out.push(`<${list.type}>${list.items.map(i => `<li>${inline(i)}</li>`).join('')}</${list.type}>`); list = null; } };
+      let para = [];
+      const flushPara = () => { if (para.length) { out.push(`<p>${inline(para.join('<br>'))}</p>`); para = []; } };
+      for (const line of text.split('\n')) {
+        let m;
+        if (/^\u0000\d+\u0000$/.test(line.trim())) { flushPara(); flushList(); out.push(line.trim()); continue; }
+        if ((m = /^(#{1,4})\s+(.*)$/.exec(line))) { flushPara(); flushList(); const lvl = Math.min(m[1].length + 1, 4); out.push(`<h${lvl}>${inline(m[2])}</h${lvl}>`); continue; }
+        if ((m = /^\s*[-*]\s+(.*)$/.exec(line))) { flushPara(); if (!list || list.type !== 'ul') { flushList(); list = { type: 'ul', items: [] }; } list.items.push(m[1]); continue; }
+        if ((m = /^\s*\d+[.)]\s+(.*)$/.exec(line))) { flushPara(); if (!list || list.type !== 'ol') { flushList(); list = { type: 'ol', items: [] }; } list.items.push(m[1]); continue; }
+        if ((m = /^&gt;\s?(.*)$/.exec(line))) { flushPara(); flushList(); out.push(`<blockquote>${inline(m[1])}</blockquote>`); continue; }
+        if (!line.trim()) { flushPara(); flushList(); continue; }
+        flushList();
+        para.push(line);
+      }
+      flushPara(); flushList();
+      return out.join('').replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[+i]);
+    }
+
+    // ---------- API upgrades ----------
+    // Robust request(): no stale browser cache, handles empty bodies, raw text.
+    GitHubAPI.prototype.request = async function (endpoint, options = {}) {
+      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+      const { raw, ...opts } = options;
+      const method = (opts.method || 'GET').toUpperCase();
+      const response = await fetch(url, {
+        ...opts,
+        cache: method === 'GET' ? 'no-store' : opts.cache,
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          ...(opts.headers || {})
+        }
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        const err = new Error(error.message || `HTTP ${response.status}`);
+        err.status = response.status;
+        throw err;
+      }
+      if (response.status === 204) return null;
+      const text = await response.text();
+      if (raw) return text;
+      if (!text) return null;
+      try { return JSON.parse(text); } catch (e) { return text; }
+    };
+
+    // Branch-aware content operations: when you're inside a repo, reads and
+    // writes target the branch picked in the branch switcher.
+    function activeRefFor(owner, repo) {
+      const r = state.currentRepo;
+      return (r && r.owner === owner && r.name === repo && state.currentBranch) ? state.currentBranch : '';
+    }
+    const _origGetContents = GitHubAPI.prototype.getContents;
+    GitHubAPI.prototype.getContents = function (owner, repo, path = '', ref = '') {
+      return _origGetContents.call(this, owner, repo, path, ref || activeRefFor(owner, repo));
+    };
+    const _origPutFile = GitHubAPI.prototype.createOrUpdateFile;
+    GitHubAPI.prototype.createOrUpdateFile = function (owner, repo, path, data) {
+      const b = activeRefFor(owner, repo);
+      return _origPutFile.call(this, owner, repo, path, (b && !data.branch) ? { ...data, branch: b } : data);
+    };
+    const _origDeleteFile = GitHubAPI.prototype.deleteFile;
+    GitHubAPI.prototype.deleteFile = function (owner, repo, path, data) {
+      const b = activeRefFor(owner, repo);
+      return _origDeleteFile.call(this, owner, repo, path, (b && !data.branch) ? { ...data, branch: b } : data);
+    };
+    GitHubAPI.prototype.getReadme = function (owner, repo, ref = '') {
+      const r = ref || activeRefFor(owner, repo);
+      return this.request(`/repos/${owner}/${repo}/readme${r ? `?ref=${encodeURIComponent(r)}` : ''}`, {
+        headers: { 'Accept': 'application/vnd.github.v3.html' }
+      }).catch(() => null);
+    };
+
+    Object.assign(GitHubAPI.prototype, {
+      async getAllRepos() {
+        let all = [];
+        for (let page = 1; page <= 10; page++) {
+          const batch = await this.request(`/user/repos?per_page=100&sort=updated&page=${page}`);
+          all = all.concat(batch || []);
+          if (!batch || batch.length < 100) break;
+        }
+        return all;
+      },
+      updateRepo(o, r, data) { return this.request(`/repos/${o}/${r}`, { method: 'PATCH', body: JSON.stringify(data) }); },
+      replaceTopics(o, r, names) { return this.request(`/repos/${o}/${r}/topics`, { method: 'PUT', body: JSON.stringify({ names }) }); },
+      listBranches(o, r) { return this.request(`/repos/${o}/${r}/branches?per_page=100`); },
+      getRef(o, r, branch) { return this.request(`/repos/${o}/${r}/git/ref/heads/${this.encodePath(branch)}`); },
+      createRef(o, r, branch, sha) { return this.request(`/repos/${o}/${r}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branch}`, sha }) }); },
+      updateRef(o, r, branch, sha, force = false) { return this.request(`/repos/${o}/${r}/git/refs/heads/${this.encodePath(branch)}`, { method: 'PATCH', body: JSON.stringify({ sha, force }) }); },
+      deleteBranch(o, r, branch) { return this.request(`/repos/${o}/${r}/git/refs/heads/${this.encodePath(branch)}`, { method: 'DELETE' }); },
+      getGitCommit(o, r, sha) { return this.request(`/repos/${o}/${r}/git/commits/${sha}`); },
+      createBlob(o, r, content, encoding) { return this.request(`/repos/${o}/${r}/git/blobs`, { method: 'POST', body: JSON.stringify({ content, encoding }) }); },
+      createTree(o, r, base_tree, tree) { return this.request(`/repos/${o}/${r}/git/trees`, { method: 'POST', body: JSON.stringify({ base_tree, tree }) }); },
+      createCommit(o, r, message, tree, parents) { return this.request(`/repos/${o}/${r}/git/commits`, { method: 'POST', body: JSON.stringify({ message, tree, parents }) }); },
+      getCommit(o, r, sha) { return this.request(`/repos/${o}/${r}/commits/${sha}`); },
+      createPull(o, r, data) { return this.request(`/repos/${o}/${r}/pulls`, { method: 'POST', body: JSON.stringify(data) }); },
+      updatePull(o, r, n, data) { return this.request(`/repos/${o}/${r}/pulls/${n}`, { method: 'PATCH', body: JSON.stringify(data) }); },
+      mergePull(o, r, n, data) { return this.request(`/repos/${o}/${r}/pulls/${n}/merge`, { method: 'PUT', body: JSON.stringify(data) }); },
+      getAllPullFiles(o, r, n) { return this.request(`/repos/${o}/${r}/pulls/${n}/files?per_page=100`); },
+      addLabels(o, r, n, labels) { return this.request(`/repos/${o}/${r}/issues/${n}/labels`, { method: 'POST', body: JSON.stringify({ labels }) }); },
+      searchIssues(q, per = 50) { return this.request(`/search/issues?q=${encodeURIComponent(q)}&per_page=${per}&sort=updated`); },
+      getRuns(o, r) { return this.request(`/repos/${o}/${r}/actions/runs?per_page=20`); },
+      rerunRun(o, r, id) { return this.request(`/repos/${o}/${r}/actions/runs/${id}/rerun`, { method: 'POST' }); },
+      cancelRun(o, r, id) { return this.request(`/repos/${o}/${r}/actions/runs/${id}/cancel`, { method: 'POST' }); },
+      getWorkflows(o, r) { return this.request(`/repos/${o}/${r}/actions/workflows?per_page=50`); },
+      dispatchWorkflow(o, r, id, ref) { return this.request(`/repos/${o}/${r}/actions/workflows/${id}/dispatches`, { method: 'POST', body: JSON.stringify({ ref }) }); },
+      getReleases(o, r) { return this.request(`/repos/${o}/${r}/releases?per_page=30`); },
+      createRelease(o, r, data) { return this.request(`/repos/${o}/${r}/releases`, { method: 'POST', body: JSON.stringify(data) }); },
+      deleteRelease(o, r, id) { return this.request(`/repos/${o}/${r}/releases/${id}`, { method: 'DELETE' }); },
+      getPages(o, r) { return this.request(`/repos/${o}/${r}/pages`).catch(e => { if (e.status === 404) return null; throw e; }); },
+      enablePages(o, r, branch, path) { return this.request(`/repos/${o}/${r}/pages`, { method: 'POST', body: JSON.stringify({ source: { branch, path } }) }); },
+      updatePages(o, r, branch, path) { return this.request(`/repos/${o}/${r}/pages`, { method: 'PUT', body: JSON.stringify({ source: { branch, path } }) }); },
+      disablePages(o, r) { return this.request(`/repos/${o}/${r}/pages`, { method: 'DELETE' }); },
+      getRaw(o, r, path, ref = '') {
+        return this.request(`/repos/${o}/${r}/contents/${this.encodePath(path)}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`, {
+          raw: true, headers: { 'Accept': 'application/vnd.github.raw' }
+        });
+      },
+      getMeta(o, r, path, ref = '') {
+        return this.request(`/repos/${o}/${r}/contents/${this.encodePath(path)}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`);
+      },
+      putRawFile(o, r, path, data) {
+        return this.request(`/repos/${o}/${r}/contents/${this.encodePath(path)}`, { method: 'PUT', body: JSON.stringify(data) });
+      },
+      deleteRawFile(o, r, path, data) {
+        return this.request(`/repos/${o}/${r}/contents/${this.encodePath(path)}`, { method: 'DELETE', body: JSON.stringify(data) });
+      },
+      markAllNotificationsRead() { return this.request('/notifications', { method: 'PUT', body: JSON.stringify({}) }); },
+      markThreadRead(id) { return this.request(`/notifications/threads/${id}`, { method: 'PATCH' }); }
+    });
+
+    // ---------- diff engine ----------
+    function splitLines(v) {
+      if (!v) return [];
+      const l = String(v).split('\n');
+      if (l[l.length - 1] === '') l.pop();
+      return l;
+    }
+
+    function computeLineDiff(a, b) {
+      a = a ?? ''; b = b ?? '';
+      if (a === b) return [{ lines: splitLines(a) }];
+      if (window.Diff && typeof window.Diff.diffLines === 'function') {
+        try {
+          const parts = window.Diff.diffLines(a, b, { timeout: 2500 });
+          if (parts) return parts.map(p => ({ added: !!p.added, removed: !!p.removed, lines: splitLines(p.value) }));
+        } catch (e) { /* fall through */ }
+      }
+      // Fallback: trim common prefix/suffix, show the middle as replaced
+      const A = splitLines(a), B = splitLines(b);
+      let s = 0;
+      while (s < A.length && s < B.length && A[s] === B[s]) s++;
+      let e = 0;
+      while (e < A.length - s && e < B.length - s && A[A.length - 1 - e] === B[B.length - 1 - e]) e++;
+      const parts = [];
+      if (s) parts.push({ lines: A.slice(0, s) });
+      if (A.length - s - e > 0) parts.push({ removed: true, lines: A.slice(s, A.length - e) });
+      if (B.length - s - e > 0) parts.push({ added: true, lines: B.slice(s, B.length - e) });
+      if (e) parts.push({ lines: A.slice(A.length - e) });
+      return parts;
+    }
+
+    function diffRow(t, o, n, code) {
+      return `<div class="diff-line ${t}"><span class="diff-num">${o ?? ''}</span><span class="diff-num">${n ?? ''}</span><span class="diff-code">${code}</span></div>`;
+    }
+
+    function renderDiffParts(parts, ctx = 3, maxLines = 1500) {
+      const rows = [];
+      let o = 1, n = 1, add = 0, del = 0;
+      for (const p of parts) {
+        for (const line of p.lines) {
+          if (p.added) { rows.push({ t: 'add', n: n++, line }); add++; }
+          else if (p.removed) { rows.push({ t: 'del', o: o++, line }); del++; }
+          else rows.push({ t: 'ctx', o: o++, n: n++, line });
+        }
+      }
+      if (!add && !del) return { html: '<div class="diff-empty">No content changes.</div>', add, del };
+      const keep = new Uint8Array(rows.length);
+      rows.forEach((r, i) => {
+        if (r.t !== 'ctx') for (let j = Math.max(0, i - ctx); j <= Math.min(rows.length - 1, i + ctx); j++) keep[j] = 1;
+      });
+      let html = '', skipped = 0, shown = 0;
+      for (let i = 0; i < rows.length; i++) {
+        if (!keep[i]) { skipped++; continue; }
+        if (skipped) { html += diffRow('hunk', '', '', `⋯ ${plural(skipped, 'unchanged line')}`); skipped = 0; }
+        if (shown >= maxLines) { html += diffRow('hunk', '', '', `… diff truncated — ${rows.length - i} more lines`); skipped = 0; break; }
+        const r = rows[i];
+        shown++;
+        html += diffRow(r.t, r.o, r.n, (r.t === 'add' ? '+' : r.t === 'del' ? '-' : ' ') + escFast(r.line));
+      }
+      if (skipped) html += diffRow('hunk', '', '', `⋯ ${plural(skipped, 'unchanged line')}`);
+      return { html, add, del };
+    }
+
+    function renderPatch(patch) {
+      if (!patch) return '<div class="diff-empty">Diff not available (binary file or too large to display).</div>';
+      let o = 0, n = 0;
+      return patch.split('\n').map(l => {
+        if (l.startsWith('@@')) {
+          const m = /@@ -(\d+)(?:,\d+)? \+(\d+)/.exec(l);
+          if (m) { o = +m[1]; n = +m[2]; }
+          return diffRow('hunk', '', '', escFast(l));
+        }
+        if (l.startsWith('+')) return diffRow('add', '', n++, escFast(l));
+        if (l.startsWith('-')) return diffRow('del', o++, '', escFast(l));
+        if (l.startsWith('\\')) return '';
+        return diffRow('ctx', o++, n++, escFast(l));
+      }).join('');
+    }
+
+    // ---------- push engine: many file changes → ONE commit ----------
+    // changes: [{ path, action: create|update|delete|rename, content?, contentBase64?, from?, fromSha? }]
+    async function pushChanges({ owner, repo, branch, message, changes, mode = 'direct', prTitle, prBody, branchName, label, onProgress }) {
+      const api = state.api;
+      const step = t => onProgress && onProgress(t);
+      step('Reading branch…');
+      let baseSha;
+      try {
+        baseSha = (await api.getRef(owner, repo, branch)).object.sha;
+      } catch (e) {
+        if (e.status === 409) return pushViaContents({ owner, repo, branch: null, message, changes, step });
+        if (e.status === 404) {
+          const r = await api.getRepo(owner, repo);
+          if (!r.size) return pushViaContents({ owner, repo, branch: null, message, changes, step });
+          throw new Error(`Branch "${branch}" was not found in ${owner}/${repo}`);
+        }
+        throw e;
+      }
+      const baseCommit = await api.getGitCommit(owner, repo, baseSha);
+      const tree = [];
+      let i = 0;
+      for (const ch of changes) {
+        i++;
+        step(`Preparing ${i}/${changes.length}: ${ch.path}`);
+        if (ch.action === 'delete') {
+          tree.push({ path: ch.path, mode: '100644', type: 'blob', sha: null });
+          continue;
+        }
+        let blobSha;
+        if (ch.contentBase64 != null) blobSha = (await api.createBlob(owner, repo, ch.contentBase64, 'base64')).sha;
+        else if (ch.content != null) blobSha = (await api.createBlob(owner, repo, ch.content, 'utf-8')).sha;
+        else if (ch.fromSha) blobSha = ch.fromSha;
+        else throw new Error(`No content for ${ch.path}`);
+        tree.push({ path: ch.path, mode: '100644', type: 'blob', sha: blobSha });
+        if (ch.action === 'rename' && ch.from && ch.from !== ch.path) {
+          tree.push({ path: ch.from, mode: '100644', type: 'blob', sha: null });
+        }
+      }
+      step('Creating commit…');
+      const newTree = await api.createTree(owner, repo, baseCommit.tree.sha, tree);
+      const commit = await api.createCommit(owner, repo, message, newTree.sha, [baseSha]);
+      if (mode === 'pr') {
+        step('Opening pull request…');
+        await api.createRef(owner, repo, branchName, commit.sha);
+        const pr = await api.createPull(owner, repo, { title: prTitle || message, head: branchName, base: branch, body: prBody || '' });
+        if (label) await api.addLabels(owner, repo, pr.number, [label]).catch(() => {});
+        return { commitSha: commit.sha, pr };
+      }
+      step(`Pushing to ${branch}…`);
+      await api.updateRef(owner, repo, branch, commit.sha, false);
+      return { commitSha: commit.sha };
+    }
+
+    // Fallback for empty repositories (Git Data API needs an existing commit)
+    async function pushViaContents({ owner, repo, branch, message, changes, step }) {
+      let last = null, i = 0;
+      for (const ch of changes) {
+        i++;
+        step && step(`Committing ${i}/${changes.length}: ${ch.path}`);
+        const base = branch ? { branch } : {};
+        if (ch.action === 'delete') continue;
+        const content = ch.contentBase64 != null ? ch.contentBase64 : utf8ToBase64(ch.content || '');
+        last = await state.api.putRawFile(owner, repo, ch.path, { message, content, ...base });
+      }
+      return { commitSha: last?.commit?.sha || null };
+    }
+
+    // ---------- storage-backed state ----------
+    function loadStaged() {
+      try { return JSON.parse(safeStorage.get('gh_staged') || '[]'); } catch (e) { return []; }
+    }
+    function saveStaged() {
+      try { safeStorage.set('gh_staged', JSON.stringify(state.staged)); }
+      catch (e) { showToast('Could not save staged changes on this device', 'warning'); }
+    }
+    Object.assign(state, {
+      currentBranch: null,
+      staged: loadStaged(),
+      requestCount: 0,
+      requestsTab: 'pending',
+      selectMode: false,
+      selectedRepos: new Set(),
+      repoSort: 'updated',
+      repoType: 'all',
+      repoLanguage: '',
+      repoQuery: ''
+    });
+
+    function stageChange(item) {
+      state.staged = state.staged.filter(s => !(s.owner === item.owner && s.repo === item.repo && s.branch === item.branch && s.path === item.path));
+      state.staged.push({ ...item, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), stagedAt: nowIso() });
+      saveStaged();
+    }
+
+    function stagedGroups() {
+      const groups = {};
+      for (const s of state.staged) {
+        const key = `${s.owner}/${s.repo}@${s.branch}`;
+        (groups[key] = groups[key] || { key, owner: s.owner, repo: s.repo, branch: s.branch, items: [] }).items.push(s);
+      }
+      return Object.values(groups);
+    }
+
+    function stagedToRequest(key) {
+      const g = stagedGroups().find(x => x.key === key);
+      if (!g) return null;
+      return {
+        id: 'staged-' + Date.now().toString(36),
+        title: `${plural(g.items.length, 'staged change')} to ${g.owner}/${g.repo}`,
+        summary: 'Changes you staged on this device. Review them and push everything as a single commit.',
+        author: state.user?.login,
+        status: 'pending',
+        created_at: g.items[0].stagedAt,
+        target: { repo: `${g.owner}/${g.repo}`, branch: g.branch },
+        commit_message: g.items.length === 1 ? `${g.items[0].action === 'create' ? 'Create' : 'Update'} ${g.items[0].path}` : `Update ${g.items.length} files`,
+        changes: g.items.map(s => ({ path: s.path, action: s.action, content: s.content, base_sha: s.baseSha, _stagedId: s.id })),
+        _staged: true,
+        _stagedKey: key
+      };
+    }
+
+    // =====================================================================
+    //  CHANGE REQUESTS — proposals from Perplexity Computer
+    //  Stored as JSON files in a private inbox repo: <you>/computer-requests
+    //  requests/<id>.json. Pull requests labelled "computer-request" in any
+    //  of your repos also show up here.
+    // =====================================================================
+
+    const REQUEST_ACTIONS = ['create', 'update', 'delete', 'rename'];
+
+    function inboxRepoFull() {
+      return safeStorage.get('gh_inbox_repo') || `${state.user?.login || 'me'}/${INBOX_DEFAULT_NAME}`;
+    }
+    function inboxParts() {
+      const [owner, repo] = inboxRepoFull().split('/');
+      return { owner, repo };
+    }
+
+    function validateRequest(r) {
+      const errs = [];
+      if (!r || typeof r !== 'object') return ['Request must be a JSON object'];
+      if (!r.title) errs.push('Missing "title"');
+      const repo = r.target?.repo;
+      if (!repo || !/^[\w.-]+\/[\w.-]+$/.test(repo)) errs.push('"target.repo" must look like owner/name');
+      if (!Array.isArray(r.changes) || !r.changes.length) errs.push('"changes" must be a non-empty array');
+      (r.changes || []).forEach((c, i) => {
+        if (!c.path) errs.push(`changes[${i}] is missing "path"`);
+        if (!REQUEST_ACTIONS.includes(c.action)) errs.push(`changes[${i}].action must be one of ${REQUEST_ACTIONS.join(', ')}`);
+        if ((c.action === 'create' || c.action === 'update') && c.content == null && c.content_base64 == null) errs.push(`changes[${i}] needs "content"`);
+        if (c.action === 'rename' && !c.from) errs.push(`changes[${i}] (rename) needs "from"`);
+      });
+      return errs;
+    }
+
+    function requestStatus(r) { return r.status || 'pending'; }
+
+    async function mapLimit(items, limit, fn) {
+      const out = new Array(items.length);
+      let i = 0;
+      const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (i < items.length) { const idx = i++; out[idx] = await fn(items[idx], idx); }
+      });
+      await Promise.all(workers);
+      return out;
+    }
+
+    async function loadRequests(force = false) {
+      if (state.requests && !force && Date.now() - state.requests.loadedAt < 60000) return state.requests;
+      const { owner, repo } = inboxParts();
+      const result = { items: [], prs: [], inboxMissing: false, errors: [], loadedAt: Date.now() };
+      const filesP = state.api.getMeta(owner, repo, 'requests').catch(e => {
+        if (e.status === 404) {
+          return state.api.getRepo(owner, repo).then(() => [], () => { result.inboxMissing = true; return []; });
+        }
+        result.errors.push('Inbox: ' + e.message);
+        return [];
+      });
+      const prsP = state.api.searchIssues(`is:pr is:open label:${CR_LABEL} user:${state.user.login} archived:false`, 50)
+        .then(r => r.items || []).catch(() => []);
+      const [files, prs] = await Promise.all([filesP, prsP]);
+      const jsonFiles = (Array.isArray(files) ? files : []).filter(f => f.type === 'file' && f.name.endsWith('.json'));
+      result.items = (await mapLimit(jsonFiles, 6, async f => {
+        try {
+          const raw = await state.api.getRaw(owner, repo, f.path);
+          const obj = JSON.parse(raw);
+          obj.id = obj.id || f.name.replace(/\.json$/, '');
+          obj._path = f.path;
+          obj._sha = f.sha;
+          obj._errors = validateRequest(obj);
+          return obj;
+        } catch (e) {
+          return { id: f.name.replace(/\.json$/, ''), title: f.name, _path: f.path, _sha: f.sha, _errors: ['Could not parse JSON: ' + e.message], changes: [], status: 'invalid' };
+        }
+      })).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      result.prs = prs;
+      state.requests = result;
+      updateRequestCount();
+      return result;
+    }
+
+    function updateRequestCount() {
+      const r = state.requests;
+      const pending = r ? r.items.filter(x => requestStatus(x) === 'pending' && !(x._errors || []).length).length + r.prs.length : 0;
+      state.requestCount = pending + stagedGroups().length;
+    }
+
+    async function saveRequestFile(req, message) {
+      const { owner, repo } = inboxParts();
+      const clean = {};
+      for (const [k, v] of Object.entries(req)) if (!k.startsWith('_')) clean[k] = v;
+      const res = await state.api.putRawFile(owner, repo, req._path, {
+        message,
+        content: utf8ToBase64(JSON.stringify(clean, null, 2) + '\n'),
+        sha: req._sha
+      });
+      req._sha = res.content.sha;
+      return req;
+    }
+
+    // Refresh badge counts quietly in the background
+    function refreshRequestBadge() {
+      if (!state.api || !state.user) return;
+      loadRequests(true).then(() => {
+        document.querySelectorAll('[data-req-badge]').forEach(el => {
+          el.textContent = state.requestCount;
+          el.style.display = state.requestCount ? '' : 'none';
+        });
+      }).catch(() => {});
+    }
+
+    function badge(n, extra = '') {
+      return `<span class="count-badge ${extra}" data-req-badge style="${n ? '' : 'display:none'}">${n}</span>`;
+    }
+
+    // ---------- icons ----------
+    const ICONS = {
+      inbox: '<svg viewBox="0 0 16 16"><path d="M2.8 2.06A1.75 1.75 0 014.41 1h7.18c.7 0 1.333.417 1.61 1.06l2.74 6.395c.04.093.06.194.06.295v4.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25v-4.5c0-.101.02-.202.06-.295L2.8 2.06zm1.61.44a.25.25 0 00-.23.152L1.887 8H4.75a.75.75 0 01.6.3L6.625 10h2.75l1.275-1.7a.75.75 0 01.6-.3h2.863L11.82 2.652a.25.25 0 00-.23-.152H4.41zm10.09 7h-2.875l-1.275 1.7a.75.75 0 01-.6.3h-3.5a.75.75 0 01-.6-.3L4.375 9.5H1.5v3.75c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25V9.5z"/></svg>',
+      pr: '<svg viewBox="0 0 16 16"><path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/></svg>',
+      file: '<svg viewBox="0 0 16 16"><path d="M3.75 1.5a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V6H9.75A1.75 1.75 0 018 4.25V1.5H3.75zm5.75.56v2.19c0 .138.112.25.25.25h2.19L9.5 2.06zM2 1.75C2 .784 2.784 0 3.75 0h5.086c.464 0 .909.184 1.237.513l3.414 3.414c.329.328.513.773.513 1.237v8.086A1.75 1.75 0 0112.25 15h-8.5A1.75 1.75 0 012 13.25V1.75z"/></svg>',
+      check: '<svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg>',
+      x: '<svg viewBox="0 0 16 16"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>',
+      comment: '<svg viewBox="0 0 16 16"><path d="M1.75 1h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0114.25 13H8.06l-2.573 2.573A1.458 1.458 0 013 14.543V13H1.75A1.75 1.75 0 010 11.25v-8.5C0 1.784.784 1 1.75 1zM1.5 2.75v8.5c0 .138.112.25.25.25h2a.75.75 0 01.75.75v2.19l2.72-2.72a.749.749 0 01.53-.22h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25H1.75a.25.25 0 00-.25.25z"/></svg>',
+      branch: '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M9.5 3.25a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zm-6 0a.75.75 0 101.5 0 .75.75 0 00-1.5 0zm8.25-.75a.75.75 0 100 1.5.75.75 0 000-1.5zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/></svg>'
+    };
+
+    function requestIconFor(status) {
+      if (status === 'applied' || status === 'pr_opened') return ICONS.check;
+      if (status === 'rejected') return ICONS.x;
+      if (status === 'changes_requested') return ICONS.comment;
+      return ICONS.file;
+    }
+
+    const STATUS_LABEL = { pending: 'Pending', changes_requested: 'Changes requested', applied: 'Pushed', pr_opened: 'PR opened', rejected: 'Rejected', invalid: 'Invalid' };
+
+    function changeSummary(changes) {
+      const c = { create: 0, update: 0, delete: 0, rename: 0 };
+      (changes || []).forEach(x => { if (c[x.action] != null) c[x.action]++; });
+      return Object.entries(c).filter(([, n]) => n).map(([k, n]) => `${n} ${k === 'update' ? 'modified' : k === 'create' ? 'new' : k === 'delete' ? 'deleted' : 'renamed'}`).join(' · ') || 'No changes';
+    }
+
+    function renderRequestRow(r) {
+      const st = r._errors?.length ? 'invalid' : requestStatus(r);
+      const onclick = r._staged ? `openStagedRequest(${jsArg(r._stagedKey)})` : `openRequest(${jsArg(r.id)})`;
+      return `
+        <div class="req-item" onclick="${onclick}">
+          <div class="req-icon ${st}">${requestIconFor(st)}</div>
+          <div class="req-body">
+            <div class="req-title">${escFast(r.title)}</div>
+            <div class="req-meta">
+              <span class="status-pill ${st}">${STATUS_LABEL[st] || st}</span>
+              <span>${escFast(r.target?.repo || '')}${r.target?.branch ? ` → ${escFast(r.target.branch)}` : ''}</span>
+              <span>${changeSummary(r.changes)}</span>
+              ${r.created_at ? `<span>${timeAgo(r.created_at)}</span>` : ''}
+              ${r._staged ? '<span class="status-pill outline">This device</span>' : r.author ? `<span>by ${escFast(r.author)}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderPrRequestRow(pr) {
+      const repo = pr.repository_url.split('/repos/')[1];
+      const [o, n] = repo.split('/');
+      return `
+        <div class="req-item" onclick="openPull(${jsArg(o)}, ${jsArg(n)}, ${pr.number})">
+          <div class="req-icon pending">${ICONS.pr}</div>
+          <div class="req-body">
+            <div class="req-title">${escFast(pr.title)}</div>
+            <div class="req-meta">
+              <span class="status-pill pending">Open PR</span>
+              <span>${escFast(repo)} #${pr.number}</span>
+              <span>${timeAgo(pr.created_at)}</span>
+              <span>by ${escFast(pr.user?.login || '')}</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ---------- Inbox view ----------
+    function renderRequests() {
+      if (!state.viewData) {
+        loadRequests(true).then(r => { state.viewData = { loaded: true }; render(); })
+          .catch(e => { state.viewData = { error: e.message }; render(); });
+        return renderLoading();
+      }
+      if (state.viewData.error) return `<div class="empty-state">Could not load requests: ${escFast(state.viewData.error)}</div>`;
+      const r = state.requests;
+      const tab = state.requestsTab;
+      const staged = stagedGroups().map(g => stagedToRequest(g.key));
+      const pendingItems = r.items.filter(x => requestStatus(x) === 'pending' && !x._errors.length);
+      const reviewItems = r.items.filter(x => requestStatus(x) === 'changes_requested' || x._errors.length);
+      const doneItems = r.items.filter(x => ['applied', 'pr_opened', 'rejected'].includes(requestStatus(x)));
+      const counts = { pending: pendingItems.length + r.prs.length + staged.length, review: reviewItems.length, done: doneItems.length };
+
+      let body = '';
+      if (tab === 'pending') {
+        body = `
+          ${staged.length ? `<div class="card"><div class="card-header">Staged on this device</div>${staged.map(renderRequestRow).join('')}</div>` : ''}
+          ${pendingItems.length ? `<div class="card"><div class="card-header">From Perplexity Computer</div>${pendingItems.map(renderRequestRow).join('')}</div>` : ''}
+          ${r.prs.length ? `<div class="card"><div class="card-header">Open pull requests labelled <code class="inline">${CR_LABEL}</code></div>${r.prs.map(renderPrRequestRow).join('')}</div>` : ''}
+          ${!counts.pending ? `<div class="card"><div class="empty-state">
+              <div style="font-size: 15px; color: var(--text-primary); margin-bottom: 6px;">You're all caught up</div>
+              <div>When Perplexity Computer proposes changes to your repos, they land here for you to review and push.</div>
+            </div></div>` : ''}`;
+      } else if (tab === 'review') {
+        body = reviewItems.length ? `<div class="card">${reviewItems.map(renderRequestRow).join('')}</div>` : '<div class="card"><div class="empty-state">Nothing waiting on a revision.</div></div>';
+      } else {
+        body = doneItems.length ? `<div class="card">${doneItems.map(renderRequestRow).join('')}</div>` : '<div class="card"><div class="empty-state">No pushed or rejected requests yet.</div></div>';
+      }
+
+      return `
+        <div class="row-between" style="margin-bottom: 16px; flex-wrap: wrap;">
+          <div>
+            <h2 style="font-size: 20px; margin-bottom: 4px;">Change requests</h2>
+            <div class="muted small">Inbox: <span class="link" onclick="openRepo(${jsArg(inboxParts().owner)}, ${jsArg(inboxParts().repo)})">${escFast(inboxRepoFull())}</span></div>
+          </div>
+          <div class="row">
+            <button class="btn btn-sm btn-secondary" onclick="refreshRequests()">Refresh</button>
+            <button class="btn btn-sm btn-secondary" onclick="showImportRequestModal()">Paste request</button>
+            <button class="btn btn-sm btn-secondary" onclick="showInboxSettings()">Setup</button>
+          </div>
+        </div>
+        ${r.inboxMissing ? `
+          <div class="card inbox-hero" style="border-color: var(--accent-blue);">
+            <div class="card-body">
+              <strong>Set up your request inbox</strong>
+              <div class="muted" style="font-size: 14px; line-height: 1.5;">Create a private repo <code class="inline">${escFast(inboxRepoFull())}</code>. Perplexity Computer writes proposed changes there as JSON files; you review the diffs here and push with one tap. Nothing touches your code until you approve it.</div>
+              <div class="row"><button class="btn btn-primary btn-sm" onclick="setupInbox()">Create inbox repo</button>
+              <button class="btn btn-secondary btn-sm" onclick="showProtocolModal()">How it works</button></div>
+            </div>
+          </div>` : ''}
+        ${r.errors.length ? `<div class="warn-banner" style="margin: 0 0 12px;">${r.errors.map(escFast).join('<br>')}</div>` : ''}
+        <div style="margin-bottom: 12px;">
+          <div class="segmented" role="tablist">
+            <button class="${tab === 'pending' ? 'active' : ''}" onclick="setRequestsTab('pending')">Pending ${counts.pending ? `<span class="count-badge">${counts.pending}</span>` : ''}</button>
+            <button class="${tab === 'review' ? 'active' : ''}" onclick="setRequestsTab('review')">Needs revision ${counts.review ? `<span class="count-badge muted-badge">${counts.review}</span>` : ''}</button>
+            <button class="${tab === 'done' ? 'active' : ''}" onclick="setRequestsTab('done')">History</button>
+          </div>
+        </div>
+        ${body}`;
+    }
+
+    function setRequestsTab(t) { state.requestsTab = t; render(); }
+    function refreshRequests() { state.viewData = null; state.requests = null; render(); }
+
+    // ---------- Request detail ----------
+    function openRequest(id) {
+      state.currentView = 'request';
+      state.currentRequest = { id };
+      state.viewData = null;
+      closeSidebar();
+      render();
+      window.scrollTo(0, 0);
+    }
+
+    function openStagedRequest(key) {
+      state.currentView = 'request';
+      state.currentRequest = { stagedKey: key };
+      state.viewData = null;
+      closeSidebar();
+      render();
+      window.scrollTo(0, 0);
+    }
+
+    async function fetchCurrentFile(owner, repo, path, ref) {
+      try {
+        const meta = await state.api.getMeta(owner, repo, path, ref);
+        if (Array.isArray(meta)) return { isDir: true };
+        let text = null, binary = false;
+        if (meta.content && meta.encoding === 'base64') {
+          text = base64ToUtf8(meta.content.replace(/\n/g, ''));
+        } else if (meta.size <= 20 * 1024 * 1024) {
+          text = await state.api.getRaw(owner, repo, path, ref);
+        }
+        if (text != null && /\u0000/.test(text.slice(0, 8000))) binary = true;
+        return { exists: true, sha: meta.sha, size: meta.size, text, binary };
+      } catch (e) {
+        if (e.status === 404) return { exists: false };
+        throw e;
+      }
+    }
+
+    async function loadRequestDetail() {
+      try {
+        let req;
+        if (state.currentRequest.stagedKey) {
+          req = stagedToRequest(state.currentRequest.stagedKey);
+          if (!req) { navigate('requests'); return; }
+        } else {
+          if (!state.requests) await loadRequests(true);
+          req = state.requests.items.find(x => x.id === state.currentRequest.id);
+          if (!req) { await loadRequests(true); req = state.requests.items.find(x => x.id === state.currentRequest.id); }
+          if (!req) throw new Error('Request not found — it may have been deleted.');
+        }
+        const errors = req._errors || [];
+        let files = [], branches = [], repoInfo = null;
+        if (!errors.length) {
+          const [owner, repo] = req.target.repo.split('/');
+          repoInfo = await state.api.getRepo(owner, repo);
+          const branch = req.target.branch || repoInfo.default_branch;
+          req.target.branch = branch;
+          branches = await state.api.listBranches(owner, repo).catch(() => []);
+          files = await mapLimit(req.changes, 5, async (ch) => {
+            const cur = await fetchCurrentFile(owner, repo, ch.action === 'rename' ? ch.from : ch.path, branch);
+            let destExists = null;
+            if (ch.action === 'rename') destExists = (await fetchCurrentFile(owner, repo, ch.path, branch)).exists;
+            return { change: ch, current: cur, destExists };
+          });
+        }
+        state.viewData = { req, files, branches, repoInfo, excluded: new Set(), errors };
+        render();
+      } catch (e) {
+        state.viewData = { fatal: e.message };
+        render();
+      }
+    }
+
+    function proposedText(ch) {
+      if (ch.content != null) return ch.content;
+      if (ch.content_base64 != null) { try { return base64ToUtf8(ch.content_base64); } catch (e) { return null; } }
+      return null;
+    }
+
+    function fileWarnings(f) {
+      const w = [];
+      const ch = f.change, cur = f.current;
+      if (cur.isDir) w.push('Path is a folder in the target repo.');
+      if (ch.action === 'create' && cur.exists) w.push('This file already exists — pushing will overwrite it.');
+      if (ch.action === 'update' && !cur.exists) w.push('File does not exist on this branch yet — it will be created.');
+      if (ch.action === 'update' && cur.exists && ch.base_sha && ch.base_sha !== cur.sha) w.push('The file changed on GitHub after this request was written. Review the diff carefully — pushing replaces the current version.');
+      if (ch.action === 'delete' && !cur.exists) w.push('File is already gone — nothing to delete.');
+      if (ch.action === 'rename' && !cur.exists) w.push(`Source file ${ch.from} was not found.`);
+      if (ch.action === 'rename' && f.destExists) w.push('Destination already exists — it will be overwritten.');
+      if (cur.binary) w.push('Current file looks binary; the diff may be unreadable.');
+      return w;
+    }
+
+    function renderRequestFile(f, i, excluded, actionable = true) {
+      const ch = f.change;
+      const before = f.current.exists ? (f.current.text ?? '') : '';
+      const after = ch.action === 'delete' ? '' : ch.action === 'rename' && proposedText(ch) == null ? before : (proposedText(ch) ?? '');
+      const d = renderDiffParts(computeLineDiff(before, after));
+      const warns = fileWarnings(f);
+      const on = !excluded.has(i);
+      const label = ch.action === 'rename' ? `${escFast(ch.from)} → ${escFast(ch.path)}` : escFast(ch.path);
+      return `
+        <div class="card diff-file" style="${on ? '' : 'opacity: 0.55;'}">
+          <details class="diff-details" ${i < 8 ? 'open' : ''}>
+            <summary class="diff-file-header">
+              <span class="chev">▶</span>
+              <span class="action-pill ${ch.action}">${ch.action}</span>
+              <span class="diff-file-path">${label}</span>
+              <span class="diff-stat"><span class="a">+${d.add}</span> <span class="d">−${d.del}</span></span>
+              ${state.viewData.req._staged || !actionable ? '' : `<button class="btn btn-sm btn-secondary" onclick="event.preventDefault(); event.stopPropagation(); editRequestChange(${i})" ${ch.action === 'delete' ? 'disabled' : ''}>Edit</button>`}
+              ${actionable ? `<label class="checkbox-label" onclick="event.stopPropagation()" style="margin: 0;">
+                <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleRequestFile(${i}, this.checked)"> Include
+              </label>` : ''}
+            </summary>
+            ${warns.map(w => `<div class="warn-banner">${escFast(w)}</div>`).join('')}
+            ${ch.note ? `<div class="info-banner">${escFast(ch.note)}</div>` : ''}
+            <div class="diff-body">${d.html}</div>
+          </details>
+        </div>`;
+    }
+
+    function renderRequest() {
+      if (!state.viewData) { loadRequestDetail(); return renderLoading(); }
+      if (state.viewData.fatal) return `
+        <div class="breadcrumb"><span class="breadcrumb-item" onclick="navigate('requests')">Requests</span></div>
+        <div class="card"><div class="empty-state">${escFast(state.viewData.fatal)}</div></div>`;
+      const { req, files, errors, excluded, repoInfo } = state.viewData;
+      const st = errors.length ? 'invalid' : requestStatus(req);
+      const actionable = !errors.length && ['pending', 'changes_requested'].includes(st);
+      const totals = files.reduce((acc, f, i) => {
+        if (excluded.has(i)) return acc;
+        acc.n++;
+        return acc;
+      }, { n: 0 });
+      return `
+        <div class="breadcrumb">
+          <span class="breadcrumb-item" onclick="navigate('requests')">Requests</span>
+          <span class="breadcrumb-separator">/</span>
+          <span>${escFast(req._staged ? 'Staged changes' : req.id)}</span>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="row" style="margin-bottom: 8px;">
+              <span class="status-pill ${st}">${STATUS_LABEL[st] || st}</span>
+              ${req.target?.repo ? `<span class="link" onclick="openRepo(${jsArg(req.target.repo.split('/')[0])}, ${jsArg(req.target.repo.split('/')[1])})">${escFast(req.target.repo)}</span>` : ''}
+              ${req.target?.branch ? `<span class="status-pill outline">${ICONS.branch} ${escFast(req.target.branch)}</span>` : ''}
+            </div>
+            <h2 style="font-size: 20px; margin-bottom: 6px; word-break: break-word;">${escFast(req.title)}</h2>
+            <div class="muted small" style="margin-bottom: 12px;">
+              ${req.author ? `Proposed by ${escFast(req.author)} · ` : ''}${req.created_at ? timeAgo(req.created_at) : ''} · ${changeSummary(req.changes)}
+            </div>
+            ${req.summary ? `<div class="markdown">${renderMarkdown(req.summary)}</div>` : ''}
+            ${req.commit_message ? `<div class="kv" style="margin-top: 10px;"><span>Commit message</span><span style="text-align: right; word-break: break-word;">${escFast(req.commit_message.split('\n')[0])}</span></div>` : ''}
+            ${req.applied_commit ? `<div class="kv"><span>Pushed commit</span><a class="sha" href="${ghUrl(`${req.target.repo}/commit/${req.applied_commit}`)}" target="_blank" rel="noopener">${req.applied_commit.slice(0, 7)}</a></div>` : ''}
+            ${req.pr_url ? `<div class="kv"><span>Pull request</span><a class="link" href="${escAttr(req.pr_url)}" target="_blank" rel="noopener">${escFast(req.pr_url.split('/').slice(-3).join('/'))}</a></div>` : ''}
+          </div>
+        </div>
+        ${errors.length ? `<div class="warn-banner" style="margin: 0 0 16px;"><strong>This request can't be applied:</strong><br>${errors.map(escFast).join('<br>')}</div>` : ''}
+        ${req.feedback?.length ? `
+          <div class="card">
+            <div class="card-header">Review notes</div>
+            ${req.feedback.map(f => `<div class="feedback-item"><div class="muted small" style="margin-bottom: 4px;">${escFast(f.by || '')} · ${f.at ? timeAgo(f.at) : ''}</div><div class="markdown">${renderMarkdown(f.message || '')}</div></div>`).join('')}
+          </div>` : ''}
+        ${repoInfo?.archived ? '<div class="warn-banner" style="margin: 0 0 16px;">The target repository is archived. Unarchive it in Settings before pushing.</div>' : ''}
+        <h3 style="margin: 16px 0 12px; font-size: 16px;">Files (${files.length})</h3>
+        ${files.map((f, i) => renderRequestFile(f, i, excluded, actionable)).join('')}
+        <div class="sticky-actions">
+          ${actionable ? `
+            <button class="btn btn-primary" onclick="showApplyRequestModal()" ${totals.n ? '' : 'disabled'}>Push ${plural(totals.n, 'file')}…</button>
+            ${req._staged ? `<button class="btn btn-secondary" onclick="discardStaged(${jsArg(req._stagedKey)})">Discard staged</button>` : `
+              <button class="btn btn-secondary" onclick="showRequestChangesModal()">Request changes</button>
+              <span class="spacer"></span>
+              <button class="btn btn-danger btn-sm" onclick="rejectRequest()">Reject</button>`}
+          ` : `
+            <span class="muted small">${st === 'invalid' ? 'Fix the JSON in the inbox repo, or delete it.' : 'This request is closed.'}</span>
+            <span class="spacer"></span>
+            ${!req._staged && st !== 'pending' && !errors.length ? `<button class="btn btn-secondary btn-sm" onclick="reopenRequest()">Reopen</button>` : ''}
+          `}
+          ${!req._staged ? `<button class="btn btn-secondary btn-sm" onclick="deleteRequest()">Delete</button>` : ''}
+        </div>`;
+    }
+
+    function toggleRequestFile(i, on) {
+      const ex = state.viewData.excluded;
+      on ? ex.delete(i) : ex.add(i);
+      const y = window.scrollY;
+      render();
+      window.scrollTo(0, y);
+    }
+
+    function editRequestChange(i) {
+      const f = state.viewData.files[i];
+      const text = proposedText(f.change) ?? (f.current.text || '');
+      showModal(`Edit ${escFast(f.change.path)}`, `
+        <div class="info-banner" style="margin: 0 0 12px;">Tweak the proposed content before pushing. Your edit is saved into the request.</div>
+        <textarea class="textarea" id="reqEditContent" style="min-height: 360px; font-family: monospace; font-size: 12px;">${escFast(text)}</textarea>
+      `, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveRequestChangeEdit(${i})">Save edit</button>
+      `);
+      document.querySelector('.modal')?.classList.add('modal-lg');
+    }
+
+    async function saveRequestChangeEdit(i) {
+      const v = document.getElementById('reqEditContent').value;
+      const { req, files } = state.viewData;
+      req.changes[i].content = v;
+      delete req.changes[i].content_base64;
+      files[i].change = req.changes[i];
+      closeModal();
+      try {
+        if (!req._staged) {
+          req.edited_by_user = true;
+          await saveRequestFile(req, `Edit request ${req.id}: ${req.changes[i].path}`);
+        }
+        showToast('Edit saved', 'success');
+      } catch (e) {
+        showToast('Edit kept locally, but saving to the inbox failed: ' + e.message, 'warning');
+      }
+      render();
+    }
+
+    function showApplyRequestModal() {
+      const { req, branches, repoInfo, excluded, files } = state.viewData;
+      const base = req.target.branch;
+      const names = branches.map(b => b.name);
+      if (!names.includes(base)) names.unshift(base);
+      const suggested = `computer/${slugify(req.title)}`;
+      const n = files.length - excluded.size;
+      showModal('Push changes', `
+        <div class="kv"><span>Repository</span><span>${escFast(req.target.repo)}</span></div>
+        <div class="kv" style="margin-bottom: 12px;"><span>Files</span><span>${plural(n, 'file')} in one commit</span></div>
+        <div class="input-group">
+          <label class="input-label">Target branch</label>
+          <select class="select" id="applyBranch">${names.map(b => `<option value="${escAttr(b)}" ${b === base ? 'selected' : ''}>${escFast(b)}${b === repoInfo?.default_branch ? ' (default)' : ''}</option>`).join('')}</select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Commit message</label>
+          <textarea class="textarea" id="applyMessage" style="min-height: 72px;">${escFast(req.commit_message || req.title)}</textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">How to push</label>
+          <label class="checkbox-label"><input type="radio" name="applyMode" value="direct" checked onchange="document.getElementById('prBranchGroup').style.display='none'"> Commit directly to the branch</label>
+          <label class="checkbox-label"><input type="radio" name="applyMode" value="pr" onchange="document.getElementById('prBranchGroup').style.display=''"> Open a pull request from a new branch</label>
+        </div>
+        <div class="input-group" id="prBranchGroup" style="display: none;">
+          <label class="input-label">New branch name</label>
+          <input class="input" id="applyPrBranch" value="${escAttr(suggested)}">
+        </div>
+        <div class="upload-status" id="applyStatus" style="display: none; font-size: 13px;"></div>
+      `, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="applyBtn" onclick="applyRequest()">Push</button>
+      `);
+    }
+
+    async function applyRequest() {
+      const { req, files, excluded } = state.viewData;
+      const branch = document.getElementById('applyBranch').value;
+      const message = document.getElementById('applyMessage').value.trim() || req.title;
+      const mode = document.querySelector('input[name="applyMode"]:checked').value;
+      const prBranch = (document.getElementById('applyPrBranch')?.value || '').trim();
+      if (mode === 'pr' && !/^[\w./-]+$/.test(prBranch)) { showToast('Enter a valid branch name', 'error'); return; }
+      const btn = document.getElementById('applyBtn');
+      const status = document.getElementById('applyStatus');
+      btn.disabled = true; btn.textContent = 'Pushing…';
+      status.style.display = '';
+      const [owner, repo] = req.target.repo.split('/');
+      try {
+        const changes = [];
+        files.forEach((f, i) => {
+          if (excluded.has(i)) return;
+          const ch = f.change;
+          if (ch.action === 'delete') { if (f.current.exists) changes.push({ path: ch.path, action: 'delete' }); return; }
+          const out = { path: ch.path, action: ch.action };
+          if (ch.content != null) out.content = ch.content;
+          else if (ch.content_base64 != null) out.contentBase64 = ch.content_base64;
+          else if (ch.action === 'rename') out.fromSha = f.current.sha;
+          if (ch.action === 'rename') out.from = ch.from;
+          changes.push(out);
+        });
+        if (!changes.length) throw new Error('Nothing to push — all selected changes are no-ops.');
+        const res = await pushChanges({
+          owner, repo, branch, message, changes, mode,
+          branchName: prBranch, prTitle: req.title,
+          prBody: `${req.summary || ''}\n\n---\nPushed from GitHub Manager change request \`${req.id}\`.`,
+          label: CR_LABEL,
+          onProgress: t => { status.textContent = t; }
+        });
+        if (req._staged) {
+          const ids = new Set(req.changes.filter((c, i) => !excluded.has(i)).map(c => c._stagedId));
+          state.staged = state.staged.filter(s => !ids.has(s.id));
+          saveStaged();
+        } else {
+          req.status = res.pr ? 'pr_opened' : 'applied';
+          req.applied_at = nowIso();
+          req.applied_by = state.user.login;
+          req.applied_commit = res.commitSha;
+          req.applied_branch = res.pr ? prBranch : branch;
+          if (res.pr) req.pr_url = res.pr.html_url;
+          await saveRequestFile(req, `${res.pr ? 'Open PR for' : 'Apply'} request ${req.id}`).catch(e => showToast('Pushed, but updating the request status failed: ' + e.message, 'warning'));
+        }
+        closeModal();
+        showToast(res.pr ? `Pull request #${res.pr.number} opened` : `Pushed ${plural(changes.length, 'file')} to ${branch}`, 'success');
+        updateRequestCount();
+        state.viewData = null;
+        if (req._staged) navigate('requests'); else render();
+      } catch (e) {
+        status.textContent = 'Failed: ' + e.message;
+        btn.disabled = false; btn.textContent = 'Retry';
+        showToast('Push failed: ' + e.message, 'error');
+      }
+    }
+
+    function showRequestChangesModal() {
+      showModal('Request changes', `
+        <div class="muted small" style="margin-bottom: 10px;">Describe what should be different. Perplexity Computer reads this note from the request file and revises its proposal.</div>
+        <textarea class="textarea" id="feedbackBody" style="min-height: 140px;" placeholder="e.g. Keep the old header, and use tabs instead of spaces"></textarea>
+      `, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitRequestFeedback()">Send note</button>
+      `);
+    }
+
+    async function submitRequestFeedback() {
+      const msg = document.getElementById('feedbackBody').value.trim();
+      if (!msg) { showToast('Write a note first', 'error'); return; }
+      const { req } = state.viewData;
+      req.feedback = [...(req.feedback || []), { by: state.user.login, at: nowIso(), message: msg }];
+      req.status = 'changes_requested';
+      try {
+        await saveRequestFile(req, `Request changes on ${req.id}`);
+        closeModal();
+        showToast('Note saved to the request', 'success');
+        updateRequestCount();
+        render();
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function setRequestStatus(status, message) {
+      const { req } = state.viewData;
+      const prev = req.status;
+      req.status = status;
+      try {
+        await saveRequestFile(req, message);
+        updateRequestCount();
+        render();
+      } catch (e) { req.status = prev; showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function rejectRequest() {
+      if (!confirm('Reject this request? It moves to History and nothing is pushed.')) return;
+      await setRequestStatus('rejected', `Reject request ${state.viewData.req.id}`);
+      showToast('Request rejected', 'success');
+    }
+
+    async function reopenRequest() { await setRequestStatus('pending', `Reopen request ${state.viewData.req.id}`); }
+
+    async function deleteRequest() {
+      const { req } = state.viewData;
+      if (!confirm('Delete this request file from your inbox repo?')) return;
+      try {
+        const { owner, repo } = inboxParts();
+        await state.api.deleteRawFile(owner, repo, req._path, { message: `Delete request ${req.id}`, sha: req._sha });
+        state.requests.items = state.requests.items.filter(x => x !== req);
+        updateRequestCount();
+        showToast('Request deleted', 'success');
+        navigate('requests');
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    function discardStaged(key) {
+      if (!confirm('Discard all staged changes in this group?')) return;
+      const g = stagedGroups().find(x => x.key === key);
+      const ids = new Set((g?.items || []).map(s => s.id));
+      state.staged = state.staged.filter(s => !ids.has(s.id));
+      saveStaged();
+      updateRequestCount();
+      navigate('requests');
+    }
+
+    // ---------- inbox setup & protocol ----------
+    function protocolExample() {
+      const login = state.user?.login || 'you';
+      return JSON.stringify({
+        id: '2026-09-22-fix-readme-typos',
+        title: 'Fix typos in README',
+        summary: 'Corrects three spelling mistakes and adds a **Usage** section.',
+        author: 'Perplexity Computer',
+        status: 'pending',
+        created_at: '2026-09-22T21:00:00Z',
+        target: { repo: `${login}/my-project`, branch: 'main' },
+        commit_message: 'Fix README typos and add usage section',
+        changes: [
+          { path: 'README.md', action: 'update', base_sha: '<blob sha the change was based on>', content: '# My Project\n...' },
+          { path: 'docs/old.md', action: 'delete' },
+          { path: 'src/new-name.js', action: 'rename', from: 'src/old-name.js' }
+        ]
+      }, null, 2);
+    }
+
+    function protocolMarkdown() {
+      return `# Change request protocol
+
+This repo is the inbox for **GitHub Manager**. Perplexity Computer proposes changes by committing
+one JSON file per request to \`requests/<id>.json\`. Nothing is pushed to the target repo until the owner
+reviews the diff in GitHub Manager and taps **Push**.
+
+## Request schema
+
+\`\`\`json
+${protocolExample()}
+\`\`\`
+
+| Field | Notes |
+| --- | --- |
+| \`target.repo\` | \`owner/name\` of the repo to change |
+| \`target.branch\` | Branch to commit to (defaults to the repo's default branch) |
+| \`changes[].action\` | \`create\`, \`update\`, \`delete\`, or \`rename\` (\`rename\` needs \`from\`; \`content\` optional) |
+| \`changes[].content\` | Full new file contents (UTF-8). Use \`content_base64\` for binary files |
+| \`changes[].base_sha\` | Optional blob SHA the edit was based on, used for conflict warnings |
+| \`status\` | \`pending\` → \`applied\` / \`pr_opened\` / \`rejected\` / \`changes_requested\` (set by the app) |
+| \`feedback[]\` | Review notes the owner leaves when requesting changes. Revise the request and set \`status\` back to \`pending\` |
+
+Alternative: open a pull request in any of your repos with the label \`${CR_LABEL}\`; it also appears in the inbox.
+`;
+    }
+
+    function showProtocolModal() {
+      const instr = `When you want to change one of my GitHub repos, don't push directly. Instead, commit a change request JSON file to ${inboxRepoFull()} at requests/<id>.json following PROTOCOL.md in that repo (fields: id, title, summary, author, status "pending", created_at, target {repo, branch}, commit_message, changes [{path, action create|update|delete|rename, content, from, base_sha}]). I'll review the diff and push it from GitHub Manager.`;
+      showModal('How change requests work', `
+        <div class="protocol">
+          <ol style="padding-left: 20px; line-height: 1.7; font-size: 14px;">
+            <li>Perplexity Computer writes a JSON request into <code class="inline">${escFast(inboxRepoFull())}/requests/</code>.</li>
+            <li>It shows up in <strong>Requests</strong> with a line-by-line diff against the live file.</li>
+            <li>You push it as a single commit, open it as a pull request, edit it, send a note back, or reject it.</li>
+          </ol>
+          <div class="input-label" style="margin-top: 14px;">Tell Perplexity Computer</div>
+          <pre>${escFast(instr)}</pre>
+          <button class="btn btn-sm btn-secondary" style="margin-top: 8px;" onclick="copyText(${jsArg(instr)})">Copy instructions</button>
+          <div class="input-label" style="margin-top: 16px;">Request format</div>
+          <pre>${escFast(protocolExample())}</pre>
+        </div>
+      `, `<button class="btn btn-secondary" onclick="closeModal()">Close</button>`);
+      document.querySelector('.modal')?.classList.add('modal-lg');
+    }
+
+    async function setupInbox() {
+      const { owner, repo } = inboxParts();
+      if (owner !== state.user.login) { showToast('Inbox repo must be under your account to auto-create it', 'error'); return; }
+      try {
+        showToast('Creating inbox repo…');
+        await state.api.createRepo({ name: repo, private: true, auto_init: true, description: 'Change requests for GitHub Manager — proposals from Perplexity Computer awaiting review' });
+        await new Promise(r => setTimeout(r, 1500));
+        const info = await state.api.getRepo(owner, repo);
+        await pushChanges({
+          owner, repo, branch: info.default_branch, message: 'Set up change request inbox',
+          changes: [
+            { path: 'PROTOCOL.md', action: 'create', content: protocolMarkdown() },
+            { path: 'requests/.gitkeep', action: 'create', content: '' },
+            { path: 'README.md', action: 'update', content: `# ${repo}\n\nInbox for GitHub Manager change requests. See [PROTOCOL.md](PROTOCOL.md).\n` }
+          ]
+        });
+        showToast('Inbox ready', 'success');
+        refreshRequests();
+      } catch (e) { showToast('Setup failed: ' + e.message, 'error'); }
+    }
+
+    function showInboxSettings() {
+      showModal('Request inbox', `
+        <div class="input-group">
+          <label class="input-label">Inbox repository (owner/name)</label>
+          <input class="input" id="inboxRepoInput" value="${escAttr(inboxRepoFull())}">
+        </div>
+        <div class="muted small" style="line-height: 1.5;">Requests are read from <code class="inline">requests/*.json</code> in this repo. Keep it private.</div>
+        <div class="row" style="margin-top: 14px;">
+          <button class="btn btn-sm btn-secondary" onclick="showProtocolModal()">How it works</button>
+          <button class="btn btn-sm btn-secondary" onclick="copyText(${jsArg(protocolExample())})">Copy JSON template</button>
+        </div>
+      `, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveInboxSettings()">Save</button>
+      `);
+    }
+
+    function saveInboxSettings() {
+      const v = document.getElementById('inboxRepoInput').value.trim();
+      if (!/^[\w.-]+\/[\w.-]+$/.test(v)) { showToast('Use the format owner/name', 'error'); return; }
+      safeStorage.set('gh_inbox_repo', v);
+      closeModal();
+      refreshRequests();
+    }
+
+    function showImportRequestModal() {
+      showModal('Paste a change request', `
+        <div class="muted small" style="margin-bottom: 10px;">Paste request JSON (for example, one Perplexity Computer gave you in chat). It's saved into your inbox so you can review it like any other request.</div>
+        <textarea class="textarea" id="importJson" style="min-height: 260px; font-family: monospace; font-size: 12px;" placeholder='{"title": "...", "target": {"repo": "owner/name"}, "changes": [...]}'></textarea>
+      `, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="importRequest()">Add to inbox</button>
+      `);
+    }
+
+    async function importRequest() {
+      let obj;
+      try { obj = JSON.parse(document.getElementById('importJson').value); }
+      catch (e) { showToast('That is not valid JSON: ' + e.message, 'error'); return; }
+      const errs = validateRequest(obj);
+      if (errs.length) { showToast(errs[0], 'error'); return; }
+      obj.id = obj.id || `${new Date().toISOString().slice(0, 10)}-${slugify(obj.title)}`;
+      obj.status = 'pending';
+      obj.created_at = obj.created_at || nowIso();
+      obj.author = obj.author || 'Pasted request';
+      const { owner, repo } = inboxParts();
+      try {
+        await state.api.putRawFile(owner, repo, `requests/${obj.id}.json`, {
+          message: `Add request ${obj.id}`,
+          content: utf8ToBase64(JSON.stringify(obj, null, 2) + '\n')
+        });
+        closeModal();
+        showToast('Request added', 'success');
+        state.requests = null;
+        openRequest(obj.id);
+      } catch (e) {
+        showToast(e.status === 404 ? 'Inbox repo not found — set it up first' : 'Failed: ' + e.message, 'error');
+      }
+    }
+
+    // =====================================================================
+    //  SHELL — header, sidebar, bottom nav, routing
+    // =====================================================================
+    const VIEW_TITLES = {
+      home: 'Home', repos: 'Repositories', gists: 'Gists', gist: 'Gist', search: 'Search', profile: 'Profile',
+      notifications: 'Notifications', starred: 'Starred', orgs: 'Organizations', requests: 'Requests',
+      request: 'Change request', commit: 'Commit', issue: 'Issue', pull: 'Pull request', file: 'File'
+    };
+
+    function renderHeader() {
+      const t = state.currentView === 'repo' && state.currentRepo ? `${state.currentRepo.owner}/${state.currentRepo.name}` : (VIEW_TITLES[state.currentView] || 'GitHub');
+      return `
+        <header class="header">
+          <button class="header-btn" onclick="toggleSidebar()" aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+          </button>
+          <span class="header-title">${escFast(t)}</span>
+          <button class="header-btn" onclick="navigate('requests')" aria-label="Change requests" title="Change requests">
+            <svg width="22" height="22" viewBox="0 0 16 16" fill="currentColor">${ICONS.inbox.replace(/<\/?svg[^>]*>/g, '')}</svg>
+            ${state.requestCount ? '<span class="dot"></span>' : ''}
+          </button>
+          <button class="header-btn" onclick="navigate('search')" aria-label="Search">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </button>
+        </header>`;
+    }
+
+    function navItem(view, label, svg, extra = '') {
+      return `<div class="nav-item ${state.currentView === view ? 'active' : ''}" onclick="navigate('${view}')">${svg}${label}${extra}</div>`;
+    }
+
+    function renderSidebar() {
+      const rl = state.rateLimit;
+      return `
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-header">
+            <img class="sidebar-avatar" src="${escAttr(state.user?.avatar_url || '')}" alt="">
+            <div class="sidebar-user">
+              <div class="sidebar-username">${escFast(state.user?.login || '')}</div>
+              <div class="sidebar-name">${escFast(state.user?.name || '')}</div>
+            </div>
+          </div>
+          <nav class="nav-section">
+            ${navItem('home', 'Home', '<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>')}
+            ${navItem('requests', 'Requests', ICONS.inbox, badge(state.requestCount))}
+            ${navItem('repos', 'Repositories', '<svg viewBox="0 0 16 16"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8z"/></svg>')}
+            ${navItem('notifications', 'Notifications', '<svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>')}
+            ${navItem('starred', 'Starred', '<svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>')}
+            ${navItem('gists', 'Gists', '<svg viewBox="0 0 16 16"><path d="M8.75 1.75a.75.75 0 00-1.5 0V5H4a.75.75 0 000 1.5h3.25v3.25a.75.75 0 001.5 0V6.5H12A.75.75 0 0012 5H8.75V1.75z"/></svg>')}
+            ${navItem('orgs', 'Organizations', '<svg viewBox="0 0 16 16"><path d="M1.75 0h8.5C11.216 0 12 .784 12 1.75v12.5c0 .085-.006.168-.018.25h2.268a.25.25 0 00.25-.25V8.285a.25.25 0 00-.111-.208l-1.055-.703a.75.75 0 11.832-1.248l1.055.703c.487.325.779.871.779 1.456v5.965A1.75 1.75 0 0114.25 16h-3.5a.75.75 0 01-.197-.026c-.099.017-.2.026-.303.026h-3a.75.75 0 01-.75-.75V14h-1v1.25a.75.75 0 01-.75.75h-3A1.75 1.75 0 010 14.25V1.75C0 .784.784 0 1.75 0zM3 3.75v.5c0 .414.336.75.75.75h.5a.75.75 0 000-1.5h-.5a.75.75 0 00-.75.25zm4 0v.5c0 .414.336.75.75.75h.5a.75.75 0 000-1.5h-.5A.75.75 0 007 3.75zM3.75 6a.75.75 0 000 1.5h.5a.75.75 0 000-1.5h-.5zM7 6.75c0 .414.336.75.75.75h.5a.75.75 0 000-1.5h-.5a.75.75 0 00-.75.75z"/></svg>')}
+          </nav>
+          <nav class="nav-section">
+            ${navItem('profile', 'Profile', '<svg viewBox="0 0 16 16"><path d="M10.561 8.073a6.005 6.005 0 013.432 5.142.75.75 0 11-1.498.07 4.5 4.5 0 00-8.99 0 .75.75 0 01-1.498-.07 6.004 6.004 0 013.431-5.142 3.999 3.999 0 115.123 0zM10.5 5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>')}
+            <div class="nav-item" onclick="signOut()">
+              <svg viewBox="0 0 16 16"><path d="M2 2.75C2 1.784 2.784 1 3.75 1h2.5a.75.75 0 010 1.5h-2.5a.25.25 0 00-.25.25v10.5c0 .138.112.25.25.25h2.5a.75.75 0 010 1.5h-2.5A1.75 1.75 0 012 13.25V2.75zm10.44 4.5H6.75a.75.75 0 000 1.5h5.69l-1.97 1.97a.75.75 0 101.06 1.06l3.25-3.25a.75.75 0 000-1.06l-3.25-3.25a.75.75 0 10-1.06 1.06l1.97 1.97z"/></svg>
+              Sign Out
+            </div>
+          </nav>
+          ${rl ? `<div style="padding: 12px 16px; font-size: 12px; color: var(--text-secondary);">API ${rl.remaining.toLocaleString()} / ${rl.limit.toLocaleString()} left · resets ${new Date(rl.reset * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>` : ''}
+        </aside>`;
+    }
+
+    function renderBottomNav() {
+      const item = (view, label, svg, extra = '') => `
+        <div class="bottom-nav-item ${state.currentView === view ? 'active' : ''}" onclick="navigate('${view}')">${svg}${label}${extra}</div>`;
+      return `
+        <nav class="bottom-nav">
+          ${item('home', 'Home', '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>')}
+          ${item('repos', 'Repos', '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8z"/></svg>')}
+          ${item('requests', 'Requests', ICONS.inbox.replace('<svg ', '<svg fill="currentColor" '), badge(state.requestCount))}
+          ${item('notifications', 'Activity', '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>')}
+          ${item('profile', 'Profile', '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M10.561 8.073a6.005 6.005 0 013.432 5.142.75.75 0 11-1.498.07 4.5 4.5 0 00-8.99 0 .75.75 0 01-1.498-.07 6.004 6.004 0 013.431-5.142 3.999 3.999 0 115.123 0zM10.5 5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>')}
+        </nav>`;
+    }
+
+    function renderView() {
+      switch (state.currentView) {
+        case 'home': return renderHome();
+        case 'repos': return renderRepos();
+        case 'repo': return renderRepo();
+        case 'file': return renderFile();
+        case 'issue': return renderIssue();
+        case 'pull': return renderPull();
+        case 'commit': return renderCommit();
+        case 'gists': return renderGists();
+        case 'gist': return renderGist();
+        case 'search': return renderSearch();
+        case 'profile': return renderProfile();
+        case 'notifications': return renderNotifications();
+        case 'starred': return renderStarred();
+        case 'orgs': return renderOrgs();
+        case 'requests': return renderRequests();
+        case 'request': return renderRequest();
+        default: return renderHome();
+      }
+    }
+
+    function openRepo(owner, name) {
+      state.currentRepo = { owner, name };
+      state.currentPath = [];
+      state.currentBranch = null;
+      state.currentView = 'repo';
+      state.viewData = null;
+      state.repoTab = 'code';
+      closeSidebar();
+      render();
+      window.scrollTo(0, 0);
+    }
+
+    async function refreshRateLimit() {
+      try {
+        const r = await state.api.request('/rate_limit');
+        state.rateLimit = r.resources.core;
+      } catch (e) {}
+    }
+
+    // =====================================================================
+    //  HOME DASHBOARD
+    // =====================================================================
+    async function loadHomeData() {
+      try {
+        const [repos, prs, issues] = await Promise.all([
+          state.api.getRepos(),
+          state.api.searchIssues(`is:pr is:open user:${state.user.login} archived:false`, 1).catch(() => ({ total_count: 0 })),
+          state.api.searchIssues(`is:issue is:open user:${state.user.login} archived:false`, 1).catch(() => ({ total_count: 0 })),
+          loadRequests(true).catch(() => null)
+        ]);
+        state.viewData = { repos, openPrs: prs.total_count, openIssues: issues.total_count };
+        render();
+      } catch (e) {
+        showToast('Failed to load data: ' + e.message, 'error');
+      }
+    }
+
+    function repoRowHTML(repo, opts = {}) {
+      const sel = state.selectMode && opts.selectable;
+      const checked = state.selectedRepos.has(repo.full_name);
+      return `
+        <div class="repo-item ${sel ? 'selectable' : ''} ${sel && checked ? 'selected' : ''}" onclick="${sel ? `toggleRepoSelect(${jsArg(repo.full_name)})` : `openRepo(${jsArg(repo.owner.login)}, ${jsArg(repo.name)})`}">
+          ${sel ? `<input type="checkbox" class="repo-check" ${checked ? 'checked' : ''} onclick="event.stopPropagation(); toggleRepoSelect(${jsArg(repo.full_name)})" aria-label="Select ${escAttr(repo.name)}">` : ''}
+          <div class="repo-item-main">
+            <div class="repo-name">
+              <span>${escFast(opts.full ? repo.full_name : repo.name)}</span>
+              <span class="repo-visibility">${repo.private ? 'Private' : 'Public'}</span>
+              ${repo.archived ? '<span class="repo-visibility" style="color: var(--accent-orange); border-color: var(--accent-orange);">Archived</span>' : ''}
+              ${repo.fork ? '<span class="repo-visibility">Fork</span>' : ''}
+            </div>
+            ${repo.description ? `<div class="repo-description">${escFast(repo.description)}</div>` : ''}
+            ${repo.topics?.length ? `<div class="topic-list">${repo.topics.slice(0, 6).map(t => `<span class="topic">${escFast(t)}</span>`).join('')}</div>` : ''}
+            <div class="repo-meta">
+              ${repo.language ? `<span class="repo-meta-item"><span class="language-dot" style="background: ${languageColors[repo.language] || '#ccc'}"></span>${escFast(repo.language)}</span>` : ''}
+              <span class="repo-meta-item">⭐ ${repo.stargazers_count}</span>
+              <span class="repo-meta-item">🍴 ${repo.forks_count}</span>
+              ${repo.open_issues_count ? `<span class="repo-meta-item">${repo.open_issues_count} open</span>` : ''}
+              <span class="repo-meta-item">Updated ${timeAgo(repo.pushed_at || repo.updated_at)}</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderHome() {
+      if (!state.viewData) { loadHomeData(); return renderLoading(); }
+      const { repos, openPrs, openIssues } = state.viewData;
+      const rq = state.requests;
+      const staged = stagedGroups().map(g => stagedToRequest(g.key));
+      const pending = rq ? rq.items.filter(x => requestStatus(x) === 'pending' && !x._errors.length) : [];
+      const pendingAll = [...staged, ...pending];
+      return `
+        <div class="stat-grid">
+          <div class="stat-card clickable ${state.requestCount ? 'highlight' : ''}" onclick="navigate('requests')">
+            <div class="stat-label">Pending requests</div>
+            <div class="stat-value">${state.requestCount}</div>
+            <div class="stat-sub">${state.requestCount ? 'Ready to review' : 'All caught up'}</div>
+          </div>
+          <div class="stat-card clickable" onclick="navigate('repos')">
+            <div class="stat-label">Repositories</div>
+            <div class="stat-value">${state.user.public_repos + (state.user.total_private_repos || 0)}</div>
+            <div class="stat-sub">${state.user.total_private_repos || 0} private</div>
+          </div>
+          <div class="stat-card clickable" onclick="searchMy('pr')">
+            <div class="stat-label">Open pull requests</div>
+            <div class="stat-value">${openPrs}</div>
+            <div class="stat-sub">Across your repos</div>
+          </div>
+          <div class="stat-card clickable" onclick="searchMy('issue')">
+            <div class="stat-label">Open issues</div>
+            <div class="stat-value">${openIssues}</div>
+            <div class="stat-sub">Across your repos</div>
+          </div>
+        </div>
+
+        ${pendingAll.length || rq?.prs?.length ? `
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Waiting for you</span>
+              <button class="btn btn-sm btn-secondary" onclick="navigate('requests')">Open inbox</button>
+            </div>
+            ${pendingAll.slice(0, 4).map(renderRequestRow).join('')}
+            ${(rq?.prs || []).slice(0, Math.max(0, 4 - pendingAll.length)).map(renderPrRequestRow).join('')}
+          </div>` : rq?.inboxMissing ? `
+          <div class="card inbox-hero" style="border-color: var(--accent-blue);">
+            <div class="card-body">
+              <strong>Let Perplexity Computer propose changes</strong>
+              <div class="muted" style="font-size: 14px; line-height: 1.5;">Set up a private inbox repo and every change Perplexity Computer suggests shows up here with a diff, ready for you to push.</div>
+              <div class="row"><button class="btn btn-primary btn-sm" onclick="navigate('requests')">Set up inbox</button></div>
+            </div>
+          </div>` : ''}
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recently updated</span>
+            <button class="btn btn-sm btn-secondary" onclick="showCreateRepoModal()">+ New</button>
+          </div>
+          ${repos?.slice(0, 6).map(r => repoRowHTML(r, { full: true })).join('') || '<div class="empty-state">No repositories yet</div>'}
+        </div>
+        <button class="btn btn-secondary btn-block" onclick="navigate('repos')">View all repositories</button>`;
+    }
+
+    function searchMy(kind) {
+      window.open(`https://github.com/pulls?q=${encodeURIComponent(`is:${kind} is:open user:${state.user.login} archived:false`)}`, '_blank', 'noopener');
+    }
+
+    // =====================================================================
+    //  REPOSITORIES — search, sort, filter, bulk actions
+    // =====================================================================
+    async function loadRepos() {
+      try {
+        const repos = await state.api.getAllRepos();
+        state.allRepos = repos;
+        state.viewData = { repos };
+        render();
+      } catch (e) {
+        state.viewData = { repos: [], error: e.message };
+        render();
+      }
+    }
+
+    function filteredRepoList() {
+      const q = state.repoQuery.trim().toLowerCase();
+      const login = state.user.login;
+      let list = state.viewData.repos.filter(r => {
+        if (q && !(`${r.full_name} ${r.description || ''} ${(r.topics || []).join(' ')}`.toLowerCase().includes(q))) return false;
+        switch (state.repoType) {
+          case 'public': if (r.private) return false; break;
+          case 'private': if (!r.private) return false; break;
+          case 'sources': if (r.fork) return false; break;
+          case 'forks': if (!r.fork) return false; break;
+          case 'archived': if (!r.archived) return false; break;
+          case 'owned': if (r.owner.login !== login) return false; break;
+          case 'shared': if (r.owner.login === login) return false; break;
+        }
+        if (state.repoLanguage && r.language !== state.repoLanguage) return false;
+        return true;
+      });
+      const by = {
+        updated: (a, b) => new Date(b.pushed_at || b.updated_at) - new Date(a.pushed_at || a.updated_at),
+        name: (a, b) => a.name.localeCompare(b.name),
+        stars: (a, b) => b.stargazers_count - a.stargazers_count,
+        size: (a, b) => b.size - a.size,
+        created: (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      }[state.repoSort];
+      return list.sort(by);
+    }
+
+    function renderRepos() {
+      if (!state.viewData) { loadRepos(); return renderLoading(); }
+      if (state.viewData.error) return `<div class="card"><div class="empty-state">Failed to load repositories: ${escFast(state.viewData.error)}</div></div>`;
+      const langs = [...new Set(state.viewData.repos.map(r => r.language).filter(Boolean))].sort();
+      const list = filteredRepoList();
+      const sel = state.selectedRepos;
+      return `
+        <input type="search" class="search-input" id="repoSearchInput" placeholder="Find a repository…" value="${escAttr(state.repoQuery)}" oninput="onRepoQuery(this.value)">
+        <div class="toolbar">
+          <select class="select" onchange="state.repoType=this.value; render()" aria-label="Type">
+            ${[['all', 'All types'], ['owned', 'Owned by me'], ['shared', 'Shared with me'], ['public', 'Public'], ['private', 'Private'], ['sources', 'Sources'], ['forks', 'Forks'], ['archived', 'Archived']].map(([v, l]) => `<option value="${v}" ${state.repoType === v ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+          <select class="select" onchange="state.repoLanguage=this.value; render()" aria-label="Language">
+            <option value="">All languages</option>
+            ${langs.map(l => `<option ${state.repoLanguage === l ? 'selected' : ''}>${escFast(l)}</option>`).join('')}
+          </select>
+          <select class="select" onchange="state.repoSort=this.value; render()" aria-label="Sort">
+            ${[['updated', 'Last pushed'], ['name', 'Name'], ['stars', 'Stars'], ['size', 'Size'], ['created', 'Newest']].map(([v, l]) => `<option value="${v}" ${state.repoSort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}
+          </select>
+          <span style="flex: 1;"></span>
+          <button class="btn btn-sm btn-secondary" onclick="toggleSelectMode()">${state.selectMode ? 'Done' : 'Select'}</button>
+          <button class="btn btn-sm btn-primary" onclick="showCreateRepoModal()">+ New</button>
+        </div>
+        <div class="muted small" style="margin-bottom: 8px;">${plural(list.length, 'repository').replace('repositorys', 'repositories')}${state.selectMode ? ` · ${sel.size} selected · <span class="link" onclick="selectAllRepos()">select all shown</span>` : ''}</div>
+        <div class="card" id="repoList">
+          ${list.map(r => repoRowHTML(r, { selectable: true, full: r.owner.login !== state.user.login })).join('') || '<div class="empty-state">No repositories match these filters</div>'}
+        </div>
+        ${state.selectMode && sel.size ? `
+          <div class="bulk-bar">
+            <strong style="font-size: 14px;">${sel.size} selected</strong>
+            <span style="flex: 1;"></span>
+            <button class="btn btn-sm btn-secondary" onclick="bulkRepoAction('private')">Make private</button>
+            <button class="btn btn-sm btn-secondary" onclick="bulkRepoAction('public')">Make public</button>
+            <button class="btn btn-sm btn-secondary" onclick="bulkRepoAction('archive')">Archive</button>
+            <button class="btn btn-sm btn-secondary" onclick="bulkRepoAction('unarchive')">Unarchive</button>
+            <button class="btn btn-sm btn-danger" onclick="bulkRepoAction('delete')">Delete</button>
+          </div>` : ''}`;
+    }
+
+    let repoQueryTimer = null;
+    function onRepoQuery(v) {
+      state.repoQuery = v;
+      clearTimeout(repoQueryTimer);
+      repoQueryTimer = setTimeout(() => {
+        render();
+        const el = document.getElementById('repoSearchInput');
+        if (el) { el.focus(); el.setSelectionRange(v.length, v.length); }
+      }, 180);
+    }
+    function toggleSelectMode() { state.selectMode = !state.selectMode; state.selectedRepos.clear(); render(); }
+    function toggleRepoSelect(full) {
+      const s = state.selectedRepos;
+      s.has(full) ? s.delete(full) : s.add(full);
+      const y = window.scrollY; render(); window.scrollTo(0, y);
+    }
+    function selectAllRepos() { filteredRepoList().forEach(r => state.selectedRepos.add(r.full_name)); render(); }
+
+    async function bulkRepoAction(kind) {
+      const names = [...state.selectedRepos];
+      const label = { private: 'make private', public: 'make public', archive: 'archive', unarchive: 'unarchive', delete: 'permanently DELETE' }[kind];
+      if (kind === 'delete') {
+        const typed = prompt(`This permanently deletes ${plural(names.length, 'repository').replace('repositorys', 'repositories')}:\n${names.join('\n')}\n\nType DELETE to confirm.`);
+        if (typed !== 'DELETE') return;
+      } else if (!confirm(`${label[0].toUpperCase() + label.slice(1)} ${names.length} selected?\n${names.join('\n')}`)) return;
+      let ok = 0, fail = [];
+      for (const full of names) {
+        const [o, n] = full.split('/');
+        try {
+          if (kind === 'delete') await state.api.deleteRepo(o, n);
+          else await state.api.updateRepo(o, n, kind === 'private' ? { private: true } : kind === 'public' ? { private: false } : { archived: kind === 'archive' });
+          ok++;
+        } catch (e) { fail.push(`${full}: ${e.message}`); }
+      }
+      showToast(`${ok} updated${fail.length ? `, ${fail.length} failed` : ''}`, fail.length ? 'warning' : 'success');
+      if (fail.length) console.warn(fail);
+      state.selectedRepos.clear();
+      state.viewData = null;
+      render();
+    }
+
+    // =====================================================================
+    //  REPOSITORY VIEW — branches, staging, Actions, releases, settings
+    // =====================================================================
+    async function loadRepo() {
+      try {
+        const { owner, name } = state.currentRepo;
+        const pathStr = state.currentPath.join('/');
+        const [repo, contents, isStarred, branches] = await Promise.all([
+          state.api.getRepo(owner, name),
+          state.api.getContents(owner, name, pathStr).catch(e => { if (e.status === 404) return []; throw e; }),
+          state.api.isStarred(owner, name),
+          state.api.listBranches(owner, name).catch(() => [])
+        ]);
+        if (!state.currentBranch) state.currentBranch = repo.default_branch;
+        let readme = null;
+        if (!pathStr) readme = await state.api.getReadme(owner, name);
+        const prev = state.viewData || {};
+        state.viewData = { repo, contents: Array.isArray(contents) ? contents : [], readme, isStarred, branches,
+          issues: prev.issues, pulls: prev.pulls, commits: null };
+        render();
+      } catch (e) {
+        state.viewData = { fatal: e.message };
+        render();
+      }
+    }
+
+    const REPO_TABS = [
+      ['code', 'Code'], ['issues', 'Issues'], ['pulls', 'Pull requests'], ['commits', 'Commits'],
+      ['branches', 'Branches'], ['actions', 'Actions'], ['releases', 'Releases'], ['settings', 'Settings']
+    ];
+
+    function renderRepo() {
+      if (!state.viewData) { loadRepo(); return renderLoading(); }
+      if (state.viewData.fatal) return `<div class="card"><div class="empty-state">Failed to load repository: ${escFast(state.viewData.fatal)}</div></div>`;
+      const { repo, contents, readme, isStarred, branches } = state.viewData;
+      const tab = state.repoTab || 'code';
+      const canAdmin = !!repo.permissions?.admin;
+      const tabs = REPO_TABS.filter(([k]) => k !== 'settings' || canAdmin);
+      const branchNames = (branches || []).map(b => b.name);
+      if (state.currentBranch && !branchNames.includes(state.currentBranch)) branchNames.unshift(state.currentBranch);
+      const stagedHere = state.staged.filter(s => s.owner === repo.owner.login && s.repo === repo.name && s.branch === state.currentBranch);
+      const stagedKey = `${repo.owner.login}/${repo.name}@${state.currentBranch}`;
+      return `
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-body">
+            <div class="repo-name" style="font-size: 20px; margin-bottom: 8px; flex-wrap: wrap;">
+              <span>${escFast(repo.full_name)}</span>
+              <span class="repo-visibility">${repo.private ? 'Private' : 'Public'}</span>
+              ${repo.archived ? '<span class="repo-visibility" style="color: var(--accent-orange); border-color: var(--accent-orange);">Archived</span>' : ''}
+            </div>
+            ${repo.fork && repo.parent ? `<div class="muted small" style="margin-bottom: 6px;">Forked from <span class="link" onclick="openRepo(${jsArg(repo.parent.owner.login)}, ${jsArg(repo.parent.name)})">${escFast(repo.parent.full_name)}</span></div>` : ''}
+            ${repo.description ? `<div class="repo-description">${escFast(repo.description)}</div>` : ''}
+            ${repo.homepage ? `<a class="link small" href="${escAttr(repo.homepage)}" target="_blank" rel="noopener">${escFast(repo.homepage)}</a>` : ''}
+            ${repo.topics?.length ? `<div class="topic-list">${repo.topics.map(t => `<span class="topic">${escFast(t)}</span>`).join('')}</div>` : ''}
+            <div class="repo-meta" style="margin-top: 12px;">
+              ${repo.language ? `<span class="repo-meta-item"><span class="language-dot" style="background: ${languageColors[repo.language] || '#ccc'}"></span>${escFast(repo.language)}</span>` : ''}
+              <span class="repo-meta-item">⭐ ${repo.stargazers_count}</span>
+              <span class="repo-meta-item">🍴 ${repo.forks_count}</span>
+              <span class="repo-meta-item">👁 ${repo.subscribers_count ?? repo.watchers_count}</span>
+              <span class="repo-meta-item">📦 ${formatBytes(repo.size * 1024)}</span>
+            </div>
+            <div class="actions-bar" style="margin-top: 12px; flex-wrap: wrap;">
+              <button class="btn btn-sm btn-secondary star-btn ${isStarred ? 'starred' : ''}" onclick="toggleStar(${jsArg(repo.owner.login)}, ${jsArg(repo.name)}, ${isStarred})">${isStarred ? '★ Starred' : '☆ Star'}</button>
+              <button class="btn btn-sm btn-secondary" onclick="forkRepo(${jsArg(repo.owner.login)}, ${jsArg(repo.name)})">🍴 Fork</button>
+              <button class="btn btn-sm btn-secondary" onclick="copyText(${jsArg(repo.clone_url)})">Copy clone URL</button>
+              <a class="btn btn-sm btn-secondary" href="${escAttr(repo.html_url)}" target="_blank" rel="noopener">Open on GitHub</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabs" style="overflow-x: auto;">
+          ${tabs.map(([k, l]) => `<div class="tab ${tab === k ? 'active' : ''}" onclick="setRepoTab('${k}')">${l}${k === 'issues' && repo.open_issues_count ? ` <span class="count-badge muted-badge">${repo.open_issues_count}</span>` : ''}</div>`).join('')}
+        </div>
+
+        ${['code', 'commits'].includes(tab) ? `
+          <div class="branch-bar">
+            ${ICONS.branch}
+            <select class="select branch-select" onchange="switchBranch(this.value)" aria-label="Branch">
+              ${branchNames.map(b => `<option value="${escAttr(b)}" ${b === state.currentBranch ? 'selected' : ''}>${escFast(b)}${b === repo.default_branch ? ' (default)' : ''}</option>`).join('')}
+            </select>
+            <button class="btn btn-sm btn-secondary" onclick="showCreateBranchModal()">New branch</button>
+            ${state.currentBranch !== repo.default_branch ? `<button class="btn btn-sm btn-secondary" onclick="showCompareModal()">Open PR</button>` : ''}
+          </div>` : ''}
+
+        ${tab === 'code' && stagedHere.length ? `
+          <div class="staged-banner">
+            <span><strong>${plural(stagedHere.length, 'staged change')}</strong> on ${escFast(state.currentBranch)} — not pushed yet</span>
+            <span class="row">
+              <button class="btn btn-sm btn-primary" onclick="openStagedRequest(${jsArg(stagedKey)})">Review &amp; push</button>
+            </span>
+          </div>` : ''}
+
+        ${tab === 'code' ? renderRepoCode(contents, readme) : ''}
+        ${tab === 'issues' ? renderRepoIssues() : ''}
+        ${tab === 'pulls' ? renderRepoPulls() : ''}
+        ${tab === 'commits' ? renderRepoCommits() : ''}
+        ${tab === 'branches' ? renderRepoBranches() : ''}
+        ${tab === 'actions' ? renderRepoActions() : ''}
+        ${tab === 'releases' ? renderRepoReleases() : ''}
+        ${tab === 'settings' ? renderRepoSettings() : ''}`;
+    }
+
+    function switchBranch(b) {
+      state.currentBranch = b;
+      state.currentPath = [];
+      state.viewData = null;
+      render();
+    }
+
+    async function loadRepoCommits() {
+      try {
+        const { owner, name } = state.currentRepo;
+        state.viewData.commits = await state.api.getCommits(owner, name, state.currentBranch ? { sha: state.currentBranch } : {});
+      } catch (e) {
+        state.viewData.commits = [];
+        showToast(e.status === 409 ? 'This repository has no commits yet' : 'Failed to load commits: ' + e.message, e.status === 409 ? 'info' : 'error');
+      }
+      render();
+    }
+
+    async function loadRepoPulls() {
+      try {
+        const { owner, name } = state.currentRepo;
+        state.viewData.pulls = await state.api.getPulls(owner, name, { state: state.pullFilter || 'open' });
+      } catch (e) { state.viewData.pulls = []; showToast('Failed to load pull requests: ' + e.message, 'error'); }
+      render();
+    }
+
+    async function loadRepoIssues() {
+      try {
+        const { owner, name } = state.currentRepo;
+        state.viewData.issues = await state.api.getIssues(owner, name, { state: state.issueFilter || 'open' });
+      } catch (e) { state.viewData.issues = []; showToast('Failed to load issues: ' + e.message, 'error'); }
+      render();
+    }
+
+    function stateFilter(kind, current) {
+      return `<div class="segmented" style="margin-bottom: 12px;">
+        ${['open', 'closed', 'all'].map(s => `<button class="${current === s ? 'active' : ''}" onclick="setListFilter('${kind}', '${s}')">${s[0].toUpperCase() + s.slice(1)}</button>`).join('')}
+      </div>`;
+    }
+    function setListFilter(kind, s) {
+      if (kind === 'issues') { state.issueFilter = s; state.viewData.issues = null; }
+      else { state.pullFilter = s; state.viewData.pulls = null; }
+      render();
+    }
+
+    function renderRepoIssues() {
+      if (!state.viewData.issues) { loadRepoIssues(); return renderLoading(); }
+      const { owner, name } = state.currentRepo;
+      const list = state.viewData.issues.filter(i => !i.pull_request);
+      return `
+        <div class="row-between" style="flex-wrap: wrap;">
+          ${stateFilter('issues', state.issueFilter || 'open')}
+          <button class="btn btn-primary btn-sm" onclick="showCreateIssueModal()">+ New issue</button>
+        </div>
+        <div class="card">
+          ${list.map(issue => `
+            <div class="issue-item" onclick="openIssue(${jsArg(owner)}, ${jsArg(name)}, ${issue.number})">
+              <div class="issue-title">
+                <span class="pr-status ${issue.state}" style="padding: 1px 8px; font-size: 11px;">${issue.state}</span>
+                <span>${escFast(issue.title)}</span>
+              </div>
+              <div class="issue-meta">
+                #${issue.number} opened ${timeAgo(issue.created_at)} by ${escFast(issue.user.login)}
+                ${issue.labels?.map(l => `<span class="topic" style="margin-left: 6px; background: #${l.color}33; color: #${l.color};">${escFast(l.name)}</span>`).join('') || ''}
+                ${issue.comments ? ` · 💬 ${issue.comments}` : ''}
+              </div>
+            </div>`).join('') || '<div class="empty-state">No issues</div>'}
+        </div>`;
+    }
+
+    function renderRepoPulls() {
+      if (!state.viewData.pulls) { loadRepoPulls(); return renderLoading(); }
+      const { owner, name } = state.currentRepo;
+      return `
+        <div class="row-between" style="flex-wrap: wrap;">
+          ${stateFilter('pulls', state.pullFilter || 'open')}
+          <button class="btn btn-primary btn-sm" onclick="showCompareModal()">+ New pull request</button>
+        </div>
+        <div class="card">
+          ${state.viewData.pulls.map(pr => {
+            const st = pr.merged_at ? 'merged' : pr.state;
+            return `
+            <div class="issue-item" onclick="openPull(${jsArg(owner)}, ${jsArg(name)}, ${pr.number})">
+              <div class="issue-title">
+                <span class="pr-status ${st}" style="padding: 1px 8px; font-size: 11px;">${st}</span>
+                <span>${escFast(pr.title)}</span>
+              </div>
+              <div class="issue-meta">#${pr.number} · ${escFast(pr.head.ref)} → ${escFast(pr.base.ref)} · ${timeAgo(pr.created_at)} by ${escFast(pr.user.login)}${pr.draft ? ' · Draft' : ''}</div>
+            </div>`;
+          }).join('') || '<div class="empty-state">No pull requests</div>'}
+        </div>`;
+    }
+
+    function renderRepoCommits() {
+      if (!state.viewData.commits) { loadRepoCommits(); return renderLoading(); }
+      const { owner, name } = state.currentRepo;
+      return `
+        <div class="card">
+          ${state.viewData.commits.map(c => `
+            <div class="commit-item clickable" onclick="openCommit(${jsArg(owner)}, ${jsArg(name)}, ${jsArg(c.sha)})">
+              <div class="commit-message">${escFast(c.commit.message.split('\n')[0])}</div>
+              <div class="commit-meta">
+                ${c.author ? `<img class="commit-avatar" src="${escAttr(c.author.avatar_url)}" alt="">` : ''}
+                <span>${escFast(c.commit.author.name)}</span><span>•</span>
+                <span>${timeAgo(c.commit.author.date)}</span><span>•</span>
+                <span class="sha">${c.sha.slice(0, 7)}</span>
+              </div>
+            </div>`).join('') || '<div class="empty-state">No commits</div>'}
+        </div>`;
+    }
+
+    // ---------- commit detail ----------
+    function openCommit(owner, name, sha) {
+      state.currentRepo = { owner, name };
+      state.currentCommit = { owner, name, sha };
+      state.currentView = 'commit';
+      state.viewData = null;
+      render();
+      window.scrollTo(0, 0);
+    }
+
+    function renderCommit() {
+      if (!state.viewData) {
+        const { owner, name, sha } = state.currentCommit;
+        state.api.getCommit(owner, name, sha).then(c => { state.viewData = { commit: c }; render(); })
+          .catch(e => { state.viewData = { fatal: e.message }; render(); });
+        return renderLoading();
+      }
+      if (state.viewData.fatal) return `<div class="card"><div class="empty-state">${escFast(state.viewData.fatal)}</div></div>`;
+      const c = state.viewData.commit;
+      const { owner, name } = state.currentCommit;
+      const [title, ...rest] = c.commit.message.split('\n');
+      return `
+        <div class="breadcrumb">
+          <span class="breadcrumb-item" onclick="backToRepo('commits')">${escFast(name)}</span>
+          <span class="breadcrumb-separator">/</span><span>Commit ${c.sha.slice(0, 7)}</span>
+        </div>
+        <div class="card"><div class="card-body">
+          <h2 style="font-size: 18px; margin-bottom: 8px; word-break: break-word;">${escFast(title)}</h2>
+          ${rest.join('\n').trim() ? `<pre style="white-space: pre-wrap; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">${escFast(rest.join('\n').trim())}</pre>` : ''}
+          <div class="commit-meta">
+            ${c.author ? `<img class="commit-avatar" src="${escAttr(c.author.avatar_url)}" alt="">` : ''}
+            <span>${escFast(c.commit.author.name)}</span><span>•</span><span>${timeAgo(c.commit.author.date)}</span><span>•</span>
+            <span class="sha">${c.sha.slice(0, 7)}</span>
+          </div>
+          <div class="diff-stat" style="margin-top: 10px;">${plural(c.files?.length || 0, 'file')} changed · <span class="a">+${c.stats?.additions || 0}</span> <span class="d">−${c.stats?.deletions || 0}</span></div>
+          <div class="row" style="margin-top: 12px;">
+            <button class="btn btn-sm btn-secondary" onclick="copyText(${jsArg(c.sha)})">Copy SHA</button>
+            <a class="btn btn-sm btn-secondary" href="${escAttr(c.html_url)}" target="_blank" rel="noopener">Open on GitHub</a>
+            ${c.parents?.length === 1 ? `<button class="btn btn-sm btn-secondary" onclick="revertCommitAsRequest()">Stage revert</button>` : ''}
+          </div>
+        </div></div>
+        ${(c.files || []).map(f => renderPatchFile(f)).join('')}`;
+    }
+
+    function renderPatchFile(f, open = true) {
+      const act = { added: 'create', removed: 'delete', renamed: 'rename', modified: 'update', changed: 'update' }[f.status] || 'update';
+      return `
+        <div class="card diff-file">
+          <details class="diff-details" ${open ? 'open' : ''}>
+            <summary class="diff-file-header">
+              <span class="chev">▶</span>
+              <span class="action-pill ${act}">${f.status}</span>
+              <span class="diff-file-path">${f.previous_filename ? `${escFast(f.previous_filename)} → ` : ''}${escFast(f.filename)}</span>
+              <span class="diff-stat"><span class="a">+${f.additions}</span> <span class="d">−${f.deletions}</span></span>
+            </summary>
+            <div class="diff-body">${renderPatch(f.patch)}</div>
+          </details>
+        </div>`;
+    }
+
+    function backToRepo(tab) {
+      state.currentView = 'repo';
+      state.repoTab = tab;
+      state.viewData = null;
+      render();
+    }
+
+    async function revertCommitAsRequest() {
+      const c = state.viewData.commit;
+      const { owner, name } = state.currentCommit;
+      if (!confirm(`Stage a revert of ${c.sha.slice(0, 7)}? You'll review the diff before anything is pushed.`)) return;
+      try {
+        const parent = c.parents[0].sha;
+        const repo = await state.api.getRepo(owner, name);
+        const branch = state.currentBranch || repo.default_branch;
+        let n = 0;
+        for (const f of c.files) {
+          if (f.status === 'added') {
+            stageChange({ owner, repo: name, branch, path: f.filename, action: 'delete' });
+          } else {
+            const src = f.status === 'renamed' ? f.previous_filename : f.filename;
+            const text = await state.api.getRaw(owner, name, src, parent);
+            stageChange({ owner, repo: name, branch, path: src, action: f.status === 'removed' ? 'create' : 'update', content: text });
+            if (f.status === 'renamed') stageChange({ owner, repo: name, branch, path: f.filename, action: 'delete' });
+          }
+          n++;
+        }
+        updateRequestCount();
+        showToast(`Staged revert of ${plural(n, 'file')}`, 'success');
+        openStagedRequest(`${owner}/${name}@${branch}`);
+      } catch (e) { showToast('Could not stage revert: ' + e.message, 'error'); }
+    }
+
+    // ---------- branches ----------
+    function renderRepoBranches() {
+      const { repo, branches } = state.viewData;
+      const { owner, name } = state.currentRepo;
+      return `
+        <div class="actions-bar"><button class="btn btn-primary btn-sm" onclick="showCreateBranchModal()">+ New branch</button></div>
+        <div class="card">
+          ${(branches || []).map(b => `
+            <div class="list-row">
+              <div class="list-row-main">
+                <div class="list-row-title" style="font-family: monospace;">${escFast(b.name)} ${b.name === repo.default_branch ? '<span class="status-pill outline">default</span>' : ''} ${b.protected ? '<span class="status-pill outline">protected</span>' : ''}</div>
+                <div class="muted small"><span class="sha">${b.commit.sha.slice(0, 7)}</span></div>
+              </div>
+              <div class="list-row-actions">
+                <button class="btn btn-sm btn-secondary" onclick="state.repoTab='code'; switchBranch(${jsArg(b.name)})">Browse</button>
+                ${b.name !== repo.default_branch ? `
+                  <button class="btn btn-sm btn-secondary" onclick="state.currentBranch=${jsArg(b.name)}; showCompareModal()">PR</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteBranch(${jsArg(b.name)})">Delete</button>` : ''}
+              </div>
+            </div>`).join('') || '<div class="empty-state">No branches</div>'}
+        </div>`;
+    }
+
+    function showCreateBranchModal() {
+      const { branches } = state.viewData;
+      showModal('New branch', `
+        <div class="input-group"><label class="input-label">Branch name</label><input class="input" id="newBranchName" placeholder="feature/my-change"></div>
+        <div class="input-group"><label class="input-label">From</label>
+          <select class="select" id="newBranchFrom">${(branches || []).map(b => `<option ${b.name === state.currentBranch ? 'selected' : ''}>${escFast(b.name)}</option>`).join('')}</select>
+        </div>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createBranch()">Create branch</button>`);
+    }
+
+    async function createBranch() {
+      const nameV = document.getElementById('newBranchName').value.trim();
+      const from = document.getElementById('newBranchFrom').value;
+      if (!/^[\w./-]+$/.test(nameV)) { showToast('Enter a valid branch name', 'error'); return; }
+      const { owner, name } = state.currentRepo;
+      try {
+        const sha = (state.viewData.branches.find(b => b.name === from) || {}).commit?.sha || (await state.api.getRef(owner, name, from)).object.sha;
+        await state.api.createRef(owner, name, nameV, sha);
+        closeModal();
+        showToast(`Branch ${nameV} created`, 'success');
+        state.repoTab = 'code';
+        switchBranch(nameV);
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function deleteBranch(b) {
+      if (!confirm(`Delete branch "${b}"?`)) return;
+      const { owner, name } = state.currentRepo;
+      try {
+        await state.api.deleteBranch(owner, name, b);
+        if (state.currentBranch === b) state.currentBranch = null;
+        showToast('Branch deleted', 'success');
+        state.viewData = null; render();
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    function showCompareModal() {
+      const { repo, branches } = state.viewData;
+      const names = (branches || []).map(b => b.name);
+      const head = state.currentBranch !== repo.default_branch ? state.currentBranch : names.find(n => n !== repo.default_branch) || '';
+      showModal('New pull request', `
+        <div class="settings-grid">
+          <div class="input-group"><label class="input-label">Merge into (base)</label>
+            <select class="select" id="prBase">${names.map(n => `<option ${n === repo.default_branch ? 'selected' : ''}>${escFast(n)}</option>`).join('')}</select></div>
+          <div class="input-group"><label class="input-label">From (head)</label>
+            <select class="select" id="prHead">${names.map(n => `<option ${n === head ? 'selected' : ''}>${escFast(n)}</option>`).join('')}</select></div>
+        </div>
+        <div class="input-group"><label class="input-label">Title</label><input class="input" id="prTitle" value="${escAttr(head ? head.replace(/[-_/]/g, ' ') : '')}"></div>
+        <div class="input-group"><label class="input-label">Description</label><textarea class="textarea" id="prBody" placeholder="What does this change?"></textarea></div>
+        <label class="checkbox-label"><input type="checkbox" id="prDraft"> Open as draft</label>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createPullRequest()">Create pull request</button>`);
+    }
+
+    async function createPullRequest() {
+      const base = document.getElementById('prBase').value, head = document.getElementById('prHead').value;
+      const title = document.getElementById('prTitle').value.trim();
+      if (base === head) { showToast('Pick two different branches', 'error'); return; }
+      if (!title) { showToast('Add a title', 'error'); return; }
+      const { owner, name } = state.currentRepo;
+      try {
+        const pr = await state.api.createPull(owner, name, { base, head, title, body: document.getElementById('prBody').value, draft: document.getElementById('prDraft').checked });
+        closeModal();
+        showToast(`Pull request #${pr.number} opened`, 'success');
+        openPull(owner, name, pr.number);
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    // ---------- Actions ----------
+    function renderRepoActions() {
+      const v = state.viewData;
+      const { owner, name } = state.currentRepo;
+      if (!v.runs) {
+        Promise.all([state.api.getRuns(owner, name), state.api.getWorkflows(owner, name)])
+          .then(([r, w]) => { v.runs = r.workflow_runs || []; v.workflows = w.workflows || []; render(); })
+          .catch(e => { v.runs = []; v.workflows = []; v.actionsError = e.message; render(); });
+        return renderLoading();
+      }
+      return `
+        ${v.actionsError ? `<div class="warn-banner" style="margin: 0 0 12px;">${escFast(v.actionsError)}</div>` : ''}
+        <div class="row-between" style="margin-bottom: 12px; flex-wrap: wrap;">
+          <span class="muted small">${plural(v.workflows.length, 'workflow')}</span>
+          <div class="row">
+            <button class="btn btn-sm btn-secondary" onclick="state.viewData.runs=null; render()">Refresh</button>
+            ${v.workflows.length ? `<button class="btn btn-sm btn-primary" onclick="showDispatchModal()">Run workflow</button>` : ''}
+          </div>
+        </div>
+        <div class="card">
+          ${v.runs.map(r => `
+            <div class="list-row">
+              <span class="run-dot ${r.conclusion || r.status}" title="${escAttr(r.conclusion || r.status)}"></span>
+              <div class="list-row-main">
+                <div class="list-row-title">${escFast(r.display_title || r.name)}</div>
+                <div class="muted small">${escFast(r.name)} · ${escFast(r.head_branch || '')} · ${escFast(r.event)} · ${timeAgo(r.created_at)} · ${escFast(r.conclusion || r.status)}</div>
+              </div>
+              <div class="list-row-actions">
+                ${['in_progress', 'queued', 'waiting'].includes(r.status) ? `<button class="btn btn-sm btn-secondary" onclick="runAction('cancel', ${r.id})">Cancel</button>` : `<button class="btn btn-sm btn-secondary" onclick="runAction('rerun', ${r.id})">Re-run</button>`}
+                <a class="btn btn-sm btn-secondary" href="${escAttr(r.html_url)}" target="_blank" rel="noopener">Logs</a>
+              </div>
+            </div>`).join('') || '<div class="empty-state">No workflow runs yet</div>'}
+        </div>`;
+    }
+
+    async function runAction(kind, id) {
+      const { owner, name } = state.currentRepo;
+      try {
+        await (kind === 'cancel' ? state.api.cancelRun(owner, name, id) : state.api.rerunRun(owner, name, id));
+        showToast(kind === 'cancel' ? 'Cancel requested' : 'Re-run started', 'success');
+        setTimeout(() => { if (state.viewData) { state.viewData.runs = null; render(); } }, 1500);
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    function showDispatchModal() {
+      const { workflows, branches, repo } = state.viewData;
+      showModal('Run workflow', `
+        <div class="muted small" style="margin-bottom: 10px;">Only workflows with a <code class="inline">workflow_dispatch</code> trigger can be started manually.</div>
+        <div class="input-group"><label class="input-label">Workflow</label>
+          <select class="select" id="dispatchWf">${workflows.map(w => `<option value="${w.id}">${escFast(w.name)}</option>`).join('')}</select></div>
+        <div class="input-group"><label class="input-label">Branch</label>
+          <select class="select" id="dispatchRef">${(branches || []).map(b => `<option ${b.name === repo.default_branch ? 'selected' : ''}>${escFast(b.name)}</option>`).join('')}</select></div>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="dispatchWorkflow()">Run</button>`);
+    }
+
+    async function dispatchWorkflow() {
+      const { owner, name } = state.currentRepo;
+      try {
+        await state.api.dispatchWorkflow(owner, name, document.getElementById('dispatchWf').value, document.getElementById('dispatchRef').value);
+        closeModal();
+        showToast('Workflow queued', 'success');
+        setTimeout(() => { if (state.viewData) { state.viewData.runs = null; render(); } }, 2500);
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    // ---------- Releases ----------
+    function renderRepoReleases() {
+      const v = state.viewData;
+      const { owner, name } = state.currentRepo;
+      if (!v.releases) {
+        state.api.getReleases(owner, name).then(r => { v.releases = r; render(); }).catch(e => { v.releases = []; showToast(e.message, 'error'); render(); });
+        return renderLoading();
+      }
+      const admin = v.repo.permissions?.push;
+      return `
+        ${admin ? `<div class="actions-bar"><button class="btn btn-primary btn-sm" onclick="showCreateReleaseModal()">+ New release</button></div>` : ''}
+        ${v.releases.map(r => `
+          <div class="card"><div class="card-body">
+            <div class="row-between">
+              <div>
+                <div style="font-weight: 600; font-size: 16px;">${escFast(r.name || r.tag_name)}</div>
+                <div class="muted small">${escFast(r.tag_name)} · ${timeAgo(r.published_at || r.created_at)} ${r.prerelease ? '· Pre-release' : ''} ${r.draft ? '· Draft' : ''}</div>
+              </div>
+              <div class="row">
+                <a class="btn btn-sm btn-secondary" href="${escAttr(r.html_url)}" target="_blank" rel="noopener">View</a>
+                ${admin ? `<button class="btn btn-sm btn-danger" onclick="deleteRelease(${r.id})">Delete</button>` : ''}
+              </div>
+            </div>
+            ${r.body ? `<div class="markdown" style="margin-top: 10px;">${renderMarkdown(r.body)}</div>` : ''}
+            ${r.assets?.length ? `<div class="muted small" style="margin-top: 8px;">${r.assets.map(a => `<a class="link" href="${escAttr(a.browser_download_url)}">${escFast(a.name)}</a> (${formatBytes(a.size)})`).join(' · ')}</div>` : ''}
+          </div></div>`).join('') || '<div class="card"><div class="empty-state">No releases yet</div></div>'}`;
+    }
+
+    function showCreateReleaseModal() {
+      const { branches, repo } = state.viewData;
+      showModal('New release', `
+        <div class="settings-grid">
+          <div class="input-group"><label class="input-label">Tag</label><input class="input" id="relTag" placeholder="v1.0.0"></div>
+          <div class="input-group"><label class="input-label">Target branch</label>
+            <select class="select" id="relTarget">${(branches || []).map(b => `<option ${b.name === repo.default_branch ? 'selected' : ''}>${escFast(b.name)}</option>`).join('')}</select></div>
+        </div>
+        <div class="input-group"><label class="input-label">Title</label><input class="input" id="relName"></div>
+        <div class="input-group"><label class="input-label">Notes</label><textarea class="textarea" id="relBody"></textarea></div>
+        <label class="checkbox-label"><input type="checkbox" id="relAuto" checked> Auto-generate notes from commits</label>
+        <label class="checkbox-label"><input type="checkbox" id="relPre"> Pre-release</label>
+        <label class="checkbox-label"><input type="checkbox" id="relDraft"> Save as draft</label>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createRelease()">Publish release</button>`);
+    }
+
+    async function createRelease() {
+      const tag = document.getElementById('relTag').value.trim();
+      if (!tag) { showToast('A tag is required', 'error'); return; }
+      const { owner, name } = state.currentRepo;
+      try {
+        await state.api.createRelease(owner, name, {
+          tag_name: tag, target_commitish: document.getElementById('relTarget').value,
+          name: document.getElementById('relName').value.trim() || tag, body: document.getElementById('relBody').value,
+          generate_release_notes: document.getElementById('relAuto').checked,
+          prerelease: document.getElementById('relPre').checked, draft: document.getElementById('relDraft').checked
+        });
+        closeModal(); showToast('Release created', 'success');
+        state.viewData.releases = null; render();
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function deleteRelease(id) {
+      if (!confirm('Delete this release? The tag stays in the repository.')) return;
+      const { owner, name } = state.currentRepo;
+      try { await state.api.deleteRelease(owner, name, id); state.viewData.releases = null; render(); showToast('Release deleted', 'success'); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    // ---------- Settings ----------
+    function renderRepoSettings() {
+      const v = state.viewData;
+      const r = v.repo;
+      const { owner, name } = state.currentRepo;
+      if (v.pages === undefined) {
+        state.api.getPages(owner, name).then(p => { v.pages = p; render(); }).catch(() => { v.pages = null; render(); });
+      }
+      return `
+        <div class="card">
+          <div class="card-header">General</div>
+          <div class="card-body">
+            <div class="settings-grid">
+              <div class="input-group"><label class="input-label">Repository name</label><input class="input" id="setName" value="${escAttr(r.name)}"></div>
+              <div class="input-group"><label class="input-label">Website</label><input class="input" id="setHomepage" value="${escAttr(r.homepage || '')}" placeholder="https://"></div>
+            </div>
+            <div class="input-group"><label class="input-label">Description</label><input class="input" id="setDesc" value="${escAttr(r.description || '')}"></div>
+            <div class="input-group"><label class="input-label">Topics (comma separated)</label><input class="input" id="setTopics" value="${escAttr((r.topics || []).join(', '))}"></div>
+            <div class="settings-grid">
+              <div class="input-group"><label class="input-label">Default branch</label>
+                <select class="select" id="setDefault">${(v.branches || []).map(b => `<option ${b.name === r.default_branch ? 'selected' : ''}>${escFast(b.name)}</option>`).join('')}</select></div>
+              <div class="input-group"><label class="input-label">Features</label>
+                <label class="checkbox-label"><input type="checkbox" id="setIssues" ${r.has_issues ? 'checked' : ''}> Issues</label>
+                <label class="checkbox-label"><input type="checkbox" id="setWiki" ${r.has_wiki ? 'checked' : ''}> Wiki</label>
+                <label class="checkbox-label"><input type="checkbox" id="setDelBranch" ${r.delete_branch_on_merge ? 'checked' : ''}> Delete head branches after merge</label>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveRepoSettings()">Save changes</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">GitHub Pages</div>
+          <div class="card-body">
+            ${v.pages === undefined ? '<div class="skeleton" style="width: 60%;"></div>' : v.pages ? `
+              <div class="kv"><span>Status</span><span>${escFast(v.pages.status || 'enabled')}</span></div>
+              <div class="kv"><span>URL</span><a class="link" href="${escAttr(v.pages.html_url)}" target="_blank" rel="noopener">${escFast(v.pages.html_url)}</a></div>
+              <div class="kv"><span>Source</span><span>${escFast(v.pages.source?.branch || '')} ${escFast(v.pages.source?.path || '')}</span></div>
+              <div class="row" style="margin-top: 12px;">
+                <button class="btn btn-sm btn-secondary" onclick="showPagesModal(true)">Change source</button>
+                <button class="btn btn-sm btn-danger" onclick="disablePages()">Unpublish</button>
+              </div>` : `
+              <div class="muted small" style="margin-bottom: 10px;">Publish this repo as a website at <code class="inline">${escFast(owner)}.github.io/${escFast(name)}</code>.</div>
+              <button class="btn btn-sm btn-primary" onclick="showPagesModal(false)">Enable Pages</button>`}
+          </div>
+        </div>
+
+        <div class="card danger-zone">
+          <div class="card-header">Danger zone</div>
+          <div class="list-row">
+            <div class="list-row-main"><div class="list-row-title">Change visibility</div><div class="muted small">Currently ${r.private ? 'private' : 'public'}</div></div>
+            <button class="btn btn-sm btn-secondary" onclick="setVisibility(${!r.private})">Make ${r.private ? 'public' : 'private'}</button>
+          </div>
+          <div class="list-row">
+            <div class="list-row-main"><div class="list-row-title">${r.archived ? 'Unarchive' : 'Archive'} this repository</div><div class="muted small">${r.archived ? 'Make it writable again' : 'Mark read-only'}</div></div>
+            <button class="btn btn-sm btn-secondary" onclick="setArchived(${!r.archived})">${r.archived ? 'Unarchive' : 'Archive'}</button>
+          </div>
+          <div class="list-row">
+            <div class="list-row-main"><div class="list-row-title">Delete this repository</div><div class="muted small">This cannot be undone</div></div>
+            <button class="btn btn-sm btn-danger" onclick="deleteThisRepo()">Delete</button>
+          </div>
+        </div>`;
+    }
+
+    async function saveRepoSettings() {
+      const { owner, name } = state.currentRepo;
+      const data = {
+        name: document.getElementById('setName').value.trim(),
+        description: document.getElementById('setDesc').value,
+        homepage: document.getElementById('setHomepage').value.trim(),
+        default_branch: document.getElementById('setDefault').value,
+        has_issues: document.getElementById('setIssues').checked,
+        has_wiki: document.getElementById('setWiki').checked,
+        delete_branch_on_merge: document.getElementById('setDelBranch').checked
+      };
+      const topics = document.getElementById('setTopics').value.split(',').map(t => t.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean);
+      try {
+        const updated = await state.api.updateRepo(owner, name, data);
+        await state.api.replaceTopics(owner, updated.name, topics);
+        showToast('Settings saved', 'success');
+        state.currentRepo = { owner, name: updated.name };
+        state.viewData = null; render();
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function setVisibility(makePrivate) {
+      if (!confirm(`Make ${state.currentRepo.name} ${makePrivate ? 'private' : 'public'}?`)) return;
+      const { owner, name } = state.currentRepo;
+      try { await state.api.updateRepo(owner, name, { private: makePrivate }); showToast('Visibility updated', 'success'); state.viewData = null; render(); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function setArchived(archived) {
+      if (!confirm(`${archived ? 'Archive' : 'Unarchive'} ${state.currentRepo.name}?`)) return;
+      const { owner, name } = state.currentRepo;
+      try { await state.api.updateRepo(owner, name, { archived }); showToast(archived ? 'Archived' : 'Unarchived', 'success'); state.viewData = null; render(); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function deleteThisRepo() {
+      const { owner, name } = state.currentRepo;
+      const typed = prompt(`This permanently deletes ${owner}/${name}. Type the repository name to confirm.`);
+      if (typed !== name) { if (typed != null) showToast('Name did not match — nothing deleted', 'warning'); return; }
+      try { await state.api.deleteRepo(owner, name); showToast('Repository deleted', 'success'); navigate('repos'); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    function showPagesModal(existing) {
+      const { branches, repo } = state.viewData;
+      showModal(existing ? 'Pages source' : 'Enable GitHub Pages', `
+        <div class="settings-grid">
+          <div class="input-group"><label class="input-label">Branch</label>
+            <select class="select" id="pagesBranch">${(branches || []).map(b => `<option ${b.name === repo.default_branch ? 'selected' : ''}>${escFast(b.name)}</option>`).join('')}</select></div>
+          <div class="input-group"><label class="input-label">Folder</label>
+            <select class="select" id="pagesPath"><option value="/">/ (root)</option><option value="/docs">/docs</option></select></div>
+        </div>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="savePages(${existing})">Save</button>`);
+    }
+
+    async function savePages(existing) {
+      const { owner, name } = state.currentRepo;
+      const b = document.getElementById('pagesBranch').value, p = document.getElementById('pagesPath').value;
+      try {
+        await (existing ? state.api.updatePages(owner, name, b, p) : state.api.enablePages(owner, name, b, p));
+        closeModal(); showToast('Pages updated — the first build can take a minute', 'success');
+        state.viewData.pages = undefined; render();
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function disablePages() {
+      if (!confirm('Unpublish the GitHub Pages site?')) return;
+      const { owner, name } = state.currentRepo;
+      try { await state.api.disablePages(owner, name); state.viewData.pages = null; render(); showToast('Pages disabled', 'success'); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    // =====================================================================
+    //  PULL REQUESTS — review diffs, merge, close
+    // =====================================================================
+    async function loadPull() {
+      try {
+        const { owner, name, number } = state.currentPull;
+        const [pull, files, comments] = await Promise.all([
+          state.api.getPull(owner, name, number),
+          state.api.getAllPullFiles(owner, name, number),
+          state.api.getIssueComments(owner, name, number).catch(() => [])
+        ]);
+        state.viewData = { pull, files, comments };
+        render();
+      } catch (e) {
+        state.viewData = { fatal: e.message };
+        render();
+      }
+    }
+
+    function renderPull() {
+      if (!state.viewData) { loadPull(); return renderLoading(); }
+      if (state.viewData.fatal) return `<div class="card"><div class="empty-state">Failed to load pull request: ${escFast(state.viewData.fatal)}</div></div>`;
+      const { pull, files, comments } = state.viewData;
+      const { owner, name } = state.currentPull;
+      const st = pull.merged ? 'merged' : pull.state;
+      const adds = files.reduce((a, f) => a + f.additions, 0), dels = files.reduce((a, f) => a + f.deletions, 0);
+      const isRequest = (pull.labels || []).some(l => l.name === CR_LABEL);
+      const mergeState = pull.mergeable === false ? 'conflicts' : pull.mergeable_state;
+      return `
+        <div class="breadcrumb">
+          <span class="breadcrumb-item" onclick="openRepo(${jsArg(owner)}, ${jsArg(name)}); state.repoTab='pulls'">${escFast(name)}</span>
+          <span class="breadcrumb-separator">/</span><span>#${pull.number}</span>
+        </div>
+        <div class="card"><div class="card-body">
+          <h2 style="margin-bottom: 8px; font-size: 20px; word-break: break-word;">${escFast(pull.title)} <span class="muted">#${pull.number}</span></h2>
+          <div class="row" style="margin-bottom: 12px;">
+            <span class="pr-status ${st}">${st}</span>
+            ${pull.draft ? '<span class="status-pill outline">Draft</span>' : ''}
+            ${isRequest ? '<span class="status-pill outline">Change request</span>' : ''}
+            <span class="muted small">${escFast(pull.user.login)} wants to merge <code class="inline">${escFast(pull.head.label)}</code> into <code class="inline">${escFast(pull.base.ref)}</code></span>
+          </div>
+          ${pull.body ? `<div class="markdown">${renderMarkdown(pull.body)}</div>` : '<div class="muted small">No description provided.</div>'}
+          <div class="diff-stat" style="margin-top: 12px;">${plural(files.length, 'file')} · ${plural(pull.commits, 'commit')} · <span class="a">+${adds}</span> <span class="d">−${dels}</span></div>
+        </div></div>
+
+        <h3 style="margin: 16px 0 12px; font-size: 16px;">Files changed</h3>
+        ${files.map((f, i) => renderPatchFile(f, i < 10)).join('') || '<div class="card"><div class="empty-state">No file changes</div></div>'}
+
+        <h3 style="margin: 16px 0 12px; font-size: 16px;">Conversation (${comments.length})</h3>
+        ${comments.map(c => `
+          <div class="card"><div class="card-body">
+            <div class="row" style="margin-bottom: 8px;"><img src="${escAttr(c.user.avatar_url)}" style="width: 24px; height: 24px; border-radius: 50%;" alt=""><strong>${escFast(c.user.login)}</strong><span class="muted small">${timeAgo(c.created_at)}</span></div>
+            <div class="markdown">${renderMarkdown(c.body)}</div>
+          </div></div>`).join('')}
+        <div class="card"><div class="card-body">
+          <textarea class="textarea" id="commentBody" placeholder="Leave a comment…"></textarea>
+          <button class="btn btn-secondary" style="margin-top: 12px;" onclick="addPullComment()">Comment</button>
+        </div></div>
+
+        ${pull.state === 'open' ? `
+          <div class="sticky-actions">
+            ${mergeState === 'conflicts' ? '<span class="muted small">This branch has conflicts — resolve them on GitHub.</span>' : ''}
+            <button class="btn btn-primary" onclick="showMergeModal()" ${mergeState === 'conflicts' || pull.draft ? 'disabled' : ''}>Merge…</button>
+            ${pull.draft ? `<button class="btn btn-secondary" onclick="markReady()">Ready for review</button>` : ''}
+            <span class="spacer"></span>
+            <button class="btn btn-danger btn-sm" onclick="setPullState('closed')">Close</button>
+          </div>` : pull.merged ? '' : `
+          <div class="sticky-actions"><span class="muted small">Closed without merging.</span><span class="spacer"></span><button class="btn btn-secondary btn-sm" onclick="setPullState('open')">Reopen</button></div>`}`;
+    }
+
+    function showMergeModal() {
+      const { pull } = state.viewData;
+      showModal(`Merge #${pull.number}`, `
+        <div class="input-group"><label class="input-label">Merge method</label>
+          <select class="select" id="mergeMethod">
+            <option value="merge">Create a merge commit</option>
+            <option value="squash" selected>Squash and merge</option>
+            <option value="rebase">Rebase and merge</option>
+          </select></div>
+        <div class="input-group"><label class="input-label">Commit title</label><input class="input" id="mergeTitle" value="${escAttr(`${pull.title} (#${pull.number})`)}"></div>
+        <label class="checkbox-label"><input type="checkbox" id="mergeDeleteBranch" ${pull.head.repo?.full_name === pull.base.repo.full_name ? 'checked' : 'disabled'}> Delete <code class="inline">${escFast(pull.head.ref)}</code> after merging</label>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="mergeBtn" onclick="mergePull()">Confirm merge</button>`);
+    }
+
+    async function mergePull() {
+      const { owner, name, number } = state.currentPull;
+      const { pull } = state.viewData;
+      const btn = document.getElementById('mergeBtn');
+      btn.disabled = true; btn.textContent = 'Merging…';
+      try {
+        const method = document.getElementById('mergeMethod').value;
+        await state.api.mergePull(owner, name, number, { merge_method: method, commit_title: method === 'rebase' ? undefined : document.getElementById('mergeTitle').value });
+        if (document.getElementById('mergeDeleteBranch').checked) await state.api.deleteBranch(owner, name, pull.head.ref).catch(() => {});
+        closeModal();
+        showToast('Pull request merged', 'success');
+        state.viewData = null; state.requests = null; render(); refreshRequestBadge();
+      } catch (e) { btn.disabled = false; btn.textContent = 'Confirm merge'; showToast('Merge failed: ' + e.message, 'error'); }
+    }
+
+    async function setPullState(s) {
+      const { owner, name, number } = state.currentPull;
+      try { await state.api.updatePull(owner, name, number, { state: s }); showToast(s === 'closed' ? 'Pull request closed' : 'Reopened', 'success'); state.viewData = null; render(); refreshRequestBadge(); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function markReady() {
+      // Draft → ready needs GraphQL; fall back to GitHub
+      window.open(state.viewData.pull.html_url, '_blank', 'noopener');
+    }
+
+    async function addPullComment() {
+      const body = document.getElementById('commentBody').value.trim();
+      if (!body) return;
+      const { owner, name, number } = state.currentPull;
+      try { await state.api.createIssueComment(owner, name, number, body); state.viewData = null; render(); showToast('Comment added', 'success'); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    // =====================================================================
+    //  ISSUES — markdown, close / reopen, labels
+    // =====================================================================
+    function renderIssue() {
+      if (!state.viewData) { loadIssue(); return renderLoading(); }
+      const { issue, comments } = state.viewData;
+      const { owner, name } = state.currentIssue;
+      return `
+        <div class="breadcrumb">
+          <span class="breadcrumb-item" onclick="openRepo(${jsArg(owner)}, ${jsArg(name)}); state.repoTab='issues'">${escFast(name)}</span>
+          <span class="breadcrumb-separator">/</span><span>#${issue.number}</span>
+        </div>
+        <div class="card"><div class="card-body">
+          <h2 style="margin-bottom: 8px; font-size: 20px; word-break: break-word;">${escFast(issue.title)} <span class="muted">#${issue.number}</span></h2>
+          <div class="row" style="margin-bottom: 12px;">
+            <span class="pr-status ${issue.state}">${issue.state}</span>
+            <span class="muted small">${escFast(issue.user.login)} opened this ${timeAgo(issue.created_at)}</span>
+            ${(issue.labels || []).map(l => `<span class="topic" style="background: #${l.color}33; color: #${l.color};">${escFast(l.name)}</span>`).join('')}
+          </div>
+          ${issue.body ? `<div class="markdown">${renderMarkdown(issue.body)}</div>` : '<div class="muted small">No description provided.</div>'}
+        </div></div>
+        <h3 style="margin: 16px 0; font-size: 16px;">Comments (${comments?.length || 0})</h3>
+        ${(comments || []).map(c => `
+          <div class="card"><div class="card-body">
+            <div class="row" style="margin-bottom: 8px;"><img src="${escAttr(c.user.avatar_url)}" style="width: 24px; height: 24px; border-radius: 50%;" alt=""><strong>${escFast(c.user.login)}</strong><span class="muted small">${timeAgo(c.created_at)}</span></div>
+            <div class="markdown">${renderMarkdown(c.body)}</div>
+          </div></div>`).join('')}
+        <div class="card" style="margin-top: 16px;"><div class="card-body">
+          <textarea class="textarea" id="commentBody" placeholder="Leave a comment…"></textarea>
+          <div class="row" style="margin-top: 12px;">
+            <button class="btn btn-primary" onclick="addComment()">Comment</button>
+            <button class="btn btn-secondary" onclick="setIssueState(${jsArg(issue.state === 'open' ? 'closed' : 'open')})">${issue.state === 'open' ? 'Close issue' : 'Reopen issue'}</button>
+            <button class="btn btn-secondary" onclick="editIssueLabels()">Labels</button>
+          </div>
+        </div></div>`;
+    }
+
+    async function setIssueState(s) {
+      const { owner, name, number } = state.currentIssue;
+      try {
+        const body = document.getElementById('commentBody')?.value.trim();
+        if (body) await state.api.createIssueComment(owner, name, number, body);
+        await state.api.request(`/repos/${owner}/${name}/issues/${number}`, { method: 'PATCH', body: JSON.stringify({ state: s }) });
+        showToast(s === 'closed' ? 'Issue closed' : 'Issue reopened', 'success');
+        state.viewData = null; render();
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    function editIssueLabels() {
+      const cur = (state.viewData.issue.labels || []).map(l => l.name).join(', ');
+      const v = prompt('Labels (comma separated):', cur);
+      if (v == null) return;
+      const labels = v.split(',').map(s => s.trim()).filter(Boolean);
+      const { owner, name, number } = state.currentIssue;
+      state.api.request(`/repos/${owner}/${name}/issues/${number}/labels`, { method: 'PUT', body: JSON.stringify({ labels }) })
+        .then(() => { state.viewData = null; render(); showToast('Labels updated', 'success'); })
+        .catch(e => showToast('Failed: ' + e.message, 'error'));
+    }
+
+    // =====================================================================
+    //  FILE VIEW — branch-aware, edit → commit now OR stage for later
+    // =====================================================================
+    function renderFile() {
+      if (!state.viewData) return renderLoading();
+      const { file } = state.viewData;
+      const { owner, name, path } = state.currentFile;
+      const text = base64ToUtf8((file.content || '').replace(/\n/g, ''));
+      const lines = text.split('\n');
+      const parts = path.split('/');
+      const staged = state.staged.find(s => s.owner === owner && s.repo === name && s.branch === state.currentBranch && s.path === path);
+      return `
+        <div class="breadcrumb">
+          <span class="breadcrumb-item" onclick="backToRepoPath([])">${escFast(name)}</span>
+          ${parts.slice(0, -1).map((p, i) => `<span class="breadcrumb-separator">/</span><span class="breadcrumb-item" onclick="backToRepoPath(${jsArg(parts.slice(0, i + 1))})">${escFast(p)}</span>`).join('')}
+          <span class="breadcrumb-separator">/</span><span>${escFast(file.name)}</span>
+        </div>
+        ${state.currentBranch ? `<div class="branch-bar">${ICONS.branch}<span class="muted small" style="font-family: monospace;">${escFast(state.currentBranch)}</span></div>` : ''}
+        ${staged ? `<div class="staged-banner"><span>You have a staged edit for this file.</span><button class="btn btn-sm btn-primary" onclick="openStagedRequest(${jsArg(`${owner}/${name}@${state.currentBranch}`)})">Review &amp; push</button></div>` : ''}
+        <div class="code-viewer">
+          <div class="code-header" style="flex-wrap: wrap; gap: 8px;">
+            <span>${lines.length} lines • ${formatBytes(file.size)}</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-sm btn-secondary" onclick="editFile()">Edit</button>
+              <button class="btn btn-sm btn-secondary" onclick="showFileHistory()">History</button>
+              <button class="btn btn-sm btn-secondary" onclick="copyText(${jsArg(text)})">Copy</button>
+              <button class="btn btn-sm btn-secondary" onclick="showRenameModalFromAttr(this)" data-rename='${escAttr(JSON.stringify({ type: 'file', name: file.name, path, sha: file.sha, folderPath: null }))}'>Rename</button>
+              <button class="btn btn-sm btn-secondary" onclick="downloadCurrentFile()">Download</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCurrentFile()">Delete</button>
+            </div>
+          </div>
+          <div class="code-content">
+            ${lines.map((l, i) => `<div class="code-line"><span class="line-number">${i + 1}</span><span class="line-content">${escFast(l)}</span></div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function backToRepoPath(path) {
+      state.currentView = 'repo';
+      state.repoTab = 'code';
+      state.currentPath = path;
+      state.viewData = null;
+      render();
+    }
+
+    function editFile() {
+      const { file } = state.viewData;
+      const { owner, name, path } = state.currentFile;
+      const staged = state.staged.find(s => s.owner === owner && s.repo === name && s.branch === state.currentBranch && s.path === path);
+      const content = staged ? staged.content : base64ToUtf8((file.content || '').replace(/\n/g, ''));
+      showModal(`Edit ${escFast(file.name)}`, `
+        ${staged ? '<div class="info-banner" style="margin: 0 0 12px;">Showing your staged version.</div>' : ''}
+        <div class="input-group">
+          <textarea class="textarea" id="editFileContent" style="min-height: 320px; font-family: monospace; font-size: 12px;">${escFast(content)}</textarea>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Commit message</label>
+          <input type="text" class="input" id="editCommitMessage" placeholder="Update ${escAttr(file.name)}">
+        </div>
+        <div class="muted small">Stage to batch several file edits into one commit — review them later under Requests.</div>
+      `, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-secondary" onclick="stageFileEdit()">Stage</button>
+        <button class="btn btn-primary" onclick="saveFile()">Commit to ${escFast(state.currentBranch || 'branch')}</button>
+      `);
+      document.querySelector('.modal')?.classList.add('modal-lg');
+    }
+
+    function stageFileEdit() {
+      const content = document.getElementById('editFileContent').value;
+      const { owner, name, path } = state.currentFile;
+      stageChange({ owner, repo: name, branch: state.currentBranch, path, action: 'update', content, baseSha: state.viewData.file.sha });
+      updateRequestCount();
+      closeModal();
+      showToast('Staged — push it from Requests or the repo banner', 'success');
+      render();
+    }
+
+    async function saveFile() {
+      const content = document.getElementById('editFileContent')?.value ?? '';
+      const message = document.getElementById('editCommitMessage')?.value.trim() || `Update ${state.currentFile.path}`;
+      const btn = document.querySelector('.modal-footer .btn-primary');
+      if (btn) { btn.disabled = true; btn.textContent = 'Committing…'; }
+      try {
+        const { owner, name, path } = state.currentFile;
+        await state.api.createOrUpdateFile(owner, name, path, { message, content: utf8ToBase64(content), sha: state.viewData.file.sha });
+        state.staged = state.staged.filter(s => !(s.owner === owner && s.repo === name && s.branch === state.currentBranch && s.path === path));
+        saveStaged(); updateRequestCount();
+        closeModal();
+        showToast('File updated', 'success');
+        state.viewData = null;
+        openFile(owner, name, path);
+      } catch (e) {
+        showToast('Failed: ' + e.message, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Commit'; }
+      }
+    }
+
+    async function showFileHistory() {
+      const { owner, name, path } = state.currentFile;
+      try {
+        const commits = await state.api.getCommits(owner, name, { path, per_page: 20, ...(state.currentBranch ? { sha: state.currentBranch } : {}) });
+        showModal('File history', `
+          <div class="card" style="margin: 0;">
+            ${commits.map(c => `
+              <div class="commit-item clickable" onclick="closeModal(); openCommit(${jsArg(owner)}, ${jsArg(name)}, ${jsArg(c.sha)})">
+                <div class="commit-message">${escFast(c.commit.message.split('\n')[0])}</div>
+                <div class="commit-meta"><span>${escFast(c.commit.author.name)}</span><span>•</span><span>${timeAgo(c.commit.author.date)}</span><span>•</span><span class="sha">${c.sha.slice(0, 7)}</span></div>
+              </div>`).join('') || '<div class="empty-state">No history</div>'}
+          </div>`, `<button class="btn btn-secondary" onclick="closeModal()">Close</button>`);
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    // =====================================================================
+    //  NOTIFICATIONS — mark read
+    // =====================================================================
+    async function deleteCurrentFile() {
+      if (!confirm('Delete this file?')) return;
+      try {
+        const { owner, name, path } = state.currentFile;
+        await state.api.deleteFile(owner, name, path, { message: `Delete ${path}`, sha: state.viewData.file.sha });
+        showToast('File deleted', 'success');
+        backToRepoPath(path.split('/').slice(0, -1));
+      } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function signIn() {
+      const token = document.getElementById('tokenInput').value.trim();
+      if (!token) { showToast('Please enter a token', 'error'); return; }
+      state.token = token;
+      state.api = new GitHubAPI(token);
+      try {
+        state.user = await state.api.getUser();
+        safeStorage.set('github_token', token);
+        showToast('Signed in successfully', 'success');
+        render();
+        startBackgroundRefresh();
+      } catch (e) {
+        state.token = null; state.api = null;
+        showToast('Invalid token: ' + e.message, 'error');
+      }
+    }
+
+    // =====================================================================
+    //  BOOT
+    // =====================================================================
+    function startBackgroundRefresh() {
+      if (state._bg) return;
+      state._bg = true;
+      refreshRateLimit().then(() => { if (!document.querySelector('.modal-overlay')) {} });
+      setTimeout(refreshRequestBadge, 400);
+      setInterval(() => { if (document.visibilityState === 'visible') { refreshRequestBadge(); refreshRateLimit(); } }, 90000);
+    }
+
+    async function loadUser() {
+      try {
+        state.user = await state.api.getUser();
+        updateRequestCount();
+        render();
+        startBackgroundRefresh();
+      } catch (e) {
+        showToast('Failed to load user: ' + e.message, 'error');
+        signOut();
+      }
+    }
+
+    // Deep link: #requests or #request/<id>
+    (function handleHash() {
+      const h = location.hash.replace(/^#/, '');
+      if (h === 'requests') state.currentView = 'requests';
+      else if (h.startsWith('request/')) { state.currentView = 'request'; state.currentRequest = { id: decodeURIComponent(h.slice(8)) }; }
+    })();
+
+    function renderNotifications() {
+      if (!state.viewData) { loadNotifications(); return renderLoading(); }
+      const list = Array.isArray(state.viewData) ? state.viewData : [];
+      return `
+        <div class="row-between" style="margin-bottom: 12px;">
+          <span class="muted small">${plural(list.length, 'unread notification')}</span>
+          ${list.length ? '<button class="btn btn-sm btn-secondary" onclick="markAllRead()">Mark all as read</button>' : ''}
+        </div>
+        <div class="card">
+          ${list.map(n => `
+            <div class="notification-item" style="cursor: pointer;" onclick="openNotification(${jsArg(n.id)}, ${jsArg(n.repository.full_name)}, ${jsArg(n.subject.type)}, ${jsArg(n.subject.url || '')})">
+              <div class="notification-icon" style="background: var(--bg-tertiary);">${n.subject.type === 'PullRequest' ? '🔀' : n.subject.type === 'Issue' ? '🔴' : n.subject.type === 'Release' ? '🏷' : '🔔'}</div>
+              <div class="notification-content" style="flex: 1; min-width: 0;">
+                <div class="notification-title">${escFast(n.subject.title)}</div>
+                <div class="notification-repo">${escFast(n.repository.full_name)} · ${escFast(n.reason.replace(/_/g, ' '))} · ${timeAgo(n.updated_at)}</div>
+              </div>
+              <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); markThread(${jsArg(n.id)})" title="Mark as read">✓</button>
+            </div>`).join('') || '<div class="empty-state">No unread notifications</div>'}
+        </div>`;
+    }
+
+    function openNotification(id, full, type, url) {
+      state.api.markThreadRead(id).catch(() => {});
+      const [o, n] = full.split('/');
+      const num = +(url.match(/\/(\d+)$/) || [])[1];
+      if (type === 'PullRequest' && num) return openPull(o, n, num);
+      if (type === 'Issue' && num) return openIssue(o, n, num);
+      openRepo(o, n);
+    }
+
+    async function markThread(id) {
+      try { await state.api.markThreadRead(id); state.viewData = state.viewData.filter(n => n.id !== id); render(); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function markAllRead() {
+      try { await state.api.markAllNotificationsRead(); showToast('All notifications marked as read', 'success'); state.viewData = []; render(); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
     }
 
     // Initialize
