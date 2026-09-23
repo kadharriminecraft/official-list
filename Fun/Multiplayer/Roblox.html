@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Baseplate — v12</title>
+<title>Baseplate — v17</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -415,6 +415,77 @@
     opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
     max-width:min(560px, calc(100vw - 40px)); text-align:center; }
   #admin-banner.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- v14 WORLD GAME LOGIC UI — money, shops, dialogue ---------- */
+  #wl-money { display:flex; align-items:center; gap:7px; justify-content:flex-end;
+    background:linear-gradient(180deg, rgba(20,26,34,0.88), rgba(13,17,23,0.88));
+    border:1px solid rgba(245,197,66,0.35); border-radius:10px;
+    padding:5px 12px; margin-bottom:7px; color:#f5c542; font-weight:800;
+    font-size:17px; letter-spacing:.3px; text-shadow:0 1px 2px rgba(0,0,0,.5);
+    transition:transform .12s, border-color .3s; }
+  #wl-money svg { width:18px; height:18px; }
+  #wl-money.pop { animation:wlPop .3s ease; }
+  #wl-money.gain { border-color:rgba(88,224,122,0.8); color:#8af09c; }
+  #wl-money.loss { border-color:rgba(217,83,79,0.8); color:#ff9d97; }
+  @keyframes wlPop { 0%{transform:scale(1)} 40%{transform:scale(1.14)} 100%{transform:scale(1)} }
+  #wl-credits { position:fixed; inset:0; pointer-events:none; z-index:30; overflow:hidden; }
+  .wl-credit { position:absolute; transform:translate(-50%,-50%);
+    font-weight:800; font-size:18px; color:#8af09c; text-shadow:0 1px 3px rgba(0,0,0,.7);
+    animation:wlFloatUp 1.25s ease-out forwards; white-space:nowrap; }
+  .wl-credit.bad { color:#ff9d97; }
+  @keyframes wlFloatUp { 0%{opacity:0; margin-top:0} 12%{opacity:1}
+    100%{opacity:0; margin-top:-84px} }
+  #wl-toast { position:fixed; bottom:118px; left:50%; transform:translateX(-50%) translateY(8px);
+    background:rgba(13,17,23,0.92); border:1px solid rgba(255,255,255,0.18);
+    color:#fff; font-weight:700; font-size:14px; border-radius:10px;
+    padding:9px 16px; opacity:0; pointer-events:none; z-index:60;
+    transition:opacity .2s, transform .2s; max-width:min(480px, calc(100vw - 40px)); text-align:center; }
+  #wl-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #wl-toast.warn { border-color:rgba(217,83,79,0.6); color:#ffb0aa; }
+  #wl-dlg { position:fixed; bottom:110px; left:50%; transform:translateX(-50%) translateY(14px);
+    width:min(560px, calc(100vw - 36px)); background:rgba(13,17,23,0.94);
+    border:1px solid rgba(159,216,255,0.35); border-radius:14px; padding:14px 18px;
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:55; }
+  #wl-dlg.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #wl-dlg .wl-dlg-name { color:#f5c542; font-weight:800; font-size:14px; margin-bottom:6px; }
+  #wl-dlg .wl-dlg-text { color:#fff; font-size:16px; line-height:1.45; min-height:44px; }
+  #wl-dlg .wl-dlg-hint { margin-top:8px; font-size:12px; color:rgba(255,255,255,0.55); }
+  #wl-dlg .key { display:inline-block; background:#fff; color:#111; border-radius:4px;
+    font-weight:800; font-size:11px; padding:1px 6px; margin-right:5px; }
+  #wl-shop { position:fixed; inset:0; background:rgba(6,9,13,0.66); z-index:70;
+    display:flex; align-items:center; justify-content:center; }
+  #wl-shop .wl-shop-card { width:min(460px, calc(100vw - 32px)); max-height:min(560px, calc(100vh - 32px));
+    overflow-y:auto; background:rgba(16,21,28,0.97); border:1px solid rgba(245,197,66,0.4);
+    border-radius:16px; padding:10px; box-shadow:0 18px 60px rgba(0,0,0,0.55); }
+  #wl-shop .wl-shop-head { display:flex; align-items:center; gap:9px; padding:8px 8px 12px;
+    color:#f5c542; font-weight:800; font-size:16px; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:6px; }
+  #wl-shop .wl-shop-head svg { width:19px; height:19px; }
+  #wl-shop .wl-shop-money { margin-left:auto; color:#8af09c; font-size:14px;
+    display:flex; align-items:center; gap:5px; }
+  #wl-shop .wl-shop-money svg { width:14px; height:14px; }
+  #wl-shop #wl-shop-close { margin-left:10px; background:none; border:none; color:rgba(255,255,255,0.5);
+    font-size:17px; cursor:pointer; padding:4px 8px; border-radius:6px; }
+  #wl-shop #wl-shop-close:hover { color:#fff; background:rgba(255,255,255,0.1); }
+  #wl-shop .wl-row { display:flex; align-items:center; gap:12px; padding:10px 10px;
+    border-radius:10px; }
+  #wl-shop .wl-row:hover { background:rgba(255,255,255,0.05); }
+  #wl-shop .wl-row > svg { width:26px; height:26px; color:#dfe7f3; flex:none; }
+  #wl-shop .wl-row-mid { flex:1; min-width:0; }
+  #wl-shop .wl-row-name { color:#fff; font-weight:700; font-size:14px; }
+  #wl-shop .wl-row-sub { color:rgba(255,255,255,0.55); font-size:12px; margin-top:2px; }
+  #wl-shop .wl-buy { background:#2f9e5f; color:#fff; border:none; font-weight:800; font-size:13px;
+    border-radius:8px; padding:8px 14px; cursor:pointer; flex:none; }
+  #wl-shop .wl-buy:hover { background:#37b96e; }
+  #wl-shop .wl-buy.cant { background:#5a3030; color:#ffb0aa; cursor:not-allowed; }
+  #wl-ammo { position:fixed; right:14px; bottom:96px; z-index:20; text-align:right;
+    background:rgba(13,17,23,0.85); border:1px solid rgba(255,255,255,0.2); border-radius:9px;
+    padding:5px 12px; color:#dfe7f3; font-weight:800; font-size:14px; display:none; }
+  #wl-ammo .wl-reload-bar { height:4px; border-radius:2px; background:rgba(255,255,255,0.15);
+    margin-top:4px; overflow:hidden; }
+  #wl-ammo .wl-reload-fill { height:100%; width:0%; background:#f5c542; }
+  #wl-ammo.reloading { border-color:rgba(245,197,66,0.7); color:#f5c542; }
+  .mp-player .wl-mchip { margin-left:auto; color:#f5c542; font-size:12px; font-weight:800;
+    display:flex; gap:4px; align-items:center; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -562,6 +633,9 @@
      §7  UI           chat (collapsible), hotbar, prompt, emotes, fps
      §8  Inventory    items, equipping tools, sword swing / apple eat
      §9  Interactions proximity prompt system
+     §9.5/9.6     Worlds — the world registry + terrain interpreter
+     §9.7 GameLogic tycoons, buy pads, droppers/conveyors,
+                   shops, custom weapons, world scripts (v14)
      §10 World        baseplate, bricks, trees, watchtower + LADDER,
                       house (door/lamp/chest/chair), zombie button
      §10.5 Rides      tree swing + rocket merry-go-round
@@ -1051,6 +1125,7 @@ const World = {
 };
 
 let GRAV = 165, JUMPV = 42, STEP_H = 1.5;   /* live-synced from V (§1.5) */
+let MAX_ZOMBIES = 6;   /* v16: declared here (before the top-level await) — §11 syncs it from V */
 
 function bodyOverlap(b, c) {
   return b.x - b.hw < c.max.x && b.x + b.hw > c.min.x &&
@@ -1625,6 +1700,9 @@ chatInput.addEventListener('blur', () => { chatFocused = false; });
 dom.addEventListener('pointerdown', () => chatInput.blur());
 
 function handleChat(v) {
+  /* v16: the WORLD gets first refusal on slash commands — its admin
+     commands (money, give, pet tuning...) live in the world script */
+  if (v.charCodeAt(0) === 47 && GameLogic.active && GameLogic.chatCommand(v)) return;
   const m = v.match(/^\/e\s+(\w+)$/i);
   if (m) {
     const name = m[1].toLowerCase();
@@ -1636,6 +1714,7 @@ function handleChat(v) {
   } else if (v.startsWith('/')) {
     addSys('Unknown command. Try /help', 'cerr');
   } else {
+    if (GameLogic.active) GameLogic.fire('chat', [v, USERNAME, true]);
     addChat(USERNAME, v, isAdmin);
     MP.sendChat(v);
   }
@@ -1723,13 +1802,13 @@ function spawnDropPickup(id, x, y, z, uid) {
   if (dropPickups.has(uid) || !ITEM_DEFS[id]) return;
   if (dropPickups.size >= 24) removeDropPickup(dropPickups.keys().next().value);   // oldest goes first
   const spin = new THREE.Group();
-  const inner = id === 'sword' ? buildSwordMesh() : id === 'gun' ? buildGunMesh() : buildAppleMesh();
+  const inner = buildToolMesh(id);
   inner.rotation.x = -Math.PI / 2;                     // blade / barrel up
   inner.scale.setScalar(1.1);
   spin.add(inner);
   spin.position.set(x, y, z);
   scene.add(spin);
-  const light = new THREE.PointLight(id === 'gun' ? 0xffd27a : 0x9fd8ff, 14, 6, 2);
+  const light = new THREE.PointLight(defKind(id) === 'gun' ? 0xffd27a : 0x9fd8ff, 14, 6, 2);
   light.position.set(x, y + 1, z);
   scene.add(light);
   const inter = addInteractable({
@@ -1756,7 +1835,7 @@ function removeDropPickup(uid) {
 
 /* interaction prompt */
 const promptEl = document.getElementById('prompt');
-promptEl.addEventListener('click', () => { if (currentInteract) currentInteract.action(); });
+promptEl.addEventListener('click', () => { if (GameLogic.dlgOpen) GameLogic.dlgNext(); else if (currentInteract) currentInteract.action(); });
 
 /* emote menu */
 const EMOTES = [
@@ -1802,10 +1881,73 @@ function flashHurt() {
    §8 INVENTORY & TOOLS
 ================================================================ */
 const ITEM_DEFS = {
-  sword: { name: 'Classic Sword', icon: 'sword', type: 'tool' },
-  gun: { name: 'Blaster', icon: 'crosshair', type: 'tool' },
-  apple: { name: 'Apple',         icon: 'apple', type: 'consumable' },
+  sword: { name: 'Classic Sword', icon: 'sword', kind: 'sword' },
+  gun: { name: 'Blaster', icon: 'crosshair', kind: 'gun' },
+  apple: { name: 'Apple', icon: 'apple', kind: 'consumable' },
 };
+
+/* v14 — the item registry. A world recipe's `items[]` are merged in at
+   world load with namespaced ids ("<world>.<item>"), so they flow
+   through the whole existing pipeline untouched: hotbar, drops,
+   pickups, remote players' hands, the admin give menu. */
+function clampN(v, lo, hi, fb) { return (typeof v === 'number' && isFinite(v) && v >= lo && v <= hi) ? v : fb; }
+function hexOf(s, fb) { return wlIsHex(s) ? wlHex(s, fb) : fb; }
+
+function normalizeItemStats(it) {
+  const s = (it.stats && typeof it.stats === 'object') ? it.stats : {};
+  if (it.kind === 'sword')
+    return {
+      damage: clampN(s.damage, 1, 500, 10), pvp: clampN(s.pvp, 0, 200, 15),
+      range: clampN(s.range, 3, 10, 5.6), cooldown: clampN(s.cooldown, 0.15, 1.5, 0.45),
+      kb: clampN(s.kb, 0, 60, 16)
+    };
+  if (it.kind === 'gun')
+    return {
+      damage: clampN(s.damage, 1, 500, 12), pvp: clampN(s.pvp, 0, 200, 12),
+      cooldown: clampN(s.cooldown, 0.08, 2, 0.3), range: clampN(s.range, 20, 400, 200),
+      spread: clampN(s.spread, 0, 12, 2), pellets: Math.round(clampN(s.pellets, 1, 8, 1)),
+      ammo: Math.round(clampN(s.ammo, 0, 500, 0)), reload: clampN(s.reload, 0, 6, 0),
+      auto: !!s.auto, kb: clampN(s.kb, 0, 60, 12),
+      tracer: hexOf(s.tracer, 0xffe08a), flash: clampN(s.flash, 0.4, 3, 0.8)
+    };
+  if (it.kind === 'consumable')
+    return { heal: clampN(s.heal, 1, 500, 30) };
+  if (it.kind === 'tool')
+    /* v15: held gadgets — the speed coil (hold to run fast), the storm
+       pet (deploy to fight for you) */
+    return {
+      speed: clampN(s.speed, 1, 3, 1), jump: clampN(s.jump, 1, 3, 1),
+      pet: !!s.pet, damage: clampN(s.damage, 1, 60, 8),
+      radius: clampN(s.radius, 8, 60, 26), zapRange: clampN(s.zapRange, 4, 30, 10)
+    };
+  return {};
+}
+
+function registerWorldItems(recipe) {
+  const items = Array.isArray(recipe.items) ? recipe.items : [];
+  for (const it of items) {
+    if (!it || typeof it.id !== 'string' || !/^[a-z0-9][a-z0-9-]{1,31}$/.test(it.id)) continue;
+    const rid = recipe.id + '.' + it.id;
+    ITEM_DEFS[rid] = {
+      name: String(it.name || it.id).slice(0, 24),
+      icon: WL_ICONS.has(it.icon) ? it.icon : (it.kind === 'gun' ? 'crosshair' : it.kind === 'consumable' ? 'apple' : 'sword'),
+      kind: it.kind || 'tool',
+      stats: normalizeItemStats(it),
+      mesh: (it.mesh && typeof it.mesh === 'object') ? it.mesh : null
+    };
+  }
+}
+
+/* the live stat block for whatever is in hand — builtin tools read the
+   room rules (V), world weapons read their recipe stats */
+function toolStats(id) {
+  if (id === 'sword') return { damage: V.swordDamage, pvp: V.swordPvpDamage, range: 5.6, cooldown: 0.42, kb: 16 };
+  if (id === 'gun') return { damage: V.gunDamage, pvp: V.gunDamage, cooldown: GUN_COOLDOWN, range: GUN_RANGE, spread: 0, pellets: 1, ammo: 0, reload: 0, auto: false, kb: 16, tracer: 0xffe08a, flash: 0.8 };
+  const d = ITEM_DEFS[id];
+  return d && d.stats ? d.stats : { damage: 1, pvp: 10, heal: 30 };
+}
+
+function defKind(id) { const d = ITEM_DEFS[id]; return d ? d.kind : null; }
 
 const Inventory = {
   slots: new Array(9).fill(null),
@@ -1813,7 +1955,7 @@ const Inventory = {
   give(id) {
     const i = this.slots.indexOf(null);
     if (i === -1) { addSys('Your inventory is full!'); return -1; }
-    this.slots[i] = { id };
+    this.slots[i] = { id, ammo: (ITEM_DEFS[id] && ITEM_DEFS[id].stats && ITEM_DEFS[id].stats.ammo) || 0 };
     renderSlot(i);
     return i;
   },
@@ -1858,54 +2000,151 @@ function renderHotbar() {
 
 /* tool meshes (built along +Z so an outstretched arm holds the
    blade pointing straight up, exactly like Roblox) */
-const bladeMat = mat(0xd9dee3, 0.22, 0.9, 1.0);
-function buildSwordMesh() {
+function buildSwordMesh(m) {
+  m = m || {};
+  const bladeC = hexOf(m.blade, 0xd9dee3), guardC = hexOf(m.guard, 0xe0aa48), gripC = hexOf(m.grip, 0x6a4423);
+  const len = clampN(m.len, 1.2, 5, 2.4), glow = clampN(m.glow, 0, 1, 0);
+  const bladeM = glow > 0.02
+    ? new THREE.MeshStandardMaterial({ color: bladeC, roughness: 0.25, metalness: 0.4, emissive: bladeC, emissiveIntensity: glow * 1.2 })
+    : mat(bladeC, 0.22, 0.9, 1.0);
   const g = new THREE.Group();
-  part(0.3, 0.3, 0.85, mat(0x6a4423, 0.6), 0, 0, 0, g);      // grip at the hand
-  part(0.36, 0.12, 0.36, goldMat, 0, 0, 0.34, g);            // collar
-  part(0.95, 0.2, 0.34, goldMat, 0, 0, 0.52, g);              // cross-guard
-  part(0.34, 0.14, 2.4, bladeMat, 0, 0, 1.85, g);             // blade
-  const tip = part(0.3, 0.3, 0.34, bladeMat, 0, 0, 3.2, g);   // point
+  part(0.3, 0.3, 0.85, mat(gripC, 0.6), 0, 0, 0, g);                 // grip at the hand
+  part(0.36, 0.12, 0.36, mat(guardC, 0.3, 0.85, 1.0), 0, 0, 0.34, g); // collar
+  part(0.95, 0.2, 0.34, mat(guardC, 0.3, 0.85, 1.0), 0, 0, 0.52, g);   // cross-guard
+  part(0.34, 0.14, len, bladeM, 0, 0, 0.48 + len / 2, g);              // blade
+  const tip = part(0.3, 0.3, 0.34, bladeM, 0, 0, 0.48 + len + 0.12, g); // point
   tip.rotation.x = Math.PI / 4;
   return g;
 }
-function buildAppleMesh() {
+
+function buildAppleMesh(m) {
+  m = m || {};
+  const s = clampN(m.size, 0.3, 1.6, 1);
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 9), mat(0xd1332a, 0.35));
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.42 * s, 12, 9), mat(hexOf(m.color, 0xd1332a), 0.35));
   body.castShadow = true; g.add(body);
   const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.3, 6), mat(0x6a4423, 0.8));
-  stem.position.y = 0.5; stem.castShadow = true; g.add(stem);
-  part(0.3, 0.06, 0.18, leafMat, 0.18, 0.55, 0, g);
+  stem.position.y = 0.5 * s; stem.castShadow = true; g.add(stem);
+  part(0.3, 0.06, 0.18, leafMat, 0.18, 0.55 * s, 0, g);
   return g;
 }
+
 
 /* the BLASTER — a basic infinite-ammo pistol (no reload, short
    cooldown). Modeled like the sword (grip at the hand, barrel along
    +Z); the holder sites rotate it to point where the arm aims. */
 const gunDarkMat = mat(0x2b2f36, 0.45, 0.6, 0.55), gunAccentMat = mat(0xC4281C, 0.4, 0.6, 0.6);
-function buildGunMesh() {
+function buildGunMesh(m) {
+  m = m || {};
+  const bodyC = hexOf(m.body, 0x2b2f36), accC = hexOf(m.accent, 0xC4281C);
+  const bodyM = mat(bodyC, 0.45, 0.6, 0.55), accM = mat(accC, 0.4, 0.6, 0.6);
+  const glow = clampN(m.glow, 0, 1, 0);
+  const barrelM = glow > 0.02
+    ? new THREE.MeshStandardMaterial({ color: accC, roughness: 0.3, emissive: accC, emissiveIntensity: glow * 1.3 })
+    : accM;
+  const L = clampN(m.len, 0.6, 2.5, 1);           // barrel length scale
   const g = new THREE.Group();
-  part(0.34, 0.5, 1.15, gunDarkMat, 0, 0.12, 0.42, g);        // body
-  part(0.3, 0.34, 0.95, gunAccentMat, 0, 0.12, 0.98, g);       // barrel shroud
-  part(0.16, 0.16, 0.5, gunDarkMat, 0, 0.12, 1.62, g);         // barrel tip (muzzle ≈ z+1.9)
-  const grip = part(0.3, 0.75, 0.4, gunDarkMat, 0, -0.42, 0.1, g); // grip at the hand
+  if (m.style === 'minigun') {
+    /* v15: the minigun — a fat drum-fed rotary: 3 barrels around the
+       axis, a chunky housing and a big drum magazine. */
+    part(0.5, 0.62, 1.3, bodyM, 0, 0.14, 0.5, g);               // housing
+    part(0.56, 0.5, 0.4, accM, 0, 0.16, 1.05, g);                // barrel clamp
+    const rot = new THREE.Group(); rot.position.set(0, 0.14, 1.5); g.add(rot);
+    for (let b = 0; b < 3; b++) {
+      const a = b / 3 * Math.PI * 2;
+      const bar = part(0.13, 0.13, 1.05 * L, barrelM, Math.cos(a) * 0.17, Math.sin(a) * 0.17, 0, rot);
+      bar.castShadow = true;
+    }
+    part(0.2, 0.2, 0.16, accM, 0, 0.14, 1.98 + 0.5 * L, g);       // muzzle cap
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.42, 12), accM);
+    drum.rotation.x = Math.PI / 2; drum.position.set(0, -0.32, 0.42); g.add(drum);   // drum mag
+    const grip = part(0.3, 0.7, 0.4, bodyM, 0, -0.44, 0.05, g);   // grip
+    grip.rotation.x = 0.3;
+    return g;
+  }
+  part(0.34, 0.5, 1.15, bodyM, 0, 0.12, 0.42, g);          // body
+  part(0.3, 0.34, 0.95 * L, barrelM, 0, 0.12, 0.98, g);    // barrel shroud
+  part(0.16, 0.16, 0.5 * L, bodyM, 0, 0.12, 0.98 + 0.64 * L, g); // barrel tip
+  const grip = part(0.3, 0.75, 0.4, bodyM, 0, -0.42, 0.1, g); // grip at the hand
   grip.rotation.x = 0.28;
-  part(0.36, 0.14, 0.24, gunAccentMat, 0, 0.42, 0.34, g);      // top sight
-  part(0.1, 0.22, 0.1, gunAccentMat, 0, 0.45, 0.86, g);         // front post
+  part(0.36, 0.14, 0.24, accM, 0, 0.42, 0.34, g);          // top sight
+  part(0.1, 0.22, 0.1, accM, 0, 0.45, 0.86, g);            // front post
   return g;
 }
+
+/* v15: SPEED COIL — a copper coil you HOLD to run fast (stats.speed). */
+function buildCoilMesh(m) {
+  m = m || {};
+  const copper = hexOf(m.accent, 0xd98c4a);
+  const core = hexOf(m.body, 0x3a2f26);
+  const glow = clampN(m.glow, 0, 1, 0.5);
+  const wireM = new THREE.MeshStandardMaterial({ color: copper, roughness: 0.28, metalness: 0.85,
+    emissive: copper, emissiveIntensity: glow * 0.55 });
+  const g = new THREE.Group();
+  part(0.24, 0.5, 0.24, mat(core, 0.6), 0, -0.1, 0, g);        // handle
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.15, 10), mat(core, 0.45));
+  rod.rotation.x = Math.PI / 2; rod.position.set(0, 0.42, 0); g.add(rod);
+  for (let i = 0; i < 6; i++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.085, 8, 16), wireM);
+    ring.rotation.y = Math.PI / 2;
+    ring.position.set(0, 0.42, -0.42 + i * 0.17);
+    g.add(ring);
+  }
+  part(0.3, 0.1, 0.3, mat(copper, 0.35, 0.9), 0, 0.42, 0.62, g); // tip cap
+  return g;
+}
+
+/* v15: STORM PET — a little drone buddy (deploy with a click while
+   holding; it follows you and zaps nearby players with lightning). */
+function buildPetMesh(m, big) {
+  m = m || {};
+  const core = hexOf(m.color, 0x9fd8ff);
+  const shell = hexOf(m.accent, 0x2c3946);
+  const s = big ? 1 : 0.62;                      // in hand: small; deployed: full size
+  const g = new THREE.Group();
+  const coreM = new THREE.MeshStandardMaterial({ color: core, roughness: 0.25,
+    emissive: core, emissiveIntensity: 1.5 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5 * s, 14, 10), mat(shell, 0.4, 0.5, 0.7));
+  g.add(body);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.17 * s, 10, 8), coreM);
+  eye.position.set(0, 0.05 * s, 0.44 * s); g.add(eye);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62 * s, 0.07 * s, 8, 20), coreM);
+  ring.rotation.x = Math.PI / 2; ring.position.y = 0.18 * s; g.add(ring);
+  const fin1 = part(0.1, 0.34 * s, 0.3 * s, mat(shell, 0.4), -0.4 * s, 0.3 * s, -0.1, g);
+  const fin2 = part(0.1, 0.34 * s, 0.3 * s, mat(shell, 0.4), 0.4 * s, 0.3 * s, -0.1, g);
+  fin1.rotation.z = 0.3; fin2.rotation.z = -0.3;
+  return g;
+}
+
+/* one builder for every item (builtin or world): the hotbar hand, the
+   FP viewmodel, pickups, drops and remote rigs all build through here */
+function buildToolMesh(id) {
+  const d = ITEM_DEFS[id];
+  const kind = d ? d.kind : null;
+  if (kind === 'sword') return buildSwordMesh(d ? d.mesh : null);
+  if (kind === 'gun') return buildGunMesh(d ? d.mesh : null);
+  if (kind === 'tool') {                                   // v15: coil / pet
+    const style = d && d.mesh && d.mesh.style;
+    if (style === 'pet') return buildPetMesh(d.mesh, false);
+    return buildCoilMesh(d ? d.mesh : null);
+  }
+  return buildAppleMesh(d ? d.mesh : null);
+}
+
 
 let toolMesh = null;
 /* per-tool orientation: the sword's blade points up when the arm is
    held out; the gun must point FORWARD along the arm's reach. */
 function attachTool(id) {
   detachTool();
-  toolMesh = id === 'sword' ? buildSwordMesh() : id === 'gun' ? buildGunMesh() : buildAppleMesh();
-  toolMesh.rotation.x = (id === 'gun' && !cam.fp) ? Math.PI / 2 : 0;   // hand: barrel along the arm; FP: upright
+  const d = ITEM_DEFS[id];
+  toolMesh = buildToolMesh(id);
+  toolMesh.rotation.x = (d && d.kind === 'gun' && !cam.fp) ? Math.PI / 2 : 0;   // hand: barrel along the arm; FP: upright
   toolMesh.traverse(o => { if (o.isMesh) o.userData.tool = true; });   // stays visible in first person
   if (cam.fp) applyFPToolPose();
   (cam.fp ? fpTool : toolAnchor).add(toolMesh);
 }
+
 function detachTool() { if (toolMesh) { toolMesh.removeFromParent(); toolMesh = null; } }
 
 /* first-person viewmodel placement per tool. v11: the grip is placed
@@ -1919,7 +2158,7 @@ function detachTool() { if (toolMesh) { toolMesh.removeFromParent(); toolMesh = 
 let fpPose = { fx: 0.55, fy: 0.74, d: 1.5 };   // grip: fractions of the screen half-extents + depth
 function applyFPToolPose(kick = 0) {
   const it = Inventory.current();
-  if (it && it.id === 'gun') {
+  if (it && defKind(it.id) === 'gun') {
     /* upright gun, muzzle toward the crosshair: a half-turn on Y
        (sights up, grip down, barrel into the screen) + a slight
        inward cant; the kick tilts the muzzle up */
@@ -1928,14 +2167,14 @@ function applyFPToolPose(kick = 0) {
     fpTool.rotation.set(kick * 0.55, Math.PI, 0.08);
   } else {
     let fx = -Math.PI / 2 + 0.1, fz = -0.1;
-    if (it && it.id === 'sword' && swingT >= 0) {
+    if (it && defKind(it.id) === 'sword' && swingT >= 0) {
       const k = swingT / 0.42;
       if (k < 0.28) { const u = k / 0.28; fx -= u * 0.6; fz -= u * 0.3; }
       else { const u = (k - 0.28) / 0.72; fx += -0.6 + easeOut(u) * 1.5; fz += 0.3 * u; }
     }
     /* the classic viewmodel: a smaller blade held low at the right
        edge, mostly vertical — it must never cover the face */
-    if (toolMesh) toolMesh.scale.setScalar(it && it.id === 'sword' ? 0.32 : 1);
+    if (toolMesh) toolMesh.scale.setScalar(defKind(it.id) === 'sword' ? 0.32 : 1);
     fpPose = { fx: 0.55, fy: 0.74, d: 1.5 };
     fpTool.rotation.set(fx - kick * 0.5, -0.2, fz - 0.18);
   }
@@ -1962,35 +2201,113 @@ function placeFPTool() {
 /* using tools — triggered by a quick TAP on the canvas (§4).
    The gun gets the tap position so a 3rd-person shot flies exactly
    where you clicked; first person always shoots the crosshair. */
-let swingT = -1, eatT = 0, swingHitSet = new Set();
+/* swingT / eatT / swingHitSet / swingCd / fireHeld now live in the
+   v14 weapon block below (one declaration, shared by every sword) */
+
+/* using tools — triggered by a quick TAP on the canvas (§4), or by
+   HOLDING the button with an automatic gun. The gun gets the tap
+   position so a 3rd-person shot flies exactly where you clicked;
+   first person always shoots the crosshair. */
+let swingT = -1, eatT = 0, swingHitSet = new Set(), swingCd = 0;
+let fireHeld = false, fireHeldMoved = false, fireStartX = 0, fireStartY = 0;
 
 function useEquipped(cx, cy) {
   const it = Inventory.current();
   if (!it) return;
-  if (it.id === 'sword') {
-    if (swingT < 0 || swingT > 0.3) { swingT = 0; swingHitSet = new Set(); }
-  } else if (it.id === 'gun') {
+  const d = ITEM_DEFS[it.id];
+  const kind = d ? d.kind : null;
+  if (kind === 'sword') {
+    const st = toolStats(it.id);
+    if (swingCd > 0) return;
+    if (swingT < 0 || swingT > 0.3) { swingT = 0; swingHitSet = new Set(); swingCd = Math.max(0.2, st.cooldown || 0.42); }
+  } else if (kind === 'gun') {
     fireGun(cx, cy);
-  } else if (it.id === 'apple') {
+  } else if (kind === 'tool') {
+    const st = (d && d.stats) || {};
+    if (st.pet) Pet.toggle();                      // v15: deploy / recall the storm pet
+    else wlToast(d ? d.name + ' — hold it to feel the boost!' : 'Tool');
+  } else {
+    const st = (d && d.stats) || {};
     eatT = 0.5;
-    health = Math.min(V.maxHealth, health + 30);
-    addSys('You ate the Apple. Yum! <b>(+30 health)</b>');
+    health = Math.min(V.maxHealth, health + (st.heal || 30));
+    wlToast('You ate the ' + (d ? d.name : 'Apple') + '. (+' + (st.heal || 30) + ' health)');
     Inventory.consume(Inventory.equipped);
   }
 }
 
+/* ---- v14 WEAPON EXTRAS: ammo, reload, automatic fire ---- */
+dom.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || menuOpen || userModalOpen || confirmOpen) return;
+  fireHeld = true; fireHeldMoved = false; fireStartX = e.clientX; fireStartY = e.clientY;
+});
+dom.addEventListener('pointermove', e => {
+  if (fireHeld && !fireHeldMoved && Math.hypot(e.clientX - fireStartX, e.clientY - fireStartY) > 14)
+    fireHeldMoved = true;                    // that was a camera drag, not shooting
+});
+const _fireEnd = () => { fireHeld = false; };
+dom.addEventListener('pointerup', _fireEnd);
+dom.addEventListener('pointercancel', _fireEnd);
+
+function startReload() {
+  const it = Inventory.current();
+  if (!it) return;
+  const st = toolStats(it.id);
+  if (!st.ammo || it.reloading != null || it.ammo >= st.ammo) return;
+  it.reloading = 0;
+}
+
+let ammoEl = null, ammoBarEl = null;
+function updateAmmoHUD() {
+  const it = Inventory.current();
+  const st = it ? toolStats(it.id) : null;
+  const show = !!(it && st && st.ammo > 0);
+  if (!show) { if (ammoEl) ammoEl.style.display = 'none'; return; }
+  if (!ammoEl) {
+    ammoEl = document.createElement('div');
+    ammoEl.id = 'wl-ammo';
+    ammoEl.innerHTML = '<span id="wl-ammo-txt"></span><div class="wl-reload-bar"><div class="wl-reload-fill"></div></div>';
+    document.body.appendChild(ammoEl);
+    ammoBarEl = ammoEl.querySelector('.wl-reload-fill');
+  }
+  ammoEl.style.display = 'block';
+  ammoEl.classList.toggle('reloading', it.reloading != null);
+  ammoEl.querySelector('#wl-ammo-txt').textContent = it.ammo + ' / ' + st.ammo + (st.reload ? '  ·  R' : '');
+  if (it.reloading != null && st.reload)
+    ammoBarEl.style.width = Math.min(100, it.reloading / st.reload * 100) + '%';
+  else ammoBarEl.style.width = '0%';
+}
+
+function tickWeapon(dt) {
+  const it = Inventory.current();
+  if (it && it.reloading != null) {
+    const st = toolStats(it.id);
+    it.reloading += dt;
+    if (it.reloading >= Math.max(0.3, st.reload || 1)) { it.reloading = null; it.ammo = st.ammo; wlToast('Reloaded.'); }
+  }
+  if (fireHeld && !fireHeldMoved) {
+    const it2 = Inventory.current();
+    const st2 = it2 ? toolStats(it2.id) : null;
+    if (st2 && st2.auto && gunCd <= 0) fireGun(null, null);
+  }
+  updateAmmoHUD();
+}
+
+
 function doSwingHits() { // anything in a ~70° arc in front of the player
+  const it = Inventory.current();
+  const st = toolStats(it ? it.id : 'sword');
+  const range = st.range || 5.6;
   const fx = Math.sin(yaw), fz = Math.cos(yaw);
   for (const z of zombies) {
     if (z.dead || swingHitSet.has(z)) continue;
     const dx = z.body.x - player.x, dz = z.body.z - player.z;
     const d = Math.hypot(dx, dz);
-    if (d > 5.6) continue;
+    if (d > range) continue;
     if ((dx * fx + dz * fz) / (d || 1) < 0.35) continue;
     swingHitSet.add(z);
     /* remote-owned zombies are damaged through their owner (§12.6) */
-    if (z.ghost) WS.emit('zdmg', { i: z.zid, d: V.swordDamage, ax: +player.x.toFixed(1), az: +player.z.toFixed(1) });
-    else damageZombie(z, V.swordDamage);
+    if (z.ghost) WS.emit('zdmg', { i: z.zid, d: st.damage, ax: +player.x.toFixed(1), az: +player.z.toFixed(1) });
+    else { z.lastHit = MP.id; damageZombie(z, st.damage); }
   }
   /* OTHER PLAYERS — the victim's own client applies the hit (§12.6) */
   for (const r of MP.remotes.values()) {
@@ -1998,17 +2315,19 @@ function doSwingHits() { // anything in a ~70° arc in front of the player
     if (swingHitSet.has(key)) continue;
     const dx = r.x - player.x, dz = r.z - player.z;
     const d = Math.hypot(dx, dz);
-    if (d > 5.6) continue;
+    if (d > range) continue;
     if ((dx * fx + dz * fz) / (d || 1) < 0.35) continue;
     swingHitSet.add(key);
-    pvpHit(r.id, V.swordPvpDamage, dx / (d || 1), dz / (d || 1));
+    pvpHit(r.id, st.pvp, dx / (d || 1), dz / (d || 1), st.kb);
   }
 }
 
-function pvpHit(to, dmg, nx, nz) {
+
+function pvpHit(to, dmg, nx, nz, kb) {
   if (!MP.connected) return;
-  WS.emit('pvp', { to, d: +dmg, x: +nx.toFixed(2), z: +nz.toFixed(2) });
+  WS.emit('pvp', { to, d: +dmg, x: +nx.toFixed(2), z: +nz.toFixed(2), kb: kb != null ? +kb : undefined });
 }
+
 
 /* ---- THE BLASTER — a basic hitscan gun: infinite ammo, no reload,
    just a short cooldown. First person shoots the CROSSHAIR; third
@@ -2021,11 +2340,11 @@ const _mz = new THREE.Vector3();   // muzzle world position
 
 /* short-lived visual effects: tracers, muzzle flash, impact sparks */
 const FX = [];
-function spawnTracer(ax, ay, az, bx, by, bz) {
+function spawnTracer(ax, ay, az, bx, by, bz, col = 0xffe08a) {
   const len = Math.hypot(bx - ax, by - ay, bz - az);
   if (len < 0.1) return;
   const m = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, len),
-    new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.95, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.95, depthWrite: false }));
   m.position.set((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2);
   m.lookAt(bx, by, bz);
   scene.add(m);
@@ -2110,8 +2429,12 @@ function spawnExplosionFX(x, y, z, size) {
 }
 
 function fireGun(cx, cy) {
-  if (gunCd > 0 || userModalOpen) return;
-  gunCd = GUN_COOLDOWN; gunKickT = 0.14;
+  const it = Inventory.current();
+  const st = toolStats(it ? it.id : 'gun');
+  if (gunCd > 0 || userModalOpen || (it && it.reloading != null)) return;
+  if (st.ammo > 0 && it && it.ammo <= 0) { startReload(); return; }
+  gunCd = Math.max(0.06, st.cooldown || 0.26); gunKickT = 0.14;
+  if (st.ammo > 0 && it) it.ammo--;
 
   /* aim direction — FP: the crosshair ray; 3rd person: through the tap */
   if (cam.fp) camera.getWorldDirection(_gv);
@@ -2120,27 +2443,10 @@ function fireGun(cx, cy) {
             -((cy ?? innerHeight / 2) / innerHeight) * 2 + 1, 0.5)
       .unproject(camera).sub(camera.position).normalize();
   }
-  const dx = _gv.x, dy = _gv.y, dz = _gv.z;
-
-  /* hit-scan FROM THE CAMERA so the shot lands exactly on what you
-     clicked (the tracer is still drawn from the muzzle) */
   const px = camera.position.x, py = camera.position.y, pz = camera.position.z;
-  let bestT = V.godMode ? GUN_RANGE : occlusionDist(camera.position, _gv, GUN_RANGE);
-  let vZ = null, vP = null;
-  for (const z of zombies) {
-    if (z.dead) continue;
-    const t = (z.body.x - px) * dx + (z.body.y + 2.6 - py) * dy + (z.body.z - pz) * dz;
-    if (t < 0.5 || t >= bestT) continue;
-    const ox = (z.body.x - px) - dx * t, oy = (z.body.y + 2.6 - py) - dy * t, oz = (z.body.z - pz) - dz * t;
-    if (Math.hypot(ox, oz) < 1.15 && Math.abs(oy) < 2.9) { bestT = t; vZ = z; vP = null; }
-  }
-  for (const r of MP.remotes.values()) {
-    const t = (r.x - px) * dx + (r.y + 2.7 - py) * dy + (r.z - pz) * dz;
-    if (t < 0.5 || t >= bestT) continue;
-    const ox = (r.x - px) - dx * t, oy = (r.y + 2.7 - py) - dy * t, oz = (r.z - pz) - dz * t;
-    if (Math.hypot(ox, oz) < 1.2 && Math.abs(oy) < 2.85) { bestT = t; vP = r; vZ = null; }
-  }
-  const ex = px + dx * bestT, ey = py + dy * bestT, ez = pz + dz * bestT;
+  const range = Math.min(st.range || GUN_RANGE, GUN_RANGE * 2);
+  const spread = (st.spread || 0) * Math.PI / 180;
+  const pellets = Math.max(1, Math.min(8, st.pellets || 1));
 
   /* muzzle — FROM THE GUN ITSELF, never the face.
      FP: the viewmodel's barrel tip (its live world matrix, kick and
@@ -2154,28 +2460,61 @@ function fireGun(cx, cy) {
     _mz.applyMatrix4(camera.matrixWorld);             // view space -> world space
     mx = _mz.x; my = _mz.y; mz = _mz.z;
   } else if (cam.fp) {
-    mx = px + dx * 0.9; my = py + dy * 0.9 - 0.1; mz = pz + dz * 0.9;
+    mx = px + _gv.x * 0.9; my = py + _gv.y * 0.9 - 0.1; mz = pz + _gv.z * 0.9;
   } else {
-    yaw = Math.atan2(dx, dz);
-    mx = player.x + dx * 1.4 - Math.cos(yaw) * 1.15;   // out along the shot,
-    my = player.y + 3.3;                               // over the right hand
-    mz = player.z + dz * 1.4 + Math.sin(yaw) * 1.15;
+    yaw = Math.atan2(_gv.x, _gv.z);
+    mx = player.x + _gv.x * 1.4 - Math.cos(yaw) * 1.15;   // out along the shot,
+    my = player.y + 3.3;                                   // over the right hand
+    mz = player.z + _gv.z * 1.4 + Math.sin(yaw) * 1.15;
   }
-  spawnTracer(mx, my, mz, ex, ey, ez);
-  spawnFlash(mx, my, mz, 0.8);
-  if (bestT < GUN_RANGE - 0.5) spawnFlash(ex, ey, ez, 1);
+  spawnFlash(mx, my, mz, st.flash || 0.8);
+
+  for (let p = 0; p < pellets; p++) {
+    /* per-pellet cone (pellet 0 always flies true) */
+    let dx = _gv.x, dy = _gv.y, dz = _gv.z;
+    if (p > 0 && spread > 0) {
+      const a = Math.random() * Math.PI * 2, r = Math.random() * spread;
+      const ux = -dz, uz = dx;                      // horizontal perpendicular
+      dx += Math.cos(a) * r * ux; dz += Math.cos(a) * r * uz;
+      dy += Math.sin(a) * r;
+      const hl = Math.hypot(dx, dy, dz) || 1;
+      dx /= hl; dy /= hl; dz /= hl;
+    }
+    /* hit-scan FROM THE CAMERA so the shot lands exactly on what you
+       clicked (the tracer is still drawn from the muzzle) */
+    let bestT = V.godMode ? range : occlusionDist(camera.position, { x: dx, y: dy, z: dz }, range);
+    let vZ = null, vP = null;
+    for (const z of zombies) {
+      if (z.dead) continue;
+      const t = (z.body.x - px) * dx + (z.body.y + 2.6 - py) * dy + (z.body.z - pz) * dz;
+      if (t < 0.5 || t >= bestT) continue;
+      const ox = (z.body.x - px) - dx * t, oy = (z.body.y + 2.6 - py) - dy * t, oz = (z.body.z - pz) - dz * t;
+      if (Math.hypot(ox, oz) < 1.15 && Math.abs(oy) < 2.9) { bestT = t; vZ = z; vP = null; }
+    }
+    for (const r of MP.remotes.values()) {
+      const t = (r.x - px) * dx + (r.y + 2.7 - py) * dy + (r.z - pz) * dz;
+      if (t < 0.5 || t >= bestT) continue;
+      const ox = (r.x - px) - dx * t, oy = (r.y + 2.7 - py) - dy * t, oz = (r.z - pz) - dz * t;
+      if (Math.hypot(ox, oz) < 1.2 && Math.abs(oy) < 2.85) { bestT = t; vP = r; vZ = null; }
+    }
+    const ex = px + dx * bestT, ey = py + dy * bestT, ez = pz + dz * bestT;
+    spawnTracer(mx, my, mz, ex, ey, ez, st.tracer);
+    if (bestT < range - 0.5) spawnFlash(ex, ey, ez, 1);
+
+    if (vZ) {
+      if (vZ.ghost) WS.emit('zdmg', { i: vZ.zid, d: st.damage, ax: +player.x.toFixed(1), az: +player.z.toFixed(1) });
+      else { vZ.lastHit = MP.id; damageZombie(vZ, st.damage); }
+    } else if (vP) {
+      const hl = Math.hypot(dx, dz) || 1;
+      pvpHit(vP.id, st.pvp, dx / hl, dz / hl, st.kb);
+    }
+  }
 
   if (MP.connected)
-    WS.emit('gshot', { a: [+mx.toFixed(1), +my.toFixed(1), +mz.toFixed(1)], b: [+ex.toFixed(1), +ey.toFixed(1), +ez.toFixed(1)] });
-
-  if (vZ) {
-    if (vZ.ghost) WS.emit('zdmg', { i: vZ.zid, d: V.gunDamage, ax: +player.x.toFixed(1), az: +player.z.toFixed(1) });
-    else damageZombie(vZ, V.gunDamage);
-  } else if (vP) {
-    const hl = Math.hypot(dx, dz) || 1;
-    pvpHit(vP.id, V.gunDamage, dx / hl, dz / hl);
-  }
+    WS.emit('gshot', { a: [+mx.toFixed(1), +my.toFixed(1), +mz.toFixed(1)],
+                       b: [+(px + _gv.x * range).toFixed(1), +(py + _gv.y * range).toFixed(1), +(pz + _gv.z * range).toFixed(1)] });
 }
+
 
 /* ================================================================
    §9 INTERACTION SYSTEM
@@ -2228,7 +2567,10 @@ function updateInteractables() {
    silently falls back to the built-in Baseplate World — solo,
    exactly like before worlds existed.
 
-   Switching worlds = save my spot per world + reload. The relay
+   Switching worlds = reload into the new world — every entry
+   lands on that world's spawn point (v13: spots are NOT
+   remembered anymore; only an admin bring still teleports you
+   after the load). The relay
    side is one Durable Object room PER WORLD (?room=world-<id>,
    the template world keeps the legacy 'baseplate-world' room so
    stored room rules survive). The registry instance pushes a
@@ -2334,8 +2676,9 @@ function validateRecipe(w, expectId) {
   if (!w || typeof w !== 'object' || Array.isArray(w)) return 'not an object';
   if (w.id !== expectId) return 'id mismatch';
   if (!/^[a-z0-9][a-z0-9-]{2,31}$/.test(String(w.id))) return 'bad id';
-  if (w.kind === 'template') return null;               // template worlds carry no terrain
-  if (w.kind !== 'terrain') return 'bad kind';
+  const isTemplate = w.kind === 'template';
+  if (!isTemplate && w.kind !== 'terrain') return 'bad kind';
+  if (!isTemplate) {                                   // terrain checks (templates may still carry logic)
   const T = w.terrain;
   if (!T || typeof T !== 'object') return 'missing terrain';
   if (!Array.isArray(T.size) || T.size.length !== 2 || !num(T.size[0], 64, 400) || !num(T.size[1], 64, 400))
@@ -2350,6 +2693,15 @@ function validateRecipe(w, expectId) {
     if (!num(I.radius, 8, 400) || !num(I.edge, 2, 200) || !num(I.rim, 0.3, 0.9)) return 'bad island';
     if (I.radius + I.edge > Math.max(T.size[0], T.size[1]) / 2) return 'island bigger than the map';
   }
+  if (T.border != null) {                       // v15: the blocky mountain ring
+    const B = T.border;
+    if (typeof B !== 'object' || Array.isArray(B)) return 'bad border';
+    if (!num(B.width, 4, 80) || !num(B.height, 1, 120)) return 'bad border size';
+    if (B.steps != null && !num(B.steps, 1, 12)) return 'bad border steps';
+    if (B.jitter != null && !num(B.jitter, 0, 3)) return 'bad border jitter';
+    if (B.block != null && !['grass', 'dirt', 'sand', 'stone'].includes(B.block)) return 'bad border block';
+    if (B.width * 2 >= Math.min(T.size[0], T.size[1])) return 'border swallows the map';
+  }
   const pal = T.palette || {};
   for (const k in pal) if (!hex(pal[k])) return 'bad palette color "' + k + '"';
   if (w.spawn && (!num(w.spawn.x, -T.size[0] / 2 + 8, T.size[0] / 2 - 8) ||
@@ -2363,6 +2715,230 @@ function validateRecipe(w, expectId) {
     }
   }
   if (w.sky) { if (w.sky.dayTop && !hex(w.sky.dayTop)) return 'bad sky'; if (w.sky.dayBottom && !hex(w.sky.dayBottom)) return 'bad sky'; }
+  }
+  return validateGameLogic(w);   // v14 — items / build / economy / logic / script
+}
+
+/* ---- v14: the GAME side of a recipe — mirrors WORLDS-SPEC.md §6-11.
+   Template worlds may carry it too (logic on the built-in map). ---- */
+function validateGameLogic(w) {
+  const hex = s => typeof s === 'string' && /^#[0-9a-fA-F]{6}$/.test(s);
+  const num = (v, lo, hi) => typeof v === 'number' && isFinite(v) && v >= lo && v <= hi;
+  const str = (v, n) => typeof v === 'string' && v.length >= 1 && v.length <= n;
+  const ids = new Set(), buttons = new Set(), claims = new Set(), ent = new Map();
+  const items = new Set(['sword', 'gun', 'apple']);
+  const TYPES = ['button', 'claim', 'dropper', 'conveyor', 'collector', 'killbrick',
+    'teleport', 'checkpoint', 'pad', 'npc', 'spawner', 'pickup', 'door', 'sign',
+    'claimer', 'zwave'];   // v16: money vault + zombie-wave pad
+
+  /* items[] — custom weapons + consumables */
+  if (w.items != null) {
+    if (!Array.isArray(w.items) || w.items.length > 24) return 'bad items';
+    for (const it of w.items) {
+      if (!it || typeof it !== 'object') return 'bad item';
+      if (!/^[a-z0-9][a-z0-9-]{1,31}$/.test(String(it.id || ''))) return 'bad item id "' + it.id + '"';
+      if (items.has(it.id)) return 'duplicate item id "' + it.id + '"';
+      if (!['sword', 'gun', 'consumable', 'tool'].includes(it.kind)) return 'item "' + it.id + '" bad kind';
+      if (!str(it.name, 24)) return 'item "' + it.id + '" bad name';
+      if (it.icon && !WL_ICONS.has(it.icon)) return 'item "' + it.id + '" bad icon';
+      if (it.stats && typeof it.stats !== 'object') return 'item "' + it.id + '" bad stats';
+      if (it.mesh && typeof it.mesh !== 'object') return 'item "' + it.id + '" bad mesh';
+      if (it.mesh && it.mesh.style != null && !['coil', 'minigun', 'pet'].includes(it.mesh.style)) return 'item "' + it.id + '" bad mesh style';
+      if (it.mesh) for (const k of ['blade', 'guard', 'grip', 'body', 'accent', 'color', 'tracer'])
+        if (it.mesh[k] != null && !hex(it.mesh[k])) return 'item "' + it.id + '" bad mesh color';
+      for (const k of ['len', 'glow', 'size']) if (it.mesh && it.mesh[k] != null && !num(it.mesh[k], 0, 5)) return 'item "' + it.id + '" bad mesh value';
+      if (it.stats) {
+        const S = it.stats;
+        if (S.damage != null && !num(S.damage, 1, 500)) return 'item "' + it.id + '" bad damage';
+        if (S.pvp != null && !num(S.pvp, 0, 200)) return 'item "' + it.id + '" bad pvp';
+        if (S.range != null && !num(S.range, 3, 400)) return 'item "' + it.id + '" bad range';
+        if (S.cooldown != null && !num(S.cooldown, 0.08, 2)) return 'item "' + it.id + '" bad cooldown';
+        if (S.kb != null && !num(S.kb, 0, 60)) return 'item "' + it.id + '" bad knockback';
+        if (S.spread != null && !num(S.spread, 0, 12)) return 'item "' + it.id + '" bad spread';
+        if (S.pellets != null && !num(S.pellets, 1, 8)) return 'item "' + it.id + '" bad pellets';
+        if (S.ammo != null && !num(S.ammo, 0, 500)) return 'item "' + it.id + '" bad ammo';
+        if (S.reload != null && !num(S.reload, 0, 6)) return 'item "' + it.id + '" bad reload';
+        if (S.heal != null && !num(S.heal, 1, 500)) return 'item "' + it.id + '" bad heal';
+        if (S.speed != null && !num(S.speed, 1, 3)) return 'item "' + it.id + '" bad speed';
+        if (S.jump != null && !num(S.jump, 1, 3)) return 'item "' + it.id + '" bad jump';
+        if (S.radius != null && !num(S.radius, 8, 60)) return 'item "' + it.id + '" bad radius';
+        if (S.zapRange != null && !num(S.zapRange, 4, 30)) return 'item "' + it.id + '" bad zapRange';
+        if (S.pet != null && typeof S.pet !== 'boolean') return 'item "' + it.id + '" bad pet';
+      }
+      items.add(it.id);
+    }
+  }
+
+  /* economy */
+  if (w.economy != null) {
+    const E = w.economy;
+    if (typeof E !== 'object' || Array.isArray(E)) return 'bad economy';
+    if (E.name != null && !str(E.name, 16)) return 'bad economy name';
+    if (E.symbol != null && (typeof E.symbol !== 'string' || !E.symbol.length || E.symbol.length > 3)) return 'bad economy symbol';
+    if (E.start != null && !num(E.start, 0, 1e9)) return 'bad economy start';
+    if (E.goal != null && !num(E.goal, 0, 1e9)) return 'bad economy goal';
+    if (E.icon && !WL_ICONS.has(E.icon)) return 'bad economy icon';
+    if (E.queue != null && !num(E.queue, 1, 6)) return 'bad economy queue';   // v16: visible buy pads per plot
+  }
+
+  /* vars — v16: per-world engine overrides (restored on world exit) */
+  if (w.vars != null) {
+    if (typeof w.vars !== 'object' || Array.isArray(w.vars)) return 'bad vars';
+    if (w.vars.maxZombies != null && !num(w.vars.maxZombies, 1, 40)) return 'bad vars maxZombies';
+  }
+
+  /* build[] — static parts */
+  if (w.build != null) {
+    if (!Array.isArray(w.build) || w.build.length > 400) return 'bad build';
+    for (const p of w.build) {
+      if (!p || typeof p !== 'object') return 'bad build part';
+      if (!Array.isArray(p.pos) || p.pos.length !== 3 || !num(p.pos[0], -1000, 1000)) return 'bad part pos';
+      if (p.pos[1] !== 'ground' && p.pos[1] !== 'g' && !num(p.pos[1], -200, 500)) return 'bad part pos y';
+      if (!num(p.pos[2], -1000, 1000)) return 'bad part pos';
+      if (!Array.isArray(p.size) || p.size.length !== 3 || !num(p.size[0], 0.1, 220) || !num(p.size[1], 0.1, 220) || !num(p.size[2], 0.1, 220)) return 'bad part size on "' + (p.id || 'unnamed') + '"';
+      if (p.color != null && !hex(p.color)) return 'bad part color';
+      if (p.material != null && !['plastic', 'neon', 'glass', 'metal', 'wood'].includes(p.material)) return 'bad part material';
+      if (p.shape != null && !['box', 'cyl', 'ball', 'wedge'].includes(p.shape)) return 'bad part shape';
+      if (p.rot != null && !num(p.rot, -360, 360)) return 'bad part rot';
+      if (p.lift != null && !num(p.lift, -200, 200)) return 'bad part lift';
+      if (p.repeat != null && (!Array.isArray(p.repeat) || p.repeat.length !== 3 || !num(p.repeat[0], 1, 40) || !num(p.repeat[1], -500, 500) || !num(p.repeat[2], -500, 500))) return 'bad part repeat';
+      if (p.id != null) {
+        if (typeof p.id !== 'string' || !/^[a-z0-9][a-z0-9-]{1,31}$/.test(p.id) || ids.has(p.id)) return 'bad part id "' + p.id + '"';
+        ids.add(p.id);
+      }
+      if (p.requires != null && (!Array.isArray(p.requires) || p.requires.length > 6 || !p.requires.every(r => typeof r === 'string'))) return 'bad part requires';
+    }
+  }
+
+  /* logic[] — the live entities (pass 1: shape) */
+  if (w.logic != null) {
+    if (!Array.isArray(w.logic) || w.logic.length > 160) return 'bad logic';
+    for (const e of w.logic) {
+      if (!e || typeof e !== 'object') return 'bad entity';
+      if (!TYPES.includes(e.type)) return 'entity type "' + e.type + '" unknown';
+      if (typeof e.id !== 'string' || !/^[a-z0-9][a-z0-9-]{1,31}$/.test(e.id) || ids.has(e.id)) return 'bad entity id "' + e.id + '"';
+      ids.add(e.id); ent.set(e.id, e);
+      if (!Array.isArray(e.pos) || e.pos.length !== 3 || !num(e.pos[0], -1000, 1000)) return 'entity "' + e.id + '" bad pos';
+      if (e.pos[1] !== 'ground' && e.pos[1] !== 'g' && !num(e.pos[1], -200, 500)) return 'entity "' + e.id + '" bad pos y';
+      if (!num(e.pos[2], -1000, 1000)) return 'entity "' + e.id + '" bad pos';
+      if (e.size != null && (!Array.isArray(e.size) || e.size.length !== 3 || !num(e.size[0], 0.5, 120) || !num(e.size[1], 0.5, 120) || !num(e.size[2], 0.5, 120))) return 'entity "' + e.id + '" bad size';
+      if (e.rot != null && !num(e.rot, -360, 360)) return 'entity "' + e.id + '" bad rot';
+      if (e.requires != null && (!Array.isArray(e.requires) || e.requires.length > 6)) return 'entity "' + e.id + '" bad requires';
+      switch (e.type) {
+        case 'button':
+          buttons.add(e.id);
+          if (e.cost != null && !num(e.cost, 0, 1e9)) return 'button "' + e.id + '" bad cost';
+          if (e.label != null && !str(e.label, 28)) return 'button "' + e.id + '" bad label';
+          if (e.maxBuys != null && !num(e.maxBuys, 1, 99)) return 'button "' + e.id + '" bad maxBuys';
+          if (e.costScale != null && !num(e.costScale, 1, 10)) return 'button "' + e.id + '" bad costScale';
+          if (e.incomeMult != null && !num(e.incomeMult, 0.1, 100)) return 'button "' + e.id + '" bad incomeMult';
+          if (e.order != null && !num(e.order, 1, 9999)) return 'button "' + e.id + '" bad order';   // v16: queue rank
+          if (e.give != null && !items.has(e.give)) return 'button "' + e.id + '" gives unknown item';
+          if (e.grant != null && !num(e.grant, 0, 1e9)) return 'button "' + e.id + '" bad grant';
+          break;
+        case 'claim':
+          claims.add(e.id);
+          if (e.name != null && !str(e.name, 24)) return 'claim "' + e.id + '" bad name';
+          if (e.cost != null && !num(e.cost, 0, 1e9)) return 'claim "' + e.id + '" bad cost';
+          break;
+        case 'dropper':
+          if (e.every != null && !num(e.every, 1, 60)) return 'dropper "' + e.id + '" bad every';
+          if (e.value != null && !num(e.value, 1, 10000)) return 'dropper "' + e.id + '" bad value';
+          if (e.dropOff != null && (!Array.isArray(e.dropOff) || e.dropOff.length !== 2 ||
+              !num(e.dropOff[0], -8, 8) || !num(e.dropOff[1], -8, 8))) return 'dropper "' + e.id + '" bad dropOff';   // v16: spout lands over the belt
+          if (e.drop != null && typeof e.drop !== 'object') return 'dropper "' + e.id + '" bad drop';
+          if (e.drop && e.drop.color != null && !hex(e.drop.color)) return 'dropper "' + e.id + '" bad drop color';
+          if (e.drop && e.drop.size != null && !num(e.drop.size, 0.4, 2.2)) return 'dropper "' + e.id + '" bad drop size';
+          break;
+        case 'conveyor':
+          if (!Array.isArray(e.dir) || e.dir.length !== 2 || !num(e.dir[0], -1, 1) || !num(e.dir[1], -1, 1) || (e.dir[0] === 0 && e.dir[1] === 0)) return 'conveyor "' + e.id + '" bad dir';
+          if (e.speed != null && !num(e.speed, 1, 20)) return 'conveyor "' + e.id + '" bad speed';
+          break;
+        case 'collector':
+          if (e.value != null && !num(e.value, 1, 10000)) return 'collector "' + e.id + '" bad value';
+          break;
+        case 'claimer':   // v16: the money vault — owner collects, thieves skim a cut
+          if (e.steal != null && !num(e.steal, 0.05, 0.9)) return 'claimer "' + e.id + '" bad steal';
+          if (e.cool != null && !num(e.cool, 5, 600)) return 'claimer "' + e.id + '" bad cool';
+          break;
+        case 'zwave':     // v16: pay -> a wave of zombies around the pad
+          if (e.cost != null && !num(e.cost, 0, 1e9)) return 'zwave "' + e.id + '" bad cost';
+          if (e.count != null && !num(e.count, 1, 8)) return 'zwave "' + e.id + '" bad count';
+          if (e.radius != null && !num(e.radius, 10, 120)) return 'zwave "' + e.id + '" bad radius';
+          if (e.reward != null && !num(e.reward, 0, 10000)) return 'zwave "' + e.id + '" bad reward';
+          break;
+        case 'killbrick':
+          if (e.damage != null && !num(e.damage, 1, 5000)) return 'killbrick "' + e.id + '" bad damage';
+          break;
+        case 'teleport':
+          if (!Array.isArray(e.to) || e.to.length !== 3 || !num(e.to[0], -1000, 1000) ||
+              (e.to[1] !== 'ground' && e.to[1] !== 'g' && !num(e.to[1], -200, 500)) || !num(e.to[2], -1000, 1000)) return 'teleport "' + e.id + '" bad to';
+          if (e.cooldown != null && !num(e.cooldown, 0.5, 20)) return 'teleport "' + e.id + '" bad cooldown';
+          break;
+        case 'pad':
+          if (!['speed', 'jump', 'heal', 'launch'].includes(e.effect)) return 'pad "' + e.id + '" bad effect';
+          if (e.power != null && !num(e.power, 0.1, 120)) return 'pad "' + e.id + '" bad power';
+          if (e.dur != null && !num(e.dur, 0, 60)) return 'pad "' + e.id + '" bad dur';
+          break;
+        case 'npc':
+          if (e.name != null && !str(e.name, 24)) return 'npc "' + e.id + '" bad name';
+          if (e.lines != null && (!Array.isArray(e.lines) || e.lines.length > 6 || !e.lines.every(l => typeof l === 'string' && l.length <= 140))) return 'npc "' + e.id + '" bad lines';
+          if (e.color != null && !hex(e.color)) return 'npc "' + e.id + '" bad color';
+          if (e.shop != null) {
+            if (!Array.isArray(e.shop) || e.shop.length > 8) return 'npc "' + e.id + '" bad shop';
+            for (const s of e.shop) {
+              if (!s || typeof s !== 'object' || !items.has(s.item) || !num(s.cost, 0, 1e9)) return 'npc "' + e.id + '" bad shop entry';
+            }
+          }
+          break;
+        case 'spawner':
+          if (e.every != null && !num(e.every, 4, 300)) return 'spawner "' + e.id + '" bad every';
+          if (e.max != null && !num(e.max, 1, 12)) return 'spawner "' + e.id + '" bad max';
+          if (e.reward != null && !num(e.reward, 0, 10000)) return 'spawner "' + e.id + '" bad reward';
+          break;
+        case 'pickup':
+          if (!items.has(e.item)) return 'pickup "' + e.id + '" unknown item';
+          if (e.respawn != null && !num(e.respawn, 0, 300)) return 'pickup "' + e.id + '" bad respawn';
+          break;
+        case 'door':
+          if (e.color != null && !hex(e.color)) return 'door "' + e.id + '" bad color';
+          break;
+        case 'sign':
+          if (e.width != null && !num(e.width, 3, 24)) return 'sign "' + e.id + '" bad width';
+          if (e.text != null && !str(e.text, 90)) return 'sign "' + e.id + '" bad text';
+          if (e.lines != null && (!Array.isArray(e.lines) || e.lines.length > 4 || !e.lines.every(l => typeof l === 'string' && l.length <= 60))) return 'sign "' + e.id + '" bad lines';
+          break;
+      }
+    }
+
+    /* pass 2: cross-references */
+    for (const e of w.logic) {
+      if (e.plot != null && !claims.has(e.plot)) return 'entity "' + e.id + '" references unknown plot "' + e.plot + '"';
+      if (e.requires) for (const r of e.requires) if (!buttons.has(r) && !claims.has(r)) return 'entity "' + e.id + '" requires unknown button or plot "' + r + '"';
+      if (e.patch != null) {
+        if (typeof e.patch !== 'object' || Array.isArray(e.patch)) return 'button "' + e.id + '" bad patch';
+        for (const tid in e.patch) {
+          const t = ent.get(tid);
+          if (!t) return 'button "' + e.id + '" patches unknown entity "' + tid + '"';
+          const allowed = WL_PATCHABLE[t.type];
+          if (!allowed) return 'entity "' + tid + '" is not patchable';
+          if (typeof e.patch[tid] !== 'object' || Array.isArray(e.patch[tid])) return 'button "' + e.id + '" bad patch body';
+          for (const k in e.patch[tid]) if (!allowed.includes(k)) return 'button "' + e.id + '" may not patch "' + k + '" on "' + tid + '"';
+        }
+      }
+    }
+  }
+
+  /* build parts' requires, checked now that buttons are known */
+  if (Array.isArray(w.build))
+    for (const p of w.build)
+      if (p.requires) for (const r of p.requires) if (!buttons.has(r) && !claims.has(r)) return 'part requires unknown button or plot "' + r + '"';
+
+  /* the script sandbox */
+  if (w.script != null) {
+    if (typeof w.script !== 'string' || w.script.length > 8000) return 'bad script';
+    if (w.script.trim() && WL_LINT.test(w.script)) return 'script uses a banned token';
+  }
   return null;
 }
 
@@ -2397,16 +2973,11 @@ function crossWorldPlayers() {
 }
 
 /* ---- switching worlds (reload-based: the whole world rebuilds
-   cleanly — rides, zombies, interactables, terrain) ---- */
-function saveWorldPos() {
-  try {
-    localStorage.setItem('baseplate.pos.' + Worlds.id,
-      JSON.stringify({ x: +player.x.toFixed(1), y: +player.y.toFixed(1), z: +player.z.toFixed(1) }));
-  } catch (e) {}
-}
+   cleanly — rides, zombies, interactables, terrain). v13: no spot
+   memory — every world entry spawns at the world's spawn point;
+   only a cross-world admin bring (tp) lands you elsewhere ---- */
 function switchWorld(id, tp) {
   try {
-    saveWorldPos();
     localStorage.setItem('baseplate.world.v1', id);
     if (tp && typeof tp.x === 'number') localStorage.setItem('baseplate.pending-tp', JSON.stringify(tp));
     else localStorage.removeItem('baseplate.pending-tp');
@@ -2426,8 +2997,9 @@ function onForceWorld(m) {
   }
   switchWorld(m.w, { x: +m.x || 0, y: (+m.y || 0) + 0.6, z: +m.z || 0, by: m.by || 'an admin' });
 }
-/* after the world + player exist: apply the cross-world teleport
-   (or my saved spot in this world), then show the boot toast */
+/* after the world + player exist: apply the cross-world admin bring
+   teleport if one is pending — otherwise you simply stand at the
+   world's spawn point (v13: no remembered spots), then the boot toast */
 function applyBootPosition() {
   let tp = null;
   try { tp = JSON.parse(localStorage.getItem('baseplate.pending-tp') || 'null'); } catch (e) {}
@@ -2436,20 +3008,22 @@ function applyBootPosition() {
     player.vx = player.vy = player.vz = 0;
     try { localStorage.removeItem('baseplate.pending-tp'); } catch (e) {}
     if (tp.by) setTimeout(() => adminBanner('Teleported by ' + tp.by), 700);
-  } else {
-    let pos = null;
-    try { pos = JSON.parse(localStorage.getItem('baseplate.pos.' + Worlds.id) || 'null'); } catch (e) {}
-    if (pos && typeof pos.x === 'number' && pos.y > -40 && isFinite(pos.y)) {
-      player.x = pos.x; player.y = pos.y + 0.4; player.z = pos.z;
-      player.vx = player.vy = player.vz = 0;
-    }
   }
   let toast = null;
   try { toast = localStorage.getItem('baseplate.world-toast'); localStorage.removeItem('baseplate.world-toast'); } catch (e) {}
   const note = toast || Worlds.bootNote; Worlds.bootNote = null;
   if (note) setTimeout(() => adminBanner(note), 450);
 }
-addEventListener('beforeunload', saveWorldPos);
+/* v13: spot memory is gone — wipe any stale spots older versions
+   saved, so nothing ever resurrects them */
+try {
+  const _stale = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.indexOf('baseplate.pos.') === 0) _stale.push(k);
+  }
+  for (const k of _stale) localStorage.removeItem(k);
+} catch (e) {}
 
 /* ================================================================
    §9.6 RECIPE TERRAIN — the data-driven world interpreter
@@ -2505,6 +3079,16 @@ function buildRecipeWorld(w) {
   const isl = T.island || null;
   const R = isl ? isl.radius + isl.edge : 1;
   const waterY = T.waterLevel != null ? T.waterLevel : 0;
+  /* v15: `border` — a blocky stepped mountain ring that walls the map
+     in (tycoon arenas). Terraces quantize the ramp so neighbours share
+     heights (crisp blocky steps + collider merging stays effective);
+     a per-column hash jitter breaks the rim into craggy blocks. */
+  const bord = T.border || null;
+  const bW = bord ? clamp(Math.round(bord.width || 26), 4, 80) : 0;
+  const bH = bord ? clamp(bord.height || 20, 1, 120) : 0;
+  const bSteps = bord ? clamp(Math.round(bord.steps || 6), 1, 12) : 0;
+  const bJit = bord ? clamp(bord.jitter != null ? bord.jitter : 1, 0, 3) : 0;
+  const bBlock = bord ? Math.max(0, TERRAIN_BLOCKS.indexOf(bord.block || 'stone')) : 0;
 
   /* ---- 1. generate the column grid (heights + surface blocks) ---- */
   const N = sx * sz;
@@ -2530,12 +3114,26 @@ function buildRecipeWorld(w) {
     let n = 0; ampTot = 0;
     for (const o of T.noise) { n += (noise(cx, cz, o.scale) * 2 - 1) * o.amp; ampTot += o.amp; }
     const hRaw = (T.base + n) * t + T.oceanFloor * (1 - t);
-    const h = Math.round(clamp(hRaw, T.oceanFloor, T.base + ampTot + 4));
+    let h = Math.round(clamp(hRaw, T.oceanFloor, T.base + ampTot + 4));
+    let s = defB;
+    let isBorder = false;
+    if (bord) {
+      /* edge distance in CELLS: 0 at the outermost ring */
+      const ed = Math.min(ix, iz, sx - 1 - ix, sz - 1 - iz);
+      if (ed < bW) {
+        /* terrace level: bSteps at the rim → 0 at the inner edge */
+        const lv = bSteps - Math.floor((ed / bW) * bSteps);
+        const jit = (worldHash(ix, iz, seed ^ 0x9e37) - 0.5) * 2 * bJit;
+        h = Math.round(T.base + (lv / bSteps) * bH + jit * Math.max(1, lv * 0.55));
+        isBorder = true;
+      }
+    }
     hArr[i] = h; tArr[i] = t;
-    let s = defB;                                       // first match wins, top-down:
-    if (h < waterY) s = uwB;                            //   underwater floor
-    else if (h <= beachBelow && beachB >= 0) s = beachB; //   shore band
-    else if (t < edgeBelow && edgeB >= 0) s = edgeB;    //   rim ring (the dirt edge)
+    if (!isBorder) {                                  // first match wins, top-down:
+      if (h < waterY) s = uwB;                            //   underwater floor
+      else if (h <= beachBelow && beachB >= 0) s = beachB; //   shore band
+      else if (t < edgeBelow && edgeB >= 0) s = edgeB;    //   rim ring (the dirt edge)
+    } else s = bBlock;                                //   the mountain block (stone…)
     sArr[i] = s;
   }
 
@@ -2569,10 +3167,33 @@ function buildRecipeWorld(w) {
       bodies.setColorAt(bi, jitter(cTmp, colOf[UNDER_OF[sName]], iz, ix, seed + 7));
       bi++;
     }
-    World.addBox(cx, h / 2, cz, 1, h, 1);                               // physics column
   }
   bodies.count = bi;
   scene.add(caps, bodies);
+
+  /* ---- 2b. physics: GREEDY RECTANGLE MERGE (v15 perf) ----
+     Same-height neighbour columns merge into one wide AABB. A flat
+     260×260 arena collapses from 67,600 colliders to ONE; terraced
+     mountain borders collapse into a few hundred slabs. Collision and
+     groundAt() results are IDENTICAL — the boxes tile the same cells. */
+  {
+    const used = new Uint8Array(N);
+    for (let iz = 0; iz < sz; iz++) for (let ix = 0; ix < sx; ix++) {
+      const i0 = iz * sx + ix;
+      if (used[i0]) continue;
+      const h = hArr[i0];
+      let w = 1;
+      while (ix + w < sx && !used[i0 + w] && hArr[i0 + w] === h) w++;      // run along X
+      let d = 1;
+      grow: while (iz + d < sz) {                                          // extend down Z
+        const base = (iz + d) * sx + ix;
+        for (let k = 0; k < w; k++) if (used[base + k] || hArr[base + k] !== h) break grow;
+        d++;
+      }
+      for (let r = 0; r < d; r++) for (let k = 0; k < w; k++) used[(iz + r) * sx + ix + k] = 1;
+      World.addBox(x0 + ix + w / 2, h / 2, z0 + iz + d / 2, w, h, d);
+    }
+  }
 
   /* ---- 3. water: one translucent block, walkable on top ---- */
   if (waterY > 0) {
@@ -2627,6 +3248,2159 @@ function buildRecipeWorld(w) {
 }
 
 /* ================================================================
+   §9.7 GAME LOGIC (v14) — tycoons, shops, custom weapons, scripts
+   ----------------------------------------------------------------
+   A world recipe can now be a full GAME, not just a place. On top
+   of the terrain recipe (§9.6) a world file may carry:
+
+     items[]    custom weapons / consumables (swords + guns with
+                damage, fire rate, spread, pellets, ammo, reload,
+                custom colored meshes) — they land in the hotbar and
+                work everywhere the classic tools work.
+     build[]    static parts (bricks, walls, ramps, neon, glass),
+                gated behind "requires" so buildings APPEAR as
+                players buy buttons.
+     economy    money: name, starting cash, goal. Money is per
+                player, saved per device per world, shown in the HUD.
+     logic[]    the live entities: claim doors, buy buttons,
+                droppers + conveyors + collectors (the tycoon loop),
+                kill bricks, teleporters, checkpoints, buff pads,
+                NPCs with dialogue + weapon shops, zombie spawners
+                with kill rewards, item pickups, doors, signs.
+     script     optional sandboxed JS — the escape hatch for deep
+                custom rules (hooks: tick/join/buy/claim/collect/win
+                + Game.* API + custom net events). See WORLDS-SPEC.
+
+   MULTIPLAYER (all through the existing §12.6 'w' channel):
+     - money is YOURS, kept on your device, saved per world.
+     - buys / claims / pickups are one 'tyc' event each — every
+       client applies them, so gated buildings unfold everywhere.
+     - drops are spawned by the plot owner ('dspawn') and simulated
+       deterministically on every screen; only the owner's client
+       pays the money in (collectors credit the plot owner).
+     - late joiners ask ('tycq') and everyone answers in chunked
+       'tycs' snapshots; the relay v6 ALSO stores the state and
+       pushes it on join, so progress survives an empty world.
+     - zombie spawners are simulated by the room leader; kill
+       rewards route to the killer with 'zrew'.
+     - the ADMIN Server tab has "Reset world progress" (tyc {t:'r'})
+       which also clears the relay's stored copy.
+================================================================ */
+
+/* ---------- tiny shared helpers ---------- */
+const WL_ICONS = new Set(['coins', 'gem', 'star', 'crown', 'trophy', 'medal',
+  'sword', 'swords', 'axe', 'hammer', 'pickaxe', 'wand', 'sparkles', 'flame',
+  'zap', 'crosshair', 'target', 'bomb', 'rocket', 'shield', 'heart', 'apple',
+  'gift', 'box', 'key', 'lock', 'anchor', 'leaf', 'droplet', 'flask',
+  'flask-conical', 'briefcase', 'banknote', 'circle-dollar-sign', 'store',
+  'pocket-knife', 'wrench', 'gauge', 'mountain', 'castle', 'skull']);
+const WL_LINT = /\b(?:fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage|indexedDB|document|window|globalThis|self|top|parent|location|navigator|eval|Function|import|postMessage|Worker|crypto|Date|setTimeout|setInterval|requestAnimationFrame|alert|confirm|prompt|constructor|__proto__|prototype|getPrototypeOf|Reflect|Proxy|arguments)\b/;   // v17: + the constructor-chain escape (x.constructor.constructor('…')). A lint, not a true sandbox — only load world scripts you trust (your own repo).
+/* which fields a button's `patch` may retune on other entities */
+const WL_PATCHABLE = {
+  dropper: ['every', 'value'],
+  conveyor: ['speed'],
+  collector: ['value'],
+  killbrick: ['damage'],
+  teleport: ['to', 'cooldown'],
+  pad: ['power', 'dur', 'amount'],
+  spawner: ['every', 'max', 'reward', 'night']
+};
+function wlIsHex(s) { return typeof s === 'string' && /^#[0-9a-fA-F]{6}$/.test(s); }
+function wlHex(s, fb) { try { return parseInt(String(s).slice(1), 16); } catch (e) { return fb; } }
+function wlNum(v, lo, hi, fb) { return (typeof v === 'number' && isFinite(v) && v >= lo && v <= hi) ? v : fb; }
+function wlMoney(n) { return (GameLogic.econSym || '$') + Math.max(0, Math.round(n)).toLocaleString('en-US'); }
+const wlV = new THREE.Vector3();
+
+/* toast — small bottom-center notice (chat is player-talk only, §7) */
+let wlToastTO = null;
+function wlToast(msg, warn) {
+  let el = document.getElementById('wl-toast');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'wl-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.className = 'show' + (warn ? ' warn' : '');
+  clearTimeout(wlToastTO);
+  wlToastTO = setTimeout(() => { el.className = ''; }, 2600);
+}
+
+/* v15: the small hover label above a buy pad — a compact pill with the
+   item name and the price, sized to read at conversational distance
+   without covering the world. Cheaper than the old billboard too
+   (192×80 canvas instead of 512×224). */
+function wlButtonLabel(label, costText, lv) {
+  const W = 192, H = 80;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.fillStyle = 'rgba(9,13,18,0.66)';
+  x.strokeStyle = 'rgba(255,255,255,0.16)';
+  x.lineWidth = 3;
+  x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 16); x.fill(); x.stroke();
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  const name = String(label || '?').slice(0, 22) + (lv > 0 ? ' · Lv' + lv : '');
+  x.font = '600 21px "Trebuchet MS", "Segoe UI", sans-serif';
+  x.fillStyle = '#ffffff';
+  x.fillText(name, W / 2, 24);
+  x.font = '700 27px "Trebuchet MS", "Segoe UI", sans-serif';
+  x.fillStyle = '#f5c542';
+  x.fillText(String(costText).slice(0, 16), W / 2, 55);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 2;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  spr.scale.set(2.9, 2.9 * (H / W), 1);
+  return spr;
+}
+
+/* canvas-text sprite — button billboards, signs, NPC names */
+function wlTextSprite(lines, opts = {}) {
+  const W = opts.W || 512, H = opts.H || 256;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const r = opts.round != null ? opts.round : 34;
+  x.fillStyle = opts.bg || 'rgba(13,17,23,0.84)';
+  x.strokeStyle = opts.border || 'rgba(255,255,255,0.28)';
+  x.lineWidth = 6;
+  if (r > 0) {
+    x.beginPath(); x.roundRect(6, 6, W - 12, H - 12, r); x.fill(); x.stroke();
+  } else x.fillRect(0, 0, W, H);
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  const n = lines.length;
+  lines.forEach((ln, i) => {
+    const big = i === 0 && opts.bigFirst !== false;
+    x.font = (big ? 'bold ' : '') + (big ? (opts.bigSize || 52) : (opts.smallSize || 38)) + 'px "Trebuchet MS", "Segoe UI", sans-serif';
+    x.fillStyle = typeof ln === 'object' && ln.color ? ln.color : (big ? '#ffffff' : 'rgba(255,255,255,0.86)');
+    const y = H / 2 + (i - (n - 1) / 2) * (big ? (opts.bigSize || 52) * 1.35 : (opts.smallSize || 38) * 1.4);
+    x.fillText(typeof ln === 'object' ? ln.text : String(ln).slice(0, 40), W / 2, y);
+  });
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const sw = opts.width || 7, sh = sw * (H / W);
+  spr.scale.set(sw, sh, 1);
+  return spr;
+}
+
+/* ---------- THE WALLET (per-player, per-world money) ---------- */
+const Wallet = {
+  amount: 0, econ: null, key: null, sym: '$', icon: 'coins',
+  chip: null, amtEl: null, lastSent: 0, goalDone: false, sentOne: 0,
+
+  load(econ, worldId) {
+    this.econ = econ;
+    this.sym = (econ.symbol || '$').slice(0, 3);
+    this.icon = WL_ICONS.has(econ.icon) ? econ.icon : 'coins';
+    this.key = 'baseplate.money.' + worldId;
+    let v = wlNum(econ.start, 0, 1e9, 100);
+    try {
+      const s = parseFloat(localStorage.getItem(this.key));
+      if (isFinite(s) && s >= 0) v = s;
+    } catch (e) {}
+    this.amount = Math.min(1e9, Math.floor(v));
+    this.goalDone = !!econ.goal && this.amount >= econ.goal;
+    this.mount();
+    this.paint(0);
+  },
+  mount() {
+    this.unmount();
+    const hud = document.getElementById('playerhud');
+    if (!hud) return;
+    const chip = document.createElement('div');
+    chip.id = 'wl-money';
+    chip.innerHTML = '<i data-lucide="' + this.icon + '"></i><span id="wl-money-amt"></span>';
+    hud.insertBefore(chip, hud.firstChild);
+    this.chip = chip; this.amtEl = chip.querySelector('#wl-money-amt');
+    refreshIcons();
+  },
+  unmount() { if (this.chip) { this.chip.remove(); this.chip = null; } },
+  have(n) { return this.amount >= n - 1e-9; },
+  add(n, opts = {}) {
+    const was = this.amount;
+    this.amount = Math.max(0, Math.min(1e9, Math.round(this.amount + (n || 0))));
+    if (this.amount === was && !opts.force) { this.paint(0); return; }
+    try { localStorage.setItem(this.key, String(this.amount)); } catch (e) {}
+    this.paint(n);
+    this.send();
+    /* goal reached? one celebration per player, ever (per world save) */
+    const goal = this.econ && this.econ.goal;
+    if (goal && !this.goalDone && this.amount >= goal) {
+      this.goalDone = true;
+      if (this.sentOne < elapsed) { this.sentOne = elapsed + 1; GameLogic.celebrate(USERNAME + ' reached ' + wlMoney(goal) + '!', true); }
+    }
+  },
+  trySpend(n) {
+    if (!this.econ) return (n || 0) <= 0;
+    if (!this.have(n)) return false;
+    this.add(-Math.round(n));
+    return true;
+  },
+  paint(delta) {
+    if (!this.amtEl) return;
+    this.amtEl.textContent = this.amount.toLocaleString('en-US');
+    if (this.chip) {
+      this.chip.classList.remove('gain', 'loss', 'pop');
+      void this.chip.offsetWidth;
+      if (delta > 0) this.chip.classList.add('gain');
+      else if (delta < 0) this.chip.classList.add('loss');
+      this.chip.classList.add('pop');
+    }
+  },
+  send() {
+    if (!MP.connected) return;
+    const now = performance.now();
+    if (now - this.lastSent < 900) return;
+    this.lastSent = now;
+    WS.emit('wmon', { m: Math.min(1e9, this.amount) });
+  },
+  reset() {
+    this.amount = wlNum(this.econ && this.econ.start, 0, 1e9, 0);
+    this.goalDone = false;
+    try { localStorage.setItem(this.key, String(this.amount)); } catch (e) {}
+    this.paint(0);
+  }
+};
+
+/* floating "+$5" credit popup at a world point */
+function wlCreditPopup(x, y, z, text, good) {
+  const layer = document.getElementById('wl-credits') || (() => {
+    const l = document.createElement('div'); l.id = 'wl-credits'; document.body.appendChild(l); return l;
+  })();
+  wlV.set(x, y, z).project(camera);
+  if (wlV.z > 1) return;
+  const el = document.createElement('div');
+  el.className = 'wl-credit' + (good === false ? ' bad' : '');
+  el.textContent = text;
+  el.style.left = ((wlV.x * 0.5 + 0.5) * innerWidth) + 'px';
+  el.style.top = ((-wlV.y * 0.5 + 0.5) * innerHeight) + 'px';
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+/* ================================================================
+   THE GAME LOGIC RUNTIME
+================================================================ */
+const GameLogic = {
+  active: false,
+  worldId: null,
+  recipe: null,
+  econSym: '$',
+  entities: [],            // all entity recs
+  byId: new Map(),         // id -> rec
+  buttons: new Map(),      // id -> button rec
+  claims: new Map(),       // id -> claim rec
+  parts: [],               // gated build parts
+  drops: [],               // live drop objects
+  dropMeshPool: [],
+  state: { b: {}, c: {}, pk: {}, bn: {} },   // bought / claimed / taken / buy-counts
+  plotBank: {},              // v16: plot -> pending vault money (droppers fill it)
+  claimers: [],              // v16: vault plate recs (one per plot, usually)
+  _bankT: {},                // v16: last bank broadcast per plot (throttle)
+  _savedVars: null,          // v16: engine vars to restore on world exit
+  checkpoint: null,
+  buffs: { speedT: 0, speedM: 1, jumpT: 0, jumpM: 1 },
+  script: null,
+  snapAsk: 0, snapBuf: null, snapN: 0,
+  dlgOpen: false, dlg: null,
+  remoteMoney: new Map(),
+
+  /* ---------------- load / dispose ---------------- */
+  load(recipe) {
+    this.dispose();
+    if (!recipe || typeof recipe !== 'object') return;
+    this.worldId = recipe.id;
+    this.recipe = recipe;
+    this.state = { b: {}, c: {}, pk: {}, bn: {} };
+    this.plotBank = {};
+    this._bankT = {};
+    this.claimers.length = 0;
+    this.checkpoint = null;
+    this.remoteMoney.clear();
+    this._started = false;
+
+    /* v16: per-world engine overrides — zombie cap etc. Saved so a world
+       exit puts the engine back exactly as it was. */
+    this._savedVars = null;
+    if (recipe.vars && typeof recipe.vars === 'object' && !Array.isArray(recipe.vars)) {
+      const v = recipe.vars;
+      if (typeof v.maxZombies === 'number' && isFinite(v.maxZombies)) {
+        this._savedVars = { maxZombies: V.maxZombies };
+        V.maxZombies = Math.round(clamp(v.maxZombies, 1, 40));
+        MAX_ZOMBIES = V.maxZombies;
+      }
+    }
+
+    if (recipe.economy && typeof recipe.economy === 'object') {
+      Wallet.load(recipe.economy, recipe.id);
+      this.econSym = Wallet.sym;
+    } else Wallet.unmount();
+
+    registerWorldItems(recipe);          // §8: custom weapons into ITEM_DEFS
+
+    /* 1. build parts (gated ones wait for their buttons) */
+    this._static = [];
+    if (Array.isArray(recipe.build))
+      for (const p of recipe.build) this.buildPart(p);
+    this.mergeStatic();                  // v17: one draw per material instead of per face
+
+    /* 2. entities */
+    if (Array.isArray(recipe.logic))
+      for (const e of recipe.logic) this.buildEntity(e);
+
+    /* 3. the script sandbox — started on the FIRST tick, when the whole
+       engine (player, MP, menu) exists and its API is safe to touch */
+    if (typeof recipe.script === 'string' && recipe.script.trim()) {
+      if (WL_LINT.test(recipe.script)) console.warn('[world] script rejected by the safety lint');
+      else this._pendingScript = recipe.script;
+    }
+
+    this.active = true;
+    this.checkGates();
+  },
+
+  dispose() {
+    for (const d of this.drops) { if (d.mesh) scene.remove(d.mesh); }
+    this.drops.length = 0;
+    if (this.dropsIM) { scene.remove(this.dropsIM); this.dropsIM.geometry && this.dropsIM.dispose(); this.dropsIM = null; }
+    for (const rec of this.entities) if (rec.dispose) { try { rec.dispose(); } catch (e) {} }
+    this.entities.length = 0;
+    this.byId.clear(); this.buttons.clear(); this.claims.clear();
+    this.parts.length = 0;
+    this.script = null; this.dlgOpen = false; this.dlg = null;
+    Pet.recall(true);                                // v15: pets don't outlive the world
+    for (const [, gh] of PetRemotes) scene.remove(gh.mesh);
+    PetRemotes.clear();
+    wlCloseShop(); wlCloseDlg();
+    Wallet.unmount();
+    /* v16: put overridden engine vars back */
+    if (this._savedVars) {
+      if (this._savedVars.maxZombies != null) { V.maxZombies = this._savedVars.maxZombies; MAX_ZOMBIES = V.maxZombies; }
+      this._savedVars = null;
+    }
+    this.plotBank = {};
+    this.claimers.length = 0;
+    this.active = false;
+  },
+
+  /* ---------------- helpers ---------------- */
+  groundY(x, z) {
+    const g = World.groundAt(x, z, 1e9);
+    return isFinite(g) ? g : 0;
+  },
+  resolveY(pos, i) {
+    const y = pos ? pos[1] : 'ground';
+    return (y === 'ground' || y === 'g') ? this.groundY(pos[0], pos[2]) : +y;
+  },
+  plotOwner(plotId) {
+    const s = this.state.c[plotId];
+    return s ? s.i : null;
+  },
+  myPlot(plotId) { return this.plotOwner(plotId) === MP.id; },
+  plotMult(plotId) {
+    let m = 1;
+    for (const [id, rec] of this.buttons)
+      if (rec.def.plot === plotId && rec.def.incomeMult && this.state.b[id]) m *= rec.def.incomeMult;
+    return m;
+  },
+  fmt: wlMoney,
+
+  /* fire a script hook safely */
+  fire(name, args) {
+    if (!this.script || !this.script.hooks[name]) return;
+    for (const fn of this.script.hooks[name]) {
+      try { fn.apply(null, args); } catch (e) { console.error('[world hook ' + name + ']', e); }
+    }
+  },
+
+  /* ---------------- gated things (requires: [button ids]) ---------- */
+  /* a requirement is satisfied by a bought button OR a claimed plot —
+     that is how "claim reveals the starter dropper" works */
+  reqMet(id) { return !!(this.state.b[id] || this.state.c[id]); },
+  checkGates() {
+    for (const p of this.parts) {
+      const ok = !p.def.requires || p.def.requires.every(id => this.reqMet(id));
+      if (ok && !p.on) { p.on = true; p.show(); }
+      else if (!ok && p.on) { p.on = false; p.hide(); }
+    }
+    for (const rec of this.entities) {
+      if (!rec.def.requires) continue;
+      const ok = rec.def.requires.every(id => this.reqMet(id));
+      if (ok !== rec.gate) { rec.gate = ok; rec.setGate ? rec.setGate(ok) : null; }
+    }
+    this.updateQueue();                     // v16: rank the open pads, show the first N
+  },
+
+  /* ---------------- v16: the buy-pad QUEUE ----------------
+     A plot with `order` on its buttons shows only the first `queue`
+     (economy.queue, default 4) OPEN + UNBOUGHT pads, lowest order
+     first. Buy one and the next one pops in — a clean progression
+     line instead of a wall of pads. Pads without `order` (weapon
+     cases, wave pads...) are never queued. */
+  updateQueue() {
+    const Q = (this.recipe && this.recipe.economy && typeof this.recipe.economy.queue === 'number')
+      ? Math.round(this.recipe.economy.queue) : 4;
+    const perPlot = new Map();
+    for (const rec of this.buttons.values()) {
+      if (rec.qHide !== true) rec.qHide = false;
+      if (!rec.def.plot || rec.def.order == null) continue;
+      if (rec.gate === false || rec.buys >= (rec.def.maxBuys || 1)) continue;
+      let arr = perPlot.get(rec.def.plot);
+      if (!arr) perPlot.set(rec.def.plot, arr = []);
+      arr.push(rec);
+    }
+    for (const arr of perPlot.values()) {
+      arr.sort((a, b) => (a.def.order - b.def.order) || (a.id < b.id ? -1 : 1));
+      arr.forEach((rec, i) => {
+        const hide = i >= Q;
+        if (hide === !!rec.qHide) return;
+        rec.qHide = hide;
+        if (!rec.pad || !rec.spr) return;
+        if (!hide) {                                   // freshly queued IN — pop!
+          const was = rec.pad.visible;
+          rec.pad.visible = rec.spr.visible = true;
+          if (!was && rec.popT < 0 && rec.gate !== false) rec.popT = 0;
+        } else rec.pad.visible = rec.spr.visible = false;
+      });
+    }
+  },
+
+  /* ---------------- build parts ---------------- */
+  buildPart(p) {
+    if (!p || !Array.isArray(p.pos) || !Array.isArray(p.size)) return;
+    const clones = (Array.isArray(p.repeat) && p.repeat.length === 3 && p.repeat[0] > 1) ?
+      Math.min(40, Math.floor(p.repeat[0])) : 1;
+    const dx = clones > 1 ? wlNum(p.repeat[1], -500, 500, 0) : 0;
+    const dz = clones > 1 ? wlNum(p.repeat[2], -500, 500, 0) : 0;
+    const rec = { def: p, meshes: [], colliders: [], on: !p.requires, revealT: -1 };
+    const color = wlIsHex(p.color) ? wlHex(p.color) : 0xb9bec4;
+    const shape = p.shape || 'box';
+    const material = p.material || 'plastic';
+    let mtl;
+    if (material === 'neon') {       // v17: cached per color (shared = mergeable, fewer programs)
+      mtl = matCache.get('wn' + color);
+      if (!mtl) matCache.set('wn' + color, mtl = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.22), emissive: color, emissiveIntensity: 1.05, roughness: 0.4 }));
+    } else if (material === 'glass') {
+      mtl = matCache.get('wg' + color);
+      if (!mtl) matCache.set('wg' + color, mtl = new THREE.MeshStandardMaterial({ color, roughness: 0.12, transparent: true, opacity: 0.38 }));
+    } else if (material === 'metal') {
+      mtl = mat(color, 0.3, 0.85, 1.0);
+    } else if (material === 'wood') {
+      mtl = mat(color, 0.85, 0, 0.2);
+    } else mtl = studMats(color, 0.75);
+
+    /* v17 fix: resolve the height ONCE, before any clone adds its own
+       collider — resolving per clone found clone 0's top at pos and
+       stacked every later clone on the one before (towers of fences) */
+    const cy = this.resolveY(p.pos, 1) + (p.lift || 0);
+    for (let k = 0; k < clones; k++) {
+      const cx = p.pos[0] + dx * k, cz = p.pos[2] + dz * k;
+      const [w, h, d] = p.size;
+      let m;
+      if (shape === 'cyl') {
+        m = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(w, d) / 2, Math.max(w, d) / 2, h, Math.max(6, Math.min(24, Math.round(w * 2)))), mtl);
+        m.position.set(cx, cy, cz);
+      } else if (shape === 'ball') {
+        m = new THREE.Mesh(new THREE.SphereGeometry(Math.max(w, d) / 2, 14, 10), mtl);
+        m.position.set(cx, cy, cz);
+      } else if (shape === 'wedge') {
+        m = this.buildWedge(w, h, d, mtl);
+        m.position.set(cx, cy, cz);
+      } else {
+        m = new THREE.Mesh(geo(w, h, d, material === 'plastic' ? w : 0, material === 'plastic' ? d : 0), mtl);
+        m.position.set(cx, cy, cz);
+      }
+      m.rotation.y = (p.rot || 0) * Math.PI / 180;
+      m.castShadow = m.receiveShadow = true;
+      scene.add(m);
+      rec.meshes.push(m);
+      if (!p.requires) this._static.push(m);        // v17: merged after the build pass
+      if (p.noCollide !== true && shape !== 'wedge') {   // wedges are trim (AABB physics can't slope)
+        rec.colliders.push(World.addBox(cx, cy, cz, w, h, d));
+      }
+    }
+    rec.show = () => { rec.revealT = 0; for (const m of rec.meshes) m.visible = true; for (const c of rec.colliders) c.enabled = true; };
+    rec.hide = () => { for (const m of rec.meshes) m.visible = false; for (const c of rec.colliders) c.enabled = false; };
+    if (p.requires) { rec.hide(); this.parts.push(rec); }
+    if (p.id) this.byId.set(p.id, rec);
+    return rec;
+  },
+  /* v17 PERFORMANCE: every always-visible build part is baked into ONE
+     mesh per material. A studded plastic box is 6 draw calls on its
+     own (one per face group) and the shadow pass doubles it, so a
+     300-part town was ~1,000+ draws a frame — far too many for a
+     mid-range phone. Merged it is a few dozen. Gated parts (requires)
+     stay separate so they can still pop in; colliders are untouched. */
+  _static: [],
+  merged: [],
+  mergeStatic() {
+    const list = this._static; this._static = [];
+    if (list.length < 2) return;
+    const buckets = new Map();
+    const v = new THREE.Vector3(), n = new THREE.Vector3(), nm = new THREE.Matrix3();
+    for (const m of list) {
+      if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) continue;
+      m.updateMatrixWorld(true);
+      nm.getNormalMatrix(m.matrixWorld);
+      const g = m.geometry, P = g.attributes.position, N = g.attributes.normal, U = g.attributes.uv, I = g.index;
+      const total = I ? I.count : P.count;
+      const groups = g.groups.length ? g.groups : [{ start: 0, count: total, materialIndex: 0 }];
+      for (const gr of groups) {
+        const mt = Array.isArray(m.material) ? m.material[gr.materialIndex || 0] : m.material;
+        if (!mt) continue;
+        let b = buckets.get(mt);
+        if (!b) buckets.set(mt, b = { p: [], n: [], u: [] });
+        const end = Math.min(total, gr.start + (isFinite(gr.count) ? gr.count : total));
+        for (let i = gr.start; i < end; i++) {
+          const k = I ? I.getX(i) : i;
+          v.fromBufferAttribute(P, k).applyMatrix4(m.matrixWorld); b.p.push(v.x, v.y, v.z);
+          if (N) { n.fromBufferAttribute(N, k).applyMatrix3(nm).normalize(); b.n.push(n.x, n.y, n.z); }
+          else b.n.push(0, 1, 0);
+          if (U) b.u.push(U.getX(k), U.getY(k)); else b.u.push(0, 0);
+        }
+      }
+      scene.remove(m);
+      m.visible = false;
+    }
+    for (const [mt, b] of buckets) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3));
+      g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(b.u, 2));
+      g.computeBoundingSphere();
+      const mesh = new THREE.Mesh(g, mt);
+      mesh.castShadow = mesh.receiveShadow = true;
+      mesh.matrixAutoUpdate = false;
+      scene.add(mesh);
+      this.merged.push(mesh);
+    }
+  },
+  buildWedge(w, h, d, mtl) {
+    /* right-angle ramp: slope from the top of -z up to the top of +z */
+    const g = new THREE.BufferGeometry();
+    const hw = w / 2, hd = d / 2;
+    const v = [
+      -hw, 0, -hd,  hw, 0, -hd,  hw, 0,  hd,   -hw, 0,  hd,    // floor
+      -hw, h,  hd,  hw, h,  hd,  hw, 0,  hd,   -hw, 0,  hd,    // back wall (+z, full height)
+      -hw, 0, -hd,  hw, 0, -hd,  hw, h,  hd,   -hw, h,  hd,    // slope
+      -hw, 0,  hd, -hw, h,  hd, -hw, 0, -hd,                    // -x side
+       hw, 0, -hd,  hw, h,  hd,  hw, 0,  hd,                    // +x side
+    ];
+    g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+    g.computeVertexNormals();
+    return new THREE.Mesh(g, mtl);
+  },
+
+  /* ---------------- entities ---------------- */
+  buildEntity(e) {
+    if (!e || typeof e.id !== 'string' || !Array.isArray(e.pos)) return;
+    const x = +e.pos[0] || 0, z = +e.pos[2] || 0;
+    const y = this.resolveY(e.pos, 1);
+    const rec = {
+      def: e, id: e.id, x, y, z,
+      /* v16: gated entities start gate=null so the FIRST checkGates()
+         always fires setGate() — pads/droppers/vaults used to sit
+         VISIBLE until something changed their gate */
+      gate: e.requires ? null : true, buys: 0, killCd: 0, tpCd: 0, spawnT: 0,
+      aabb: { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }
+    };
+    const S = Array.isArray(e.size) ? e.size : null;
+    if (S) { rec.aabb.min.x = x - S[0] / 2; rec.aabb.max.x = x + S[0] / 2;
+             rec.aabb.min.y = y; rec.aabb.max.y = y + S[1];
+             rec.aabb.min.z = z - S[2] / 2; rec.aabb.max.z = z + S[2] / 2; }
+    try {
+      const fn = WL_BUILDERS[e.type];
+      if (!fn) return;
+      fn(rec, e, x, y, z);
+      this.entities.push(rec);
+      this.byId.set(rec.id, rec);
+      if (e.type === 'button') this.buttons.set(rec.id, rec);
+      if (e.type === 'claim') this.claims.set(rec.id, rec);
+      if (e.type === 'claimer') this.claimers.push(rec);   // v16: vault plates (bank labels)
+    } catch (err) {
+      console.error('[world] entity "' + e.id + '" (' + e.type + ') failed:', err);
+    }
+  },
+
+  /* button pad cost right now (escalating repeats) */
+  buttonCost(rec) {
+    const n = this.state.bn[rec.id] || 0;
+    return Math.round(rec.def.cost * Math.pow(rec.def.costScale || 1, n));
+  },
+
+  /* ---------------- BUY / CLAIM / PICK (synced through 'tyc') ------- */
+  tryBuy(rec, viaTouch) {
+    if (rec.gate === false) return;
+    const max = rec.def.maxBuys || 1;
+    if (rec.buys >= max) return;
+    if (menuOpen || userModalOpen || this.dlgOpen) return;   // never buy behind a menu
+    const notMine = rec.def.plot && !this.myPlot(rec.def.plot);
+    if (notMine) { if (!viaTouch) wlToast('This belongs to a claimed plot.', true); return; }
+    const cost = this.buttonCost(rec);
+    if (!Wallet.trySpend(cost)) {
+      /* standing on a pad you can't afford: nag at most every 2.4s */
+      if (!viaTouch || elapsed - rec.lastBroke > 2.4) { rec.lastBroke = elapsed; wlToast('Not enough money — need ' + wlMoney(cost), true); }
+      return;
+    }
+    WS.act('tyc', { t: 'b', e: rec.id });
+  },
+
+  applyBuy(id) {
+    const rec = this.buttons.get(id);
+    if (!rec) return;
+    this.state.bn[id] = (this.state.bn[id] || 0) + 1;
+    this.state.b[id] = 1;
+    rec.buys = this.state.bn[id];
+    /* patch runtime fields (validated whitelist above) */
+    if (rec.def.patch && typeof rec.def.patch === 'object') this.applyPatch(rec.def.patch);
+    this.checkGates();
+    if (rec.refresh) rec.refresh();
+    this.fire('buy', [rec.def.label || id, this.buyerName(id)]);
+  },
+  buyerName(id) {
+    const s = this.state.b[id];
+    return s && s.n ? s.n : 'someone';
+  },
+
+  applyClaim(id, byId, name) {
+    if (this.state.c[id]) return;
+    const rec = this.claims.get(id);
+    if (!rec) return;
+    this.state.c[id] = { i: byId, n: String(name || 'Player').slice(0, 20) };
+    if (rec.refresh) rec.refresh();
+    this.checkGates();                    // reveal everything gated on this claim
+    wlToast(this.state.c[id].n + ' claimed ' + (rec.def.name || 'a plot') + '!');
+    this.fire('claim', [id, this.state.c[id].n]);
+  },
+
+  applyPick(id) {
+    if (this.state.pk[id]) return;
+    this.state.pk[id] = 1;
+    const rec = this.byId.get(id);
+    if (rec && rec.hide) rec.hide();
+    if (rec && rec.inter) rec.inter.enabled = () => false;
+  },
+
+  applyReset() {
+    this.state = { b: {}, c: {}, pk: {}, bn: {} };
+    this.plotBank = {};                 // v16: vaults empty too
+    this.refreshClaimers(null);
+    for (const rec of this.entities) {
+      rec.buys = 0;
+      if (rec.unreset) rec.unreset();
+      if (rec.refresh) rec.refresh();
+    }
+    this.checkGates();
+    wlToast('World progress was reset by an admin.', true);
+  },
+
+  /* snapshots for late joiners (chunked — the relay caps message size) */
+  onConnected() {
+    this.snapAsk = elapsed; this.snapBuf = {}; this.snapN = -1;
+    WS.emit('tycq', {});
+    Wallet.send();
+  },
+  snapshotChunks() {
+    const ids = Object.keys(this.state.b);
+    const out = [];
+    for (let i = 0; i < ids.length; i += 18) {
+      const d = { b: {}, bn: {} };
+      for (const id of ids.slice(i, i + 18)) { d.b[id] = 1; if (this.state.bn[id]) d.bn[id] = this.state.bn[id]; }
+      out.push(d);
+    }
+    const cids = Object.keys(this.state.c);
+    for (let i = 0; i < cids.length; i += 6) {
+      const d = { c: {} };
+      for (const id of cids.slice(i, i + 6)) d.c[id] = this.state.c[id];
+      out.push(d);
+    }
+    const pids = Object.keys(this.state.pk);
+    for (let i = 0; i < pids.length; i += 30) {
+      const d = { pk: {} };
+      for (const id of pids.slice(i, i + 30)) d.pk[id] = 1;
+      out.push(d);
+    }
+    /* v16: vault totals, so late joiners see the real bank */
+    const plots = Object.keys(this.plotBank).filter(p => (this.plotBank[p] || 0) > 0);
+    if (plots.length) {
+      const d = { k: {} };
+      for (const p of plots) d.k[p] = Math.max(0, Math.round(this.plotBank[p]));
+      out.push(d);
+    }
+    return out;
+  },
+  applySnapshot(s) {
+    if (!s || typeof s !== 'object') return;
+    let changed = false;
+    /* v16: claims from a stored snapshot whose owner is GONE (they left,
+       their client reset the plot, but the relay still remembers) are
+       dropped — a claim only counts while its owner is in the room.
+       Runs BEFORE the merge so stale claims never land in state. */
+    if (s.c && typeof s.c === 'object' && MP.connected && MP.remotes.size > 0) {
+      for (const id in s.c)
+        if (this.state.c[id] === undefined && s.c[id] && s.c[id].i !== MP.id && !MP.remotes.has(s.c[id].i)) {
+          delete s.c[id];
+        }
+    }
+    for (const k of ['b', 'c', 'pk', 'bn'])
+      if (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k])) {
+        for (const id in s[k]) {
+          if (this.state[k][id] === undefined) { this.state[k][id] = s[k][id]; changed = true; }
+          else if (k === 'bn' && s[k][id] > this.state[k][id]) { this.state[k][id] = s[k][id]; changed = true; }
+        }
+      }
+    /* v16: vault balances (relay-stored or peer-shared) */
+    if (s.k && typeof s.k === 'object' && !Array.isArray(s.k)) {
+      for (const p in s.k)
+        if (typeof s.k[p] === 'number' && s.k[p] >= 0) {
+          const nv = Math.round(s.k[p]);
+          if ((this.plotBank[p] || 0) !== nv) { this.plotBank[p] = nv; changed = true; this.refreshClaimers(p); }
+        }
+    }
+    if (!changed) return;
+    for (const rec of this.entities) { rec.buys = this.state.bn[rec.id] || 0; if (rec.refresh) rec.refresh(); }
+    this.checkGates();
+  },
+
+  /* the WIN moment — banner + confetti on every screen */
+  celebrate(text, broadcast) {
+    adminBanner(text);
+    for (let i = 0; i < 34; i++) {
+      const d = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.12),
+        new THREE.MeshBasicMaterial({ color: [0xf5c542, 0x4aa3e0, 0xd1332a, 0x58a94f, 0xe8935a, 0xffffff][i % 6], transparent: true, opacity: 1 }));
+      d.position.set(player.x + (Math.random() - 0.5) * 10, player.y + 12 + Math.random() * 6, player.z + (Math.random() - 0.5) * 10);
+      scene.add(d);
+      FX.push({ mesh: d, life: 1.6, max: 1.6, kind: 'd',
+        vx: (Math.random() - 0.5) * 8, vy: 4 + Math.random() * 6, vz: (Math.random() - 0.5) * 8,
+        rx: (Math.random() - 0.5) * 8, rz: (Math.random() - 0.5) * 8 });
+    }
+    if (broadcast) WS.emit('tyc', { t: 'win', n: text });
+  },
+
+  /* the BUY moment — which fields a button's `patch` may retune */
+  applyPatch(patch) {
+    for (const tid in patch) {
+      const t = this.byId.get(tid);
+      if (!t || !t.def) continue;
+      const allowed = WL_PATCHABLE[t.def.type];
+      if (!allowed) continue;
+      const ch = patch[tid];
+      if (!ch || typeof ch !== 'object') continue;
+      for (const k in ch) if (allowed.includes(k) && typeof ch[k] === typeof t.def[k]) t.def[k] = ch[k];
+    }
+  },
+  tick(dt) {
+    if (!this.active) return;
+
+    /* deferred start (see load): the whole engine exists by tick 1 */
+    if (!this._started) {
+      this._started = true;
+      this.wireNet();
+      if (this._pendingScript) { this.script = this.runScript(this._pendingScript, this.recipe); this._pendingScript = null; }
+      this.fire('join', [USERNAME]);
+    }
+
+    /* part reveal pop-in */
+    for (const p of this.parts) {
+      if (p.on && p.revealT >= 0 && p.revealT < 0.4) {
+        p.revealT += dt;
+        const s = Math.max(0.01, easeOut(Math.min(1, p.revealT / 0.4)));
+        for (const m of p.meshes) m.scale.set(s, s, s);
+        if (p.revealT >= 0.4) for (const m of p.meshes) m.scale.set(1, 1, 1);
+      }
+    }
+
+    /* player-region effects + entity anims + owner sims */
+    this.tickPlayer(dt);
+    Pet.tick(dt);                                    // v15: the storm pet (§9.8)
+    /* cull stale ghost pets (their owner left / recalled silently) */
+    if (PetRemotes.size) for (const [id, gh] of PetRemotes)
+      if (elapsed - gh.t > 4) { scene.remove(gh.mesh); PetRemotes.delete(id); }
+    for (const rec of this.entities) if (rec.tick) { try { rec.tick(dt); } catch (e) { console.error('[world] tick', rec.id, e); rec.tick = null; } }
+    this.tickDrops(dt);
+
+    /* buffs */
+    if (this.buffs.speedT > 0) this.buffs.speedT -= dt;
+    if (this.buffs.jumpT > 0) this.buffs.jumpT -= dt;
+
+    /* script hooks */
+    if (this.script) {
+      this.fire('tick', [dt]);
+      const t = this.script.timers;
+      for (let i = t.after.length - 1; i >= 0; i--) { t.after[i].t -= dt; if (t.after[i].t <= 0) { const fn = t.after[i].fn; t.after.splice(i, 1); try { fn(); } catch (e) { console.error(e); } } }
+      for (const ev of t.every) { ev.t -= dt; if (ev.t <= 0) { ev.t = ev.sec; try { ev.fn(); } catch (e) { console.error(e); } } }
+    }
+  },
+
+  /* v15: held tools (the speed coil) buff you WHILE equipped */
+  speedMult() {
+    let m = this.buffs.speedT > 0 ? this.buffs.speedM : 1;
+    const it = Inventory.current();
+    const st = it && ITEM_DEFS[it.id] ? ITEM_DEFS[it.id].stats : null;
+    if (st && st.speed && st.speed > 1) m *= st.speed;
+    return m;
+  },
+  jumpMult() {
+    let m = this.buffs.jumpT > 0 ? this.buffs.jumpM : 1;
+    const it = Inventory.current();
+    const st = it && ITEM_DEFS[it.id] ? ITEM_DEFS[it.id].stats : null;
+    if (st && st.jump && st.jump > 1) m *= st.jump;
+    return m;
+  },
+
+  /* conveyor carry + touch triggers (called from the loop) */
+  carryPlayer(dt) {
+    if (!this.active) return;
+    for (const rec of this.entities) {
+      if (rec.kind !== 'conveyor' || rec.gate === false || !rec.def.dir) continue;
+      const a = rec.aabb;
+      if (player.x + player.hw > a.min.x && player.x - player.hw < a.max.x &&
+          player.z + player.hw > a.min.z && player.z - player.hw < a.max.z &&
+          player.y > a.max.y - 1.4 && player.y < a.max.y + 0.6) {
+        player.x += rec.def.dir[0] * rec.def.speed * dt;
+        player.z += rec.def.dir[1] * rec.def.speed * dt;
+      }
+    }
+  },
+
+  tickPlayer(dt) {
+    const pb = playerAABB();
+    for (const rec of this.entities) {
+      if (rec.gate === false) continue;
+      const a = rec.aabb;
+      const hit = pb.min.x < a.max.x && pb.max.x > a.min.x &&
+                  pb.min.y < a.max.y && pb.max.y > a.min.y &&
+                  pb.min.z < a.max.z && pb.max.z > a.min.z;
+      if (rec.kind === 'killbrick') {
+        if (hit && rec.killCd <= 0) { rec.killCd = 0.8; hurtPlayer(rec.def.damage || 1000); }
+        rec.killCd -= dt;
+      } else if (rec.kind === 'button') {
+        /* v15: STEP ON = BUY. The press cooldown paces repeat buys and
+           keeps the "need more money" nag polite while you stand there. */
+        if (hit && player.grounded && rec.pressCd <= 0) {
+          rec.pressCd = 0.55;
+          this.tryBuy(rec, true);
+        }
+      } else if (rec.kind === 'claimer') {
+        /* v16: step on the vault — owner sweeps it, raiders skim a cut */
+        if (hit && player.grounded && rec.pressCd <= 0) {
+          rec.pressCd = 0.6;
+          this.claimerTouch(rec);
+        }
+      } else if (rec.kind === 'zwave') {
+        /* v16: step on the skull pad — pay, and a wave rises. Spam it
+           as long as you can pay; the zombie cap is the only brake. */
+        if (hit && player.grounded && rec.pressCd <= 0) {
+          rec.pressCd = 0.9;
+          this.zwaveTouch(rec);
+        }
+      } else if (rec.kind === 'claim') {
+        if (hit) this.applyClaimTouch(rec);
+      } else if (rec.kind === 'teleport') {
+        rec.tpCd -= dt;
+        if (hit && rec.tpCd <= 0 && Array.isArray(rec.def.to)) {
+          rec.tpCd = rec.def.cooldown || 3;
+          const ty = (rec.def.to[1] === 'ground' || rec.def.to[1] === 'g')
+            ? this.groundY(+rec.def.to[0] || 0, +rec.def.to[2] || 0) : (+rec.def.to[1] || 0);
+          player.x = +rec.def.to[0] || 0;
+          player.y = ty + 0.6;
+          player.z = +rec.def.to[2] || 0;
+          player.vx = player.vy = player.vz = 0; climbing = false;
+          spawnFlash(player.x, player.y + 2, player.z, 1.6);
+          this.fire('tp', [rec.id]);
+        }
+      } else if (rec.kind === 'checkpoint') {
+        if (hit && this.checkpoint !== rec) {
+          this.checkpoint = rec;
+          player.grounded && wlToast('Checkpoint set!');
+          if (rec.def.heal !== false) health = V.maxHealth;
+          spawnFlash(rec.x, rec.y + 2, rec.z, 1.2);
+        }
+      } else if (rec.kind === 'pad') {
+        if (hit) {
+          const p = rec.def.power || 1.4;
+          if (rec.def.effect === 'speed') { this.buffs.speedM = p; this.buffs.speedT = Math.max(this.buffs.speedT, (rec.def.dur || 6)); }
+          else if (rec.def.effect === 'jump') { this.buffs.jumpM = p; this.buffs.jumpT = Math.max(this.buffs.jumpT, (rec.def.dur || 6)); }
+          else if (rec.def.effect === 'heal') { if (rec.killCd <= 0) { rec.killCd = 1; health = Math.min(V.maxHealth, health + (rec.def.amount || 30)); spawnFlash(rec.x, rec.y + 1.5, rec.z, 1); } rec.killCd -= dt; }
+          else if (rec.def.effect === 'launch') { if (player.grounded && rec.killCd <= 0) { rec.killCd = 0.6; player.vy = p; } rec.killCd -= dt; }
+        }
+      }
+    }
+  },
+  applyClaimTouch(rec) {
+    if (this.state.c[rec.id]) return;
+    if (rec.def.cost > 0 && !Wallet.trySpend(rec.def.cost)) return;
+    WS.act('tyc', { t: 'c', e: rec.id, n: USERNAME });
+  },
+
+  /* v16: the zombie-wave pad — pay up, wave rises (random spots in
+     the battlefield ring around the pad). Broadcast through the same
+     'zspawn' channel the spawners use, so every screen agrees. */
+  zwaveTouch(rec) {
+    const cost = rec.def.cost || 0;
+    if (cost > 0 && !Wallet.trySpend(cost)) {
+      if (elapsed - rec.lastBroke > 2.4) { rec.lastBroke = elapsed; wlToast('A wave costs ' + wlMoney(cost) + ' — you need more gold.', true); }
+      return;
+    }
+    const n = Math.round(rec.def.count || 4);
+    const R = rec.def.radius || 45;
+    const T = this.recipe && this.recipe.terrain && Array.isArray(this.recipe.terrain.size)
+      ? this.recipe.terrain.size : [260, 260];
+    const bx = Math.abs(T[0]) / 2 - 10, bz = Math.abs(T[1]) / 2 - 10;
+    let spawned = 0;
+    for (let k = 0; k < n; k++) {
+      if (zombies.length >= MAX_ZOMBIES) break;        // the only brake
+      const a = Math.random() * Math.PI * 2;
+      const r = 10 + Math.random() * (R - 10);
+      const zx = clamp(rec.x + Math.cos(a) * r, -bx, bx);
+      const zz = clamp(rec.z + Math.sin(a) * r, -bz, bz);
+      const zid = MP.id + '.zw.' + (++GL_ZSEQ);
+      WS.act('zspawn', { i: zid, x: +zx.toFixed(1), z: +zz.toFixed(1), r: rec.def.reward || 0 });
+      spawned++;
+    }
+    if (spawned) {
+      spawnFlash(rec.x, rec.y + 4, rec.z, 2.2);
+      this.fire('zwave', [spawned]);
+    }
+  },
+
+  /* ---------------- drops (droppers → conveyors → collectors) ------ */
+  tickDrops(dt) {
+    for (let i = this.drops.length - 1; i >= 0; i--) {
+      const d = this.drops[i];
+      d.age += dt;
+      if (!d.grounded) {
+        d.vy -= 100 * dt;
+        d.y += d.vy * dt;
+        const g = World.groundAt(d.x, d.z, d.y + 0.5);
+        if (d.y <= g + 0.45 && d.vy <= 0) { d.y = g + 0.45; d.vy = 0; d.grounded = true; }
+      } else {
+        const cv = this.conveyorAt(d.x, d.z, d.y);
+        if (cv) { d.x += cv.def.dir[0] * cv.def.speed * dt; d.z += cv.def.dir[1] * cv.def.speed * dt; d.rot += dt * 3; }
+        const g = World.groundAt(d.x, d.z, d.y + 0.6);
+        if (d.y > g + 0.7) d.grounded = false;
+        const col = this.collectorAt(d);
+        if (col) { this.collectDrop(col, d, i); continue; }
+      }
+      if (d.age > 60) { this.drops.splice(i, 1); continue; }
+    }
+    /* rebuild the instanced batch — one draw call for every drop */
+    if (this.dropsIM) {
+      const im = this.dropsIM;
+      const n = Math.min(this.drops.length, 96);
+      for (let i = 0; i < n; i++) {
+        const d = this.drops[i];
+        this._dE.set(0, d.rot || 0, 0);
+        this._dQ.setFromEuler(this._dE);
+        this._dM4.compose(this._dP.set(d.x, d.y, d.z), this._dQ, this._dS.setScalar(d.s || 0.95));
+        im.setMatrixAt(i, this._dM4);
+        im.setColorAt(i, d.col || this._dCol);
+      }
+      im.count = n;
+      im.instanceMatrix.needsUpdate = true;
+      if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    }
+  },
+  conveyorAt(x, z, y) {
+    for (const rec of this.entities)
+      if (rec.kind === 'conveyor' && rec.gate !== false) {
+        if (Math.abs(rec.x - x) > 30 || Math.abs(rec.z - z) > 30) continue;   // v15: cheap pre-check
+        const a = rec.aabb;
+        if (x > a.min.x && x < a.max.x && z > a.min.z && z < a.max.z && y > a.max.y - 2 && y < a.max.y + 1) return rec;
+      }
+    return null;
+  },
+  collectorAt(d) {
+    for (const rec of this.entities)
+      if (rec.kind === 'collector' && rec.gate !== false) {
+        if (Math.abs(rec.x - d.x) > 30 || Math.abs(rec.z - d.z) > 30) continue;   // v15: cheap pre-check
+        const a = rec.aabb;
+        if (d.x > a.min.x && d.x < a.max.x && d.z > a.min.z && d.z < a.max.z && d.y > a.min.y - 1 && d.y < a.max.y + 2) return rec;
+      }
+    return null;
+  },
+  collectDrop(col, d, i) {
+    const plot = col.def.plot;
+    const owner = this.plotOwner(plot);
+    if (owner != null) {
+      /* v16: the drop's OWN value (dropper tier) x plot multipliers */
+      const v = Math.max(1, Math.round((d.v || col.def.value || 1) * this.plotMult(plot)));
+      if (owner === MP.id) {
+        this.bankAdd(plot, v);                                  // -> the plot vault
+        wlCreditPopup(d.x, d.y + 2, d.z, '+' + wlMoney(v));
+        this.fire('collect', [v, plot]);
+      }
+    }
+    spawnFlash(col.x, col.y + 3, col.z, 1.1);
+    this.drops.splice(i, 1);
+  },
+
+  /* ---------------- v16: the plot VAULT ----------------
+     Droppers no longer pay your wallet — they fill the plot's vault
+     plate. The owner steps on it to sweep the balance; a raider who
+     steps on someone ELSE'S vault skims `steal` (25%) with a cooldown. */
+  bankAdd(plot, v) {
+    this.plotBank[plot] = Math.max(0, (this.plotBank[plot] || 0) + Math.max(0, Math.round(v)));
+    /* throttle broadcasts — a busy belt fires these every couple of sec */
+    if (elapsed - (this._bankT[plot] || 0) > 0.9) {
+      this._bankT[plot] = elapsed;
+      WS.emit('tyc', { t: 'bank', p: plot, v: this.plotBank[plot] });
+    }
+    this.refreshClaimers(plot);
+  },
+  refreshClaimers(plot) {
+    for (const rec of this.claimers) {
+      if (plot && rec.def.plot !== plot) continue;
+      if (rec.refresh) rec.refresh();
+    }
+  },
+  claimerTouch(rec) {
+    const plot = rec.def.plot;
+    if (!plot) return;
+    const bank = this.plotBank[plot] || 0;
+    if (this.myPlot(plot)) {
+      if (bank > 0) {
+        Wallet.add(bank);
+        this.plotBank[plot] = 0;
+        WS.emit('tyc', { t: 'bank', p: plot, v: 0 });
+        wlToast('Collected ' + wlMoney(bank) + ' from your vault!');
+        spawnFlash(rec.x, rec.y + 2.5, rec.z, 1.6);
+        this.fire('collect', [bank, plot]);
+      } else if (rec.pressCd <= 0.01) wlToast('Your vault is empty — the droppers fill it.');
+    } else if (this.plotOwner(plot) != null) {
+      if (rec.stealCd > 0) {
+        if (elapsed - rec.lastBroke > 2.4) { rec.lastBroke = elapsed; wlToast('The vault is sealed — ' + Math.ceil(rec.stealCd) + 's', true); }
+        return;
+      }
+      const cut = Math.floor(bank * (rec.def.steal != null ? rec.def.steal : 0.25));
+      if (cut > 0) {
+        this.plotBank[plot] = bank - cut;
+        rec.stealCd = rec.def.cool != null ? rec.def.cool : 60;
+        WS.emit('tyc', { t: 'bank', p: plot, v: bank - cut });
+        WS.emit('tyc', { t: 'rob', p: plot, n: USERNAME, a: cut });
+        Wallet.add(cut);
+        wlCreditPopup(rec.x, rec.y + 3, rec.z, '+' + wlMoney(cut));
+        wlToast('You stole ' + wlMoney(cut) + ' — a 25% cut!');
+        spawnFlash(rec.x, rec.y + 2.5, rec.z, 1.4);
+      } else {
+        if (elapsed - rec.lastBroke > 2.4) { rec.lastBroke = elapsed; wlToast('The vault is empty.', true); }
+      }
+    }
+    this.refreshClaimers(plot);
+  },
+
+  /* ---------------- v16: plot reset (owner left / admin) ----------------
+     Clears the claim, its buttons, the vault and the owner's in-flight
+     drops, then re-gates everything — the plot goes back on the market
+     as bare plate + claim door + conveyor. */
+  playerLeft(id) {
+    if (!this.active) return;
+    let touched = false;
+    for (const cid in this.state.c)
+      if (this.state.c[cid] && this.state.c[cid].i === id) { this.resetPlot(cid, true); touched = true; }
+    this.fire('leave', [id]);
+    return touched;
+  },
+  /* quiet = triggered by a 'pr' broadcast — don't re-broadcast */
+  resetPlot(plotId, becauseLeft, quiet) {
+    const s = this.state.c[plotId];
+    if (!s) return;                              // nothing to reset
+    const ownerId = s.i;
+    const ownerName = s.n;
+    delete this.state.c[plotId];
+    this.plotBank[plotId] = 0;
+    /* clear the plot's buttons (buys + escalating counts) */
+    const ids = [];
+    for (const [id, rec] of this.buttons)
+      if (rec.def.plot === plotId) {
+        delete this.state.b[id]; delete this.state.bn[id];
+        rec.buys = 0; ids.push(id);
+        if (rec.unreset) rec.unreset();
+      }
+    /* their in-flight drops vanish with them (uid = owner id + seq) */
+    if (ownerId) {
+      const pre = ownerId + '.';
+      for (let i = this.drops.length - 1; i >= 0; i--)
+        if (typeof this.drops[i].uid === 'string' && this.drops[i].uid.startsWith(pre)) this.drops.splice(i, 1);
+    }
+    /* refresh every entity that belongs to the plot (incl. the claim door) */
+    for (const rec of this.entities)
+      if (rec.def.plot === plotId || rec.id === plotId) {
+        rec.buys = 0;
+        if (rec.unreset) rec.unreset();
+        if (rec.refresh) rec.refresh();
+      }
+    this.refreshClaimers(plotId);
+    this.checkGates();
+    /* v16: tell the room (and v7 relays: their stored state) so the
+       plot doesn't resurrect for the next joiner */
+    if (!quiet) WS.emit('tyc', { t: 'pr', e: plotId, ids: ids.slice(0, 24) });
+    wlToast(ownerName + (becauseLeft ? ' left — their plot is back on the market.' : '\'s plot was reset.'), true);
+  },
+
+  /* ================================================================
+     THE SANDBOXED WORLD SCRIPT
+  ---------------------------------------------------------------- */
+  runScript(code, recipe) {
+    const GL = this;
+    const hooks = { tick: [], join: [], leave: [], buy: [], claim: [], collect: [], win: [], tp: [], chat: [], cmd: [], zwave: [] };
+    const net = {};
+    const timers = { after: [], every: [] };
+    const api = {
+      config: JSON.parse(JSON.stringify(recipe)),
+      on(evt, fn) { if (typeof fn === 'function' && hooks[evt]) hooks[evt].push(fn); },
+      onNet(key, fn) { if (typeof fn === 'function') (net[String(key).slice(0, 32)] || (net[String(key).slice(0, 32)] = [])).push(fn); },
+      broadcast(key, d) {
+        let s; try { s = JSON.stringify(d === undefined ? null : d); } catch (e) { return; }
+        if (s.length > 700) { console.warn('[world] broadcast too big (700B cap)'); return; }
+        WS.emit('snet', { k: String(key).slice(0, 32), d: JSON.parse(s) });
+      },
+      money: () => Wallet.amount,
+      addMoney: n => Wallet.add(clamp(+n || 0, -1e9, 1e9)),
+      spendMoney: n => Wallet.trySpend(Math.max(0, +n || 0)),
+      give: id => { const r = GL.recipe && ITEM_DEFS[GL.worldId + '.' + id] ? GL.worldId + '.' + id : id; if (ITEM_DEFS[r]) Inventory.give(r); },
+      /* v16: admin tools — retune a weapon/pet item LIVE (clamped the
+         same way the validator clamps world items), spawn a zombie
+         wave, or broadcast a full world reset */
+      tuneItem: (id, stats) => {
+        const r = GL.recipe && ITEM_DEFS[GL.worldId + '.' + id] ? GL.worldId + '.' + id : id;
+        const def = ITEM_DEFS[r];
+        if (!def || !stats || typeof stats !== 'object' || Array.isArray(stats)) return false;
+        def.stats = def.stats || {};
+        const cl = { damage: [1, 500], pvp: [0, 200], range: [3, 400], cooldown: [0.08, 2], kb: [0, 60],
+          spread: [0, 12], pellets: [1, 8], ammo: [0, 500], reload: [0, 6], heal: [1, 500],
+          speed: [1, 3], jump: [1, 3], radius: [8, 60], zapRange: [4, 30] };
+        for (const k in stats) {
+          if (!cl[k]) continue;
+          const n = +stats[k];
+          if (!isFinite(n)) continue;
+          def.stats[k] = clamp(n, cl[k][0], cl[k][1]);
+        }
+        if (def.stats.pet === true || def.stats.pet === false) { /* keep */ }
+        /* live pet? refresh its stats so tuning is instant */
+        if (Pet.active && Pet.stats && ITEM_DEFS[r] && def.stats.pet) Pet.stats = def.stats;
+        return true;
+      },
+      itemStats: id => {
+        const r = GL.recipe && ITEM_DEFS[GL.worldId + '.' + id] ? GL.worldId + '.' + id : id;
+        const def = ITEM_DEFS[r];
+        return def && def.stats ? JSON.parse(JSON.stringify(def.stats)) : null;
+      },
+      zombies: (n, x, z, r) => {
+        const cnt = Math.round(clamp(+n || 1, 1, 8));
+        const cx = +x || 0, cz = +z || 0, rad = clamp(+r || 20, 5, 80);
+        let spawned = 0;
+        for (let k = 0; k < cnt; k++) {
+          if (zombies.length >= MAX_ZOMBIES) break;
+          const a = Math.random() * Math.PI * 2, rr = Math.random() * rad;
+          const zid = MP.id + '.zw.' + (++GL_ZSEQ);
+          WS.act('zspawn', { i: zid, x: +(cx + Math.cos(a) * rr).toFixed(1), z: +(cz + Math.sin(a) * rr).toFixed(1), r: 0 });
+          spawned++;
+        }
+        return spawned;
+      },
+      resetWorld: () => { WS.act('tyc', { t: 'r' }); },
+      resetPlot: id => { if (GL.state.c[id]) GL.resetPlot(id, false, false); },
+      heal: n => { health = Math.min(V.maxHealth, health + (+n || 0)); },
+      hurt: n => hurtPlayer(Math.max(0, +n || 0)),
+      tp: (x, y, z) => { player.x = +x || 0; player.y = (+y || 0) + 0.6; player.z = +z || 0; player.vy = 0; climbing = false; },
+      banner: t => adminBanner(String(t).slice(0, 140)),
+      toast: t => wlToast(String(t).slice(0, 140)),
+      bought: id => !!GL.state.b[id],
+      claims: () => { const o = {}; for (const k in GL.state.c) o[k] = GL.state.c[k].n; return o; },
+      players: () => [{ id: MP.id, name: USERNAME, me: true }].concat([...MP.remotes.values()].map(r => ({ id: r.id, name: r.name }))),
+      time: () => elapsed,
+      dayTime: () => V.dayTime,
+      myId: () => MP.id,
+      after: (sec, fn) => { if (typeof fn === 'function') timers.after.push({ t: Math.max(0, +sec || 0), fn }); },
+      every: (sec, fn) => { if (typeof fn === 'function') timers.every.push({ t: Math.max(0.05, +sec || 1), sec: Math.max(0.05, +sec || 1), fn }); },
+      log: (...a) => console.log('[world]', ...a)
+    };
+    try { (new Function('Game', '"use strict";\n' + code))(api); }
+    catch (e) { console.error('[world script] failed to start:', e); }
+    return { hooks, net, timers, api };
+  },
+
+  /* v16: a chat line starting with '/' — the world script gets first
+     refusal. Returns true when a hook claimed it (it is NOT sent as
+     player chat). Engine commands like /help still work when no
+     world hook wants the line. */
+  chatCommand(text) {
+    if (!this.script || !this.script.hooks.cmd || !this.script.hooks.cmd.length) return false;
+    let handled = false;
+    for (const fn of this.script.hooks.cmd) {
+      try { if (fn(String(text).slice(0, 140)) === true) handled = true; }
+      catch (e) { console.error('[world cmd]', e); }
+    }
+    return handled;
+  },
+
+  /* NPC dialogue */
+  dlgNext() {
+    if (!this.dlg) { wlCloseDlg(); return; }
+    const rec = this.dlg.rec, lines = rec.def.lines || [];
+    this.dlg.i++;
+    if (this.dlg.i >= lines.length) {
+      const shop = rec.def.shop;
+      wlCloseDlg();
+      if (shop && shop.length) wlOpenShop(rec);
+      return;
+    }
+    wlDlgShow(this.dlg);
+  }
+};
+
+/* ---------- the entity builders ---------- */
+const WL_BUILDERS = {
+
+  /* BUY BUTTON — v15: step on the pad to buy (no E). A small label
+     hovers above it; hidden until its `requires` are met (progressive
+     unlocks), then it POPS in. Affordable = green, broke = gray.
+     v16: `order` + economy.queue rank visible pads (max 4 by default)
+     and `give` pads render a glass weapon CASE with the item spinning
+     inside — step on, pay, take it. */
+  button(rec, e, x, y, z) {
+    rec.kind = 'button';
+    rec.qHide = false;
+    /* trigger volume above the pad (step-on) */
+    if (!Array.isArray(e.size)) {
+      rec.aabb.min.x = x - 2.5; rec.aabb.max.x = x + 2.5;
+      rec.aabb.min.y = y; rec.aabb.max.y = y + 2.6;
+      rec.aabb.min.z = z - 2.5; rec.aabb.max.z = z + 2.5;
+    }
+    rec.pressCd = 0; rec.lastBroke = -99; rec.popT = -1;
+    const padMesh = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 0.34, 20),
+      new THREE.MeshStandardMaterial({ color: 0x38b24a, roughness: 0.55 }));
+    padMesh.position.set(x, y + 0.17, z);
+    padMesh.castShadow = padMesh.receiveShadow = true;
+    scene.add(padMesh);
+    const mkLabel = () => wlButtonLabel(e.label || e.id,
+      wlMoney(GameLogic.buttonCost(rec)), GameLogic.state.bn[rec.id] || 0);
+    const spr = mkLabel();
+    spr.position.set(x, y + 2.55, z);
+    scene.add(spr);
+    rec.pad = padMesh; rec.spr = spr;
+    rec.relLabel = () => {                 // price changed (buy / snapshot / reset)
+      const pos = rec.spr.position.clone();
+      rec.spr.material.map.dispose(); rec.spr.material.dispose();
+      scene.remove(rec.spr);
+      const ns = mkLabel();
+      ns.position.copy(pos);
+      scene.add(ns);
+      rec.spr = ns;
+    };
+    /* v16: a `give` button is a WEAPON CASE — glass box + the item
+       spinning on a little plinth, so you can see what you're buying */
+    let caseGrp = null, caseSpin = null;
+    if (e.give) {
+      const rid = (ITEM_DEFS[GameLogic.worldId + '.' + e.give] ? GameLogic.worldId + '.' + e.give : e.give);
+      const idef = ITEM_DEFS[rid];
+      if (idef) {
+        caseGrp = new THREE.Group();
+        caseGrp.position.set(x, y + 0.34, z);
+        const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.9, 0.5, 16), mat(0x2b3138, 0.5, 0.6));
+        plinth.position.y = 0.25; plinth.castShadow = true;
+        caseGrp.add(plinth);
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2.6, 2.3),
+          new THREE.MeshStandardMaterial({ color: 0x9fd8ff, roughness: 0.12, transparent: true, opacity: 0.22 }));
+        glass.position.y = 1.8; caseGrp.add(glass);
+        const spin = new THREE.Group();
+        const inner = buildToolMesh(rid);
+        inner.rotation.x = -Math.PI / 2;
+        inner.scale.setScalar(1.25);
+        spin.add(inner);
+        spin.position.y = 1.8;
+        caseGrp.add(spin);
+        caseSpin = spin;
+        scene.add(caseGrp);
+        spr.position.y = y + 4.5;                       // label above the case
+      }
+    }
+    let afford = null, tAcc = 0;
+    rec.tick = dt => {
+      if (rec.buys >= (e.maxBuys || 1)) return;
+      if (rec.pressCd > 0) rec.pressCd -= dt;
+      if (caseSpin) caseSpin.rotation.y += dt * 1.4;
+      /* pop-in when the gate opens */
+      if (rec.popT >= 0 && rec.popT < 0.32) {
+        rec.popT += dt;
+        const s = Math.max(0.01, easeOut(Math.min(1, rec.popT / 0.32)));
+        padMesh.scale.setScalar(s);
+        rec.spr.scale.set(2.9 * s, 2.9 * s * (80 / 192), 1);
+        if (rec.popT >= 0.32) { padMesh.scale.setScalar(1); rec.spr.scale.set(2.9, 2.9 * (80 / 192), 1); rec.popT = -1; }
+      }
+      tAcc += dt;
+      if (tAcc < 0.3) return; tAcc = 0;
+      const c = GameLogic.buttonCost(rec);
+      const ok = Wallet.have(c) && (!e.plot || GameLogic.myPlot(e.plot));
+      if (ok !== afford) {
+        afford = ok;
+        padMesh.material.color.setHex(ok ? 0x38b24a : 0x8a9096);
+      }
+      rec.spr.position.y = (caseGrp ? y + 4.5 : y + 2.55) + Math.sin(elapsed * 1.6) * 0.12;
+    };
+    rec.refresh = () => {
+      const done = rec.buys >= (e.maxBuys || 1);
+      padMesh.visible = rec.spr.visible = !done && !rec.qHide;
+      if (caseGrp) caseGrp.visible = !done;
+      if (done) { padMesh.material.color.setHex(0x38b24a); }
+      else rec.relLabel();
+    };
+    rec.unreset = () => { afford = null; };
+    rec.dispose = () => {
+      scene.remove(padMesh); scene.remove(rec.spr);
+      padMesh.geometry.dispose(); padMesh.material.dispose();
+      if (caseGrp) scene.remove(caseGrp);
+    };
+    rec.setGate = ok => {
+      const vis = ok && rec.buys < (e.maxBuys || 1) && !rec.qHide;
+      const was = padMesh.visible;
+      padMesh.visible = rec.spr.visible = vis;
+      if (caseGrp) caseGrp.visible = ok && rec.buys < (e.maxBuys || 1);
+      if (ok && vis && !was && rec.popT < 0) rec.popT = 0;   // POP!
+    };
+  },
+  /* CLAIM — the plot door: touch to claim, then only the owner walks in */
+  claim(rec, e, x, y, z) {
+    rec.kind = 'claim';
+    /* the TRIGGER reaches past the barrier — physics stops you at the
+       door's face, so the touch volume must be bigger than the collider */
+    rec.aabb.min.x -= 1.7; rec.aabb.max.x += 1.7;
+    rec.aabb.min.z -= 1.7; rec.aabb.max.z += 1.7;
+    rec.aabb.min.y -= 0.5;
+    /* frame + translucent barrier */
+    const frameM = mat(0x37414f, 0.6);
+    const w = Array.isArray(e.size) ? e.size[0] : 8;
+    const h = Array.isArray(e.size) ? e.size[1] : 6;
+    const postL = box(0.7, h, 0.7, frameM, x - w / 2, y + h / 2, z);
+    const postR = box(0.7, h, 0.7, frameM, x + w / 2, y + h / 2, z);
+    const top = box(w + 0.7, 0.7, 0.7, mat(0xf5c542, 0.4, 0.6), x, y + h, z);
+    const barM = new THREE.MeshStandardMaterial({ color: 0x7fd0ff, roughness: 0.2, transparent: true, opacity: 0.34 });
+    const bar = box(w, h - 0.6, 0.35, barM, x, y + (h - 0.6) / 2, z);
+    rec.collider = World.addBox(x, y + h / 2, z, w, h, 0.6);
+    /* the sign above */
+    const spr = wlTextSprite([e.name || 'PLOT FOR SALE', { text: 'step in to claim', color: '#9fd8ff' }],
+      { width: 8, W: 512, H: 224, border: 'rgba(159,216,255,0.6)' });
+    spr.position.set(x, y + h + 2.4, z);
+    scene.add(spr);
+    rec.spr = spr;
+    rec.refresh = () => {
+      const s = GameLogic.state.c[rec.id];
+      const pos = rec.spr.position.clone();
+      const ns = wlTextSprite(s ? [e.name || 'PLOT', { text: s.n, color: '#f5c542' }] :
+        [e.name || 'PLOT FOR SALE', { text: 'step in to claim', color: '#9fd8ff' }],
+        { width: 8, W: 512, H: 224, border: s ? 'rgba(245,197,66,0.65)' : 'rgba(159,216,255,0.6)' });
+      ns.position.copy(pos);
+      rec.spr.material.map.dispose(); rec.spr.material.dispose();
+      scene.remove(rec.spr);
+      scene.add(ns);
+      rec.spr = ns;
+    };
+    rec.tick = () => {
+      /* the barrier only lets the plot owner through (on their screen) */
+      rec.collider.enabled = !GameLogic.myPlot(rec.id);
+      bar.material.opacity = GameLogic.myPlot(rec.id) ? 0.08 : 0.34;
+    };
+    rec.dispose = () => {
+      scene.remove(postL); scene.remove(postR); scene.remove(top); scene.remove(bar); scene.remove(rec.spr);
+      rec.collider.enabled = false;
+      const ix = World.colliders.indexOf(rec.collider); if (ix >= 0) World.colliders.splice(ix, 1);
+    };
+  },
+
+  /* v16: MONEY VAULT (claimer) — the plot's bank plate. Droppers fill
+     it; the owner steps on to sweep the balance; a raider steps on to
+     skim `steal` (25%) with a `cool` (60s) lockout. The hover label
+     shows the live balance, so raiders can see it's worth the trip. */
+  claimer(rec, e, x, y, z) {
+    rec.kind = 'claimer';
+    rec.aabb.min.x = x - 2.3; rec.aabb.max.x = x + 2.3;
+    rec.aabb.min.y = y; rec.aabb.max.y = y + 2.8;
+    rec.aabb.min.z = z - 2.3; rec.aabb.max.z = z + 2.3;
+    rec.pressCd = 0; rec.stealCd = 0; rec.lastBroke = -99; rec.popT = -1;
+    const grp = new THREE.Group();
+    grp.position.set(x, y, z);
+    const dais = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 3.1, 0.5, 22),
+      new THREE.MeshStandardMaterial({ color: 0x6b5416, roughness: 0.45, metalness: 0.35 }));
+    dais.position.y = 0.25; dais.castShadow = dais.receiveShadow = true;
+    grp.add(dais);
+    const plateM = new THREE.MeshStandardMaterial({ color: 0xe0aa48, roughness: 0.25, metalness: 0.7, emissive: 0x332005, emissiveIntensity: 0.6 });
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.15, 0.3, 22), plateM);
+    plate.position.y = 0.62; plate.castShadow = true;
+    grp.add(plate);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.45, 0.14, 8, 26),
+      new THREE.MeshStandardMaterial({ color: 0xf5c542, roughness: 0.3, metalness: 0.6, emissive: 0xf5c542, emissiveIntensity: 0.55 }));
+    ring.rotation.x = Math.PI / 2; ring.position.y = 0.58;
+    grp.add(ring);
+    /* four little gold pillars — a vault, not a coffee table */
+    const pilM = mat(0x8a6d1f, 0.4, 0.6);
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 + Math.PI / 4;
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 1.5, 8), pilM);
+      p.position.set(Math.cos(a) * 2.0, 1.3, Math.sin(a) * 2.0);
+      p.castShadow = true;
+      grp.add(p);
+    }
+    scene.add(grp);
+    rec.grp = grp; rec.plate = plate; rec.ring = ring;
+    const mkLabel = () => wlButtonLabel(e.label || 'Money Vault',
+      wlMoney(GameLogic.plotBank[e.plot] || 0), 0);
+    const spr = mkLabel();
+    spr.position.set(x, y + 3.4, z);
+    scene.add(spr);
+    rec.spr = spr;
+    rec.relLabel = () => {
+      const pos = rec.spr.position.clone();
+      rec.spr.material.map.dispose(); rec.spr.material.dispose();
+      scene.remove(rec.spr);
+      const ns = mkLabel();
+      ns.position.copy(pos);
+      scene.add(ns);
+      rec.spr = ns;
+    };
+    let shown = null;
+    rec.tick = dt => {
+      if (rec.pressCd > 0) rec.pressCd -= dt;
+      if (rec.stealCd > 0) rec.stealCd -= dt;
+      if (rec.popT >= 0 && rec.popT < 0.32) {                 // pop-in after a claim
+        rec.popT += dt;
+        const s = Math.max(0.01, easeOut(Math.min(1, rec.popT / 0.32)));
+        grp.scale.setScalar(s);
+        if (rec.popT >= 0.32) { grp.scale.setScalar(1); rec.popT = -1; }
+      }
+      ring.rotation.z += dt * 0.7;                            // slow spin — it's alive
+      rec.spr.position.y = y + 3.4 + Math.sin(elapsed * 1.6) * 0.12;
+      const b = Math.round(GameLogic.plotBank[e.plot] || 0);  // live label
+      if (b !== shown) { shown = b; rec.relLabel(); }
+    };
+    rec.refresh = () => { shown = null; rec.relLabel(); };
+    rec.setGate = ok => {
+      const was = grp.visible;
+      grp.visible = ok; rec.spr.visible = ok;
+      if (ok && !was && rec.popT < 0) rec.popT = 0;
+    };
+    rec.dispose = () => { scene.remove(grp); scene.remove(rec.spr); };
+  },
+
+  /* v16: ZOMBIE WAVE pad — pay `cost`, `count` zombies rise at random
+     spots in a `radius` ring (the battlefield). Spam it while you can
+     pay; the room's zombie cap is the only brake. Kills pay `reward`. */
+  zwave(rec, e, x, y, z) {
+    rec.kind = 'zwave';
+    rec.aabb.min.x = x - 2.6; rec.aabb.max.x = x + 2.6;
+    rec.aabb.min.y = y; rec.aabb.max.y = y + 2.6;
+    rec.aabb.min.z = z - 2.6; rec.aabb.max.z = z + 2.6;
+    rec.pressCd = 0; rec.lastBroke = -99;
+    const grp = new THREE.Group();
+    grp.position.set(x, y, z);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 3.2, 0.4, 22),
+      new THREE.MeshStandardMaterial({ color: 0x1c1214, roughness: 0.5 }));
+    disc.position.y = 0.2; disc.receiveShadow = true;
+    grp.add(disc);
+    const rune = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.16, 8, 26),
+      new THREE.MeshStandardMaterial({ color: 0xd1332a, emissive: 0xd1332a, emissiveIntensity: 1.1, roughness: 0.4 }));
+    rune.rotation.x = Math.PI / 2; rune.position.y = 0.42;
+    grp.add(rune);
+    /* the skull totem: blocky head + eye sockets + jaw */
+    const boneM = new THREE.MeshStandardMaterial({ color: 0xd8d4c8, roughness: 0.6 });
+    const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.3, 1.3), boneM);
+    head.position.y = 1.75; head.castShadow = true; grp.add(head);
+    const jaw = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.42, 0.9), boneM);
+    jaw.position.y = 0.95; jaw.castShadow = true; grp.add(jaw);
+    const eyeM = new THREE.MeshStandardMaterial({ color: 0x2a0505, emissive: 0xd1332a, emissiveIntensity: 1.6 });
+    const eL = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.3, 0.14), eyeM); eL.position.set(-0.34, 1.95, 0.68); grp.add(eL);
+    const eR = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.3, 0.14), eyeM); eR.position.set(0.34, 1.95, 0.68); grp.add(eR);
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.3, 0.14), eyeM); nose.position.set(0, 1.6, 0.68); grp.add(nose);
+    scene.add(grp);
+    rec.grp = grp; rec.rune = rune;
+    const mkLabel = () => wlButtonLabel(e.label || 'Zombie Wave',
+      wlMoney(e.cost || 0), 0);
+    const spr = mkLabel();
+    spr.position.set(x, y + 3.6, z);
+    scene.add(spr);
+    rec.spr = spr;
+    let afford = null, tAcc = 0;
+    rec.tick = dt => {
+      if (rec.pressCd > 0) rec.pressCd -= dt;
+      rune.rotation.z += dt * 0.5;
+      rec.spr.position.y = y + 3.6 + Math.sin(elapsed * 1.6) * 0.12;
+      tAcc += dt; if (tAcc < 0.3) return; tAcc = 0;
+      const ok = Wallet.have(e.cost || 0);
+      if (ok !== afford) { afford = ok; eyeM.emissiveIntensity = ok ? 1.6 : 0.45; }
+    };
+    rec.refresh = () => {};
+    rec.setGate = ok => { grp.visible = ok; rec.spr.visible = ok; };
+    rec.dispose = () => { scene.remove(grp); scene.remove(rec.spr); };
+  },
+
+  /* DROPPER — the plot owner's client spawns the drops.
+     v16 FIX: the machine now stands BESIDE the belt and its spout arm
+     reaches OVER it — `dropOff: [ox, oz]` is where the ore actually
+     lands, so drops never pile up on the machine's own collider
+     (that was the v15 "drops get stuck" bug). */
+  dropper(rec, e, x, y, z) {
+    rec.kind = 'dropper';
+    const off = Array.isArray(e.dropOff) ? e.dropOff : [0, 0];
+    const ox = clamp(+off[0] || 0, -8, 8), oz = clamp(+off[1] || 0, -8, 8);
+    const bodyM = mat(wlIsHex(e.color) ? wlHex(e.color) : 0x4a5568, 0.5, 0.5);
+    solid(2.2, 1.2, 2.2, bodyM, x, y + 0.6, z);
+    box(1.6, 1.6, 1.6, mat(0x2f3742, 0.5, 0.6), x, y + 2.0, z);
+    /* spout arm toward the drop point (visual) */
+    const dx = x + ox, dz = z + oz;
+    const armLen = Math.hypot(ox, oz);
+    const arm = box(Math.max(0.8, armLen + 0.8), 0.5, 1.1, mat(0x2f3742, 0.5, 0.6), (x + dx) / 2, y + 2.55, (z + dz) / 2, Math.atan2(-oz, ox));
+    arm.castShadow = true;
+    const noz = box(0.7, 0.9, 0.7, mat(0xf5c542, 0.35, 0.7), dx, y + 2.3, dz);
+    const lamp = box(0.5, 0.5, 0.5,
+      new THREE.MeshStandardMaterial({ color: 0x11150f, emissive: 0x58e07a, emissiveIntensity: 1.4 }), x + 1.4, y + 1.5, z);
+    rec.timer = (e.every || 4) * 0.35;   // first drop lands sooner
+    rec.tick = dt => {
+      const plot = e.plot;
+      if (!plot || GameLogic.plotOwner(plot) !== MP.id) return;
+      if (GameLogic.drops.length >= 90) return;
+      rec.timer -= dt;
+      if (rec.timer > 0) return;
+      rec.timer = Math.max(1, e.every || 4);
+      const uid = MP.id + '.' + (++GL_DROP_SEQ);
+      const dy = y + 3.4;
+      const drop = { uid, x: dx + (Math.random() - 0.5) * 0.4, y: dy, z: dz + (Math.random() - 0.5) * 0.4,
+        vy: 0, grounded: false, age: 0, v: Math.max(1, Math.round(e.value || 1)) };
+      GameLogic.spawnDropMesh(drop, e);
+      GameLogic.drops.push(drop);
+      WS.emit('dspawn', { i: uid, e: rec.id, x: +drop.x.toFixed(1), y: +drop.y.toFixed(1), z: +drop.z.toFixed(1), v: drop.v });
+    };
+    rec.dispose = () => {};
+  },
+
+  /* CONVEYOR — moves players + drops riding on top */
+  conveyor(rec, e, x, y, z) {
+    rec.kind = 'conveyor';
+    const S = Array.isArray(e.size) ? e.size : [10, 0.5, 4];
+    /* scrolling chevron canvas */
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#23282f'; ctx.fillRect(0, 0, 128, 128);
+    ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 16; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(38, 28); ctx.lineTo(78, 64); ctx.lineTo(38, 100); ctx.stroke();
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(Math.max(1, S[0] / 4), 1);
+    const m = new THREE.Mesh(geo(S[0], S[1], S[2]),
+      [mat(0x23282f, 0.8), mat(0x23282f, 0.8), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75 }), mat(0x23282f, 0.8), mat(0x23282f, 0.8), mat(0x23282f, 0.8)]);
+    m.position.set(x, y + S[1] / 2, z);
+    m.rotation.y = e.dir ? Math.atan2(-e.dir[1], e.dir[0]) : 0;   // local +x → (dx, dz)
+    m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+    World.addBox(x, y + S[1] / 2, z, S[0], S[1], S[2]);
+    const side1 = box(0.5, 1.0, S[2], mat(0xf5c542, 0.5, 0.4), x - S[0] / 2 + 0.25, y + 0.7, z, 0, scene);
+    const side2 = box(0.5, 1.0, S[2], mat(0xf5c542, 0.5, 0.4), x + S[0] / 2 - 0.25, y + 0.7, z, 0, scene);
+    rec.railA = side1; rec.railB = side2; rec.tex = tex; rec.convMesh = m;
+    rec.tick = dt => { tex.offset.x -= dt * (e.speed || 6) / 4; };
+    rec.dispose = () => { scene.remove(m); scene.remove(side1); scene.remove(side2); tex.dispose(); };
+  },
+
+  /* COLLECTOR — drops vanish here, the plot owner gets paid */
+  collector(rec, e, x, y, z) {
+    rec.kind = 'collector';
+    const S = Array.isArray(e.size) ? e.size : [5, 8, 5];
+    solid(S[0], S[1], S[2], mat(0x2b323d, 0.55, 0.5), x, y + S[1] / 2, z);
+    const rim = box(S[0] + 0.3, 0.5, S[2] + 0.3,
+      new THREE.MeshStandardMaterial({ color: 0x0f1a10, emissive: 0x39d353, emissiveIntensity: 1.6 }), x, y + S[1] + 0.3, z);
+    const spr = wlTextSprite([{ text: wlMoney(e.value || 1) + ' / drop', color: '#39d353' }], { width: 5.5, W: 512, H: 128, bg: 'rgba(10,30,14,0.85)' });
+    spr.position.set(x, y + S[1] + 2.6, z);
+    scene.add(spr);
+    rec.spr = spr; rec.rim = rim;
+    rec.dispose = () => { scene.remove(rim); scene.remove(spr); };
+  },
+
+  /* KILL BRICK — touch = massive damage */
+  killbrick(rec, e, x, y, z) {
+    rec.kind = 'killbrick';
+    const S = Array.isArray(e.size) ? e.size : [6, 1, 6];
+    const m = new THREE.Mesh(geo(...S),
+      new THREE.MeshStandardMaterial({ color: 0xd1332a, roughness: 0.4, transparent: true, opacity: e.damage != null && e.damage < 100 ? 0.55 : 0.75, emissive: 0x5a0f0a, emissiveIntensity: 0.5 }));
+    m.position.set(x, y + S[1] / 2, z);
+    m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+    World.addBox(x, y + S[1] / 2, z, ...S);
+    rec.dispose = () => scene.remove(m);
+  },
+
+  /* TELEPORTER — one-way pad */
+  teleport(rec, e, x, y, z) {
+    rec.kind = 'teleport';
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.9, 0.3, 22),
+      new THREE.MeshStandardMaterial({ color: 0x142033, emissive: 0x4aa3e0, emissiveIntensity: 1.2, roughness: 0.4 }));
+    disc.position.set(x, y + 0.15, z);
+    disc.receiveShadow = true;
+    scene.add(disc);
+    World.addBox(x, y + 0.15, z, 5.2, 0.3, 5.2);
+    rec.disc = disc;
+    rec.tick = dt => { disc.rotation.y += dt * 1.4; };
+    rec.dispose = () => scene.remove(disc);
+  },
+
+  /* CHECKPOINT — respawn here after touching */
+  checkpoint(rec, e, x, y, z) {
+    rec.kind = 'checkpoint';
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 0.3, 22),
+      new THREE.MeshStandardMaterial({ color: 0x1a2b18, emissive: 0x58e07a, emissiveIntensity: 1.1, roughness: 0.5 }));
+    disc.position.set(x, y + 0.15, z);
+    disc.receiveShadow = true;
+    scene.add(disc);
+    World.addBox(x, y + 0.15, z, 4.8, 0.3, 4.8);
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 16, 10, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0x58e07a, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide }));
+    beam.position.set(x, y + 8, z);
+    scene.add(beam);
+    rec.disc = disc; rec.beam = beam;
+    rec.tick = dt => { disc.rotation.y += dt * 0.8; };
+    rec.dispose = () => { scene.remove(disc); scene.remove(beam); };
+  },
+
+  /* BUFF PAD — speed / jump / heal / launch while standing on it */
+  pad(rec, e, x, y, z) {
+    rec.kind = 'pad';
+    const COLORS = { speed: 0xf5c542, jump: 0xe86bd0, heal: 0x58e07a, launch: 0x4aa3e0 };
+    const col = COLORS[e.effect] || 0x8a9096;
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 0.26, 20),
+      new THREE.MeshStandardMaterial({ color: 0x15181d, emissive: col, emissiveIntensity: 1.0, roughness: 0.4 }));
+    disc.position.set(x, y + 0.13, z);
+    disc.receiveShadow = true;
+    scene.add(disc);
+    World.addBox(x, y + 0.13, z, 4.6, 0.26, 4.6);
+    const spr = wlTextSprite([{ text: (e.effect || '').toUpperCase() + (e.effect === 'launch' ? ' x' + (e.power || 60) : ''), color: '#' + (col & 0xffffff).toString(16).padStart(6, '0') }],
+      { width: 4.2, W: 384, H: 96, bg: 'rgba(13,17,23,0.6)' });
+    spr.position.set(x, y + 2.4, z);
+    scene.add(spr);
+    rec.disc = disc; rec.spr = spr;
+    rec.tick = dt => { disc.rotation.y += dt * 2.0; };
+    rec.dispose = () => { scene.remove(disc); scene.remove(spr); };
+  },
+
+  /* NPC — dialogue + optional weapon shop */
+  npc(rec, e, x, y, z) {
+    rec.kind = 'npc';
+    const col = wlIsHex(e.color) ? wlHex(e.color) : 0x0D69AC;
+    const shirt = mat(col, 0.8), pants = mat(0x37414f, 0.8), skin = mat(0xf0c8a0, 0.85);
+    const g = new THREE.Group();
+    part(2, 2, 1, shirt, 0, 3, 0, g);
+    part(0.95, 1.9, 0.95, skin, -1.5, 3.4, 0, g);
+    part(0.95, 1.9, 0.95, skin, 1.5, 3.4, 0, g);
+    part(1.05, 2.1, 1.05, pants, -0.55, 0.95, 0, g);
+    part(1.05, 2.1, 1.05, pants, 0.55, 0.95, 0, g);
+    const head = new THREE.Mesh(geo(1.4, 1.4, 1.4), skin);
+    head.position.set(0, 4.85, 0); head.castShadow = true;
+    g.add(head);
+    const face = new THREE.Mesh(geo(1.42, 0.5, 0.1), mat(0x1c2313, 0.9));
+    face.position.set(0, 4.95, 0.68); g.add(face);
+    const face2 = new THREE.Mesh(geo(0.5, 0.5, 0.1), mat(0xffffff, 0.9));
+    face2.position.set(0, 5.0, 0.74); g.add(face2);
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    g.position.set(x, y, z);
+    g.rotation.y = (e.rot || 0) * Math.PI / 180;
+    scene.add(g);
+    const spr = wlTextSprite([{ text: e.name || 'Shopkeeper', color: '#f5c542' },
+      { text: e.shop && e.shop.length ? 'WEAPONS & GEAR' : 'talk to me', color: 'rgba(255,255,255,0.8)' }],
+      { width: 6.5, W: 512, H: 224, bigSize: 44, border: 'rgba(245,197,66,0.55)' });
+    spr.position.set(x, y + 7.6, z);
+    scene.add(spr);
+    rec.rig = g; rec.spr = spr;
+    rec.inter = addInteractable({
+      x, y: y + 3, z, radius: 5,
+      label: 'Talk to ' + (e.name || 'the shopkeeper'),
+      action: () => wlOpenDlg(rec),
+      enabled: () => rec.gate !== false
+    });
+    rec.tick = dt => {
+      g.rotation.y += Math.sin(elapsed * 0.4) * dt * 0.12;
+      spr.position.y = y + 7.6 + Math.sin(elapsed * 1.3) * 0.14;
+    };
+    rec.dispose = () => {
+      scene.remove(g); scene.remove(spr);
+      const ix = Interactables.indexOf(rec.inter); if (ix >= 0) Interactables.splice(ix, 1);
+    };
+  },
+
+  /* ZOMBIE SPAWNER — leader simulates; kills pay the killer */
+  spawner(rec, e, x, y, z) {
+    rec.kind = 'spawner';
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.0, 0.36, 20),
+      new THREE.MeshStandardMaterial({ color: 0x1c1214, emissive: 0xd1332a, emissiveIntensity: 0.9, roughness: 0.5 }));
+    disc.position.set(x, y + 0.18, z);
+    disc.receiveShadow = true;
+    scene.add(disc);
+    World.addBox(x, y + 0.18, z, 5.6, 0.36, 5.6);
+    rec.timer = 3;
+    rec.tick = dt => {
+      disc.rotation.y += dt * 0.6;
+      if (worldLeader() !== MP.id) return;                    // exactly one client spawns
+      if (e.night && !(V.dayTime < 6 || V.dayTime >= 19)) return;
+      rec.timer -= dt;
+      if (rec.timer > 0) return;
+      rec.timer = Math.max(4, e.every || 30);
+      const max = Math.min(12, e.max || 4);
+      const mine = zombies.filter(q => q.src === rec.id && !q.dead).length;
+      if (mine >= max || zombies.length >= MAX_ZOMBIES) return;
+      const a = Math.random() * Math.PI * 2;
+      const zx = x + Math.cos(a) * 3, zz = z + Math.sin(a) * 3;
+      const zid = 'wsp.' + rec.id + '.' + (GL_ZSEQ++);
+      WS.act('zspawn', { i: zid, x: +zx.toFixed(1), z: +zz.toFixed(1), r: e.reward || 0, s: rec.id });
+    };
+    rec.dispose = () => scene.remove(disc);
+  },
+
+  /* ITEM PICKUP — like the classic sword pickup, respawning */
+  pickup(rec, e, x, y, z) {
+    rec.kind = 'pickup';
+    const rid = (ITEM_DEFS[GameLogic.worldId + '.' + e.item] ? GameLogic.worldId + '.' + e.item : e.item);
+    const def = ITEM_DEFS[rid];
+    if (!def) return;
+    const spin = new THREE.Group();
+    const inner = buildToolMesh(rid);
+    inner.rotation.x = -Math.PI / 2;
+    inner.scale.setScalar(1.15);
+    spin.add(inner);
+    spin.position.set(x, y + 2.2, z);
+    scene.add(spin);
+    const light = new THREE.PointLight(def.kind === 'gun' ? 0xffd27a : 0x9fd8ff, 14, 6, 2);
+    light.position.set(x, y + 3, z);
+    scene.add(light);
+    rec.spin = spin; rec.light = light;
+    rec.inter = addInteractable({
+      x, y, z, radius: 4,
+      label: 'Take the ' + def.name,
+      action: () => {
+        if (Inventory.give(rid) < 0) return;
+        WS.act('tyc', { t: 'pk', e: rec.id });
+      },
+      enabled: () => !GameLogic.state.pk[rec.id]
+    });
+    const delay = Math.max(0, e.respawn || 0);
+    rec.hide = () => {
+      spin.visible = light.visible = false;
+      rec.respawnAt = delay > 0 ? elapsed + delay : Infinity;
+    };
+    rec.unreset = () => { spin.visible = light.visible = true; rec.respawnAt = 0; };
+    rec.tick = dt => {
+      if (spin.visible) {
+        spin.rotation.y += dt * 1.2;
+        spin.position.y = y + 2.2 + Math.sin(elapsed * 2) * 0.15;
+      } else if (rec.respawnAt !== Infinity && elapsed >= rec.respawnAt && !GameLogic.state.pk[rec.id]) {
+        spin.visible = light.visible = true;
+      }
+    };
+    rec.dispose = () => {
+      scene.remove(spin); scene.remove(light);
+      const ix = Interactables.indexOf(rec.inter); if (ix >= 0) Interactables.splice(ix, 1);
+    };
+  },
+
+  /* DOOR — opens for the plot owner (or forever once required) */
+  door(rec, e, x, y, z) {
+    rec.kind = 'door';
+    const S = Array.isArray(e.size) ? e.size : [7, 7, 0.6];
+    const pivot = new THREE.Group();
+    pivot.position.set(x - S[0] / 2, y, z);
+    scene.add(pivot);
+    const panel = new THREE.Mesh(geo(S[0], S[1], S[2]),
+      new THREE.MeshStandardMaterial({ color: wlIsHex(e.color) ? wlHex(e.color) : 0x7fd0ff, roughness: 0.25, transparent: true, opacity: 0.42 }));
+    panel.position.set(S[0] / 2, S[1] / 2, 0);
+    panel.castShadow = true;
+    pivot.add(panel);
+    const frameM = mat(0x37414f, 0.6);
+    box(0.8, S[1] + 0.8, 1.0, frameM, x - S[0] / 2, y + (S[1] + 0.8) / 2, z);
+    box(0.8, S[1] + 0.8, 1.0, frameM, x + S[0] / 2, y + (S[1] + 0.8) / 2, z);
+    box(S[0] + 1.6, 0.8, 1.0, frameM, x, y + S[1] + 0.4, z);
+    rec.collider = World.addBox(x, y + S[1] / 2, z, S[0], S[1], S[2] + 0.5);
+    rec.anim = 0;
+    rec.tick = dt => {
+      let open;
+      if (e.plot) {
+        const near = Math.hypot(player.x - x, player.z - z) < 8;
+        open = GameLogic.myPlot(e.plot) && near;
+      } else open = true;
+      rec.anim += clamp((open ? 1 : 0) - rec.anim, -dt * 2.4, dt * 2.4);
+      pivot.rotation.y = rec.anim * 1.45;
+      rec.collider.enabled = rec.anim < 0.25;
+    };
+    rec.dispose = () => {
+      scene.remove(pivot);
+      rec.collider.enabled = false;
+      const ix = World.colliders.indexOf(rec.collider); if (ix >= 0) World.colliders.splice(ix, 1);
+    };
+  },
+
+  /* SIGN — text billboard on a post */
+  sign(rec, e, x, y, z) {
+    rec.kind = 'sign';
+    const S = wlNum(e.width, 3, 24, 10);
+    solid(0.6, 4.2, 0.6, mat(0x624732, 0.85), x, y + 2.1, z);
+    const lines = (Array.isArray(e.lines) ? e.lines : [e.text || '...']).slice(0, 4);
+    const spr = wlTextSprite(lines, { width: S, W: 640, H: 320, bigSize: 40, smallSize: 34, bg: 'rgba(20,26,34,0.88)' });
+    spr.position.set(x, y + 6.4, z);
+    scene.add(spr);
+    rec.dispose = () => { scene.remove(spr); };
+  }
+};
+let GL_DROP_SEQ = 1, GL_ZSEQ = 1;
+
+/* spawn the visual mesh for a drop (gold cube by default) */
+GameLogic.spawnDropMesh = function (drop, e) {
+  /* v15: drops render through ONE InstancedMesh (1 draw call for all
+     90). The mesh is created lazily and rebuilt by tickDrops every
+     frame from the drop list. */
+  const d = (e && e.drop) || {};
+  if (!this.dropsIM) {
+    const im = new THREE.InstancedMesh(geo(1, 1, 1),
+      new THREE.MeshStandardMaterial({ roughness: 0.38 }), 96);
+    im.castShadow = true;
+    im.count = 0;
+    im.frustumCulled = false;
+    this.dropsIM = im;
+    scene.add(im);
+  }
+  drop.col = new THREE.Color(wlIsHex(d.color) ? wlHex(d.color) : 0xf5c542);
+  drop.s = wlNum(d.size, 0.4, 2.2, 0.95);
+  drop.rot = Math.random() * Math.PI;
+};
+GameLogic._dM4 = new THREE.Matrix4();
+GameLogic._dQ = new THREE.Quaternion();
+GameLogic._dE = new THREE.Euler();
+GameLogic._dP = new THREE.Vector3();
+GameLogic._dS = new THREE.Vector3();
+GameLogic._dCol = new THREE.Color(0xf5c542);
+
+/* remote drop spawn (the plot owner's event) */
+function wlDropSpawn(d) {
+  if (!GameLogic.active || !d || typeof d.i !== 'string') return;
+  if (GameLogic.drops.find(q => q.uid === d.i)) return;
+  const rec = GameLogic.byId.get(d.e);
+  const drop = { uid: d.i, x: +d.x || 0, y: +d.y || 0, z: +d.z || 0, vy: 0, grounded: false, age: 0,
+    v: Math.max(1, Math.round(+d.v || (rec && rec.def && rec.def.value) || 1)) };
+  GameLogic.spawnDropMesh(drop, rec && rec.def);
+  GameLogic.drops.push(drop);
+  if (GameLogic.drops.length > 90) GameLogic.drops.shift();
+}
+
+/* ================================================================
+   v15 §9.8 THE STORM PET — a little drone that fights for you
+   ----------------------------------------------------------------
+   Buy the item, hold it, CLICK to deploy. It hovers at your shoulder,
+   scans for the nearest enemy player (or zombie) inside its radius,
+   chases them and strikes LIGHTNING every zapCd seconds. Runs on the
+   OWNER's client (like bullets: the owner's screen decides hits, the
+   victim's client applies the damage through the existing 'pvp'
+   channel). Everyone else just sees the orb + the bolts ('pet' /
+   'petzap' events ride the normal relay).
+================================================================ */
+const Pet = {
+  active: false, stats: null, mesh: null,
+  x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
+  target: null, targetZ: null, scanT: 0, zapCd: 0, sendT: 0, bob: 0,
+
+  deploy(stats) {
+    if (this.active) return;
+    this.stats = stats || { damage: 8, radius: 26, zapRange: 10 };
+    this.mesh = buildPetMesh(null, true);
+    this.x = player.x; this.y = player.y + 5; this.z = player.z;
+    this.vx = this.vy = this.vz = 0;
+    this.mesh.position.set(this.x, this.y, this.z);
+    this.mesh.scale.setScalar(0.01);
+    scene.add(this.mesh);
+    this.active = true;
+    wlToast('Storm pet deployed — it watches your back.');
+    spawnFlash(this.x, this.y, this.z, 1.2);
+  },
+  recall(quiet) {
+    if (!this.active) return;
+    if (this.mesh) { scene.remove(this.mesh); this.mesh = null; }
+    this.active = false; this.target = null; this.targetZ = null;
+    if (MP.connected) WS.emit('pet', { off: 1 });
+    if (!quiet) wlToast('Storm pet recalled.');
+  },
+  toggle() {
+    if (this.active) this.recall();
+    else {
+      const it = Inventory.current();
+      const st = it && ITEM_DEFS[it.id] ? ITEM_DEFS[it.id].stats : null;
+      if (st && st.pet) this.deploy(st);
+    }
+  },
+
+  tick(dt) {
+    if (!this.active) return;
+    this.bob += dt;
+
+    /* ---- pick a target: nearest enemy player, else a zombie, in radius */
+    this.scanT -= dt;
+    if (this.scanT <= 0) {
+      this.scanT = 0.3;
+      const R = (this.stats && this.stats.radius) || 26;
+      let best = null, bd = R, bestZ = null, bdZ = R;
+      for (const r of MP.remotes.values()) {
+        const d = Math.hypot(r.x - player.x, r.z - player.z);
+        if (d < bd) { bd = d; best = r; }
+      }
+      for (const zb of zombies) {
+        if (zb.dead || zb.ghost) continue;
+        const d = Math.hypot(zb.body.x - player.x, zb.body.z - player.z);
+        if (d < bdZ) { bdZ = d; bestZ = zb; }
+      }
+      this.target = best; this.targetZ = bestZ;
+    }
+
+    /* ---- desired hover point */
+    let dx, dy, dz, speed;
+    const tgt = this.target;
+    const tz = this.targetZ && !this.targetZ.dead ? this.targetZ : null;
+    if (tgt) {
+      dx = tgt.x; dy = tgt.y + 3.1; dz = tgt.z; speed = 21;          // chase the player
+    } else if (tz) {
+      dx = tz.body.x; dy = tz.body.y + 3.1; dz = tz.body.z; speed = 21;
+    } else {
+      dx = player.x - Math.sin(yaw) * 2.8;
+      dy = player.y + 4.6 + Math.sin(this.bob * 2.1) * 0.4;
+      dz = player.z - Math.cos(yaw) * 2.8; speed = 26;              // follow the owner
+    }
+    /* spring toward it, capped. sdt: the integration step is clamped so
+       one huge frame (background tab, slow device) can't wipe the
+       damping to zero and freeze the pet. */
+    const sdt = Math.min(dt, 0.05);
+    this.vx += (dx - this.x) * 34 * sdt; this.vy += (dy - this.y) * 34 * sdt; this.vz += (dz - this.z) * 34 * sdt;
+    const dmp = Math.max(0, 1 - 7 * sdt);
+    this.vx *= dmp; this.vy *= dmp; this.vz *= dmp;
+    const vl = Math.hypot(this.vx, this.vy, this.vz);
+    if (vl > speed) { const k = speed / vl; this.vx *= k; this.vy *= k; this.vz *= k; }
+    this.x += this.vx * sdt; this.y += this.vy * sdt; this.z += this.vz * sdt;
+
+    /* ---- lightning! */
+    this.zapCd -= dt;
+    if (this.zapCd <= 0) {
+      const ZR = (this.stats && this.stats.zapRange) || 10;
+      const dmg = (this.stats && this.stats.damage) || 8;
+      if (tgt && Math.hypot(tgt.x - this.x, tgt.y + 2 - this.y, tgt.z - this.z) < ZR) {
+        this.zapCd = 0.9;
+        this.zapAt(tgt.x, tgt.y + 0.6, tgt.z);
+        pvpHit(tgt.id, dmg, (tgt.x - this.x) / (Math.hypot(tgt.x - this.x, tgt.z - this.z) || 1),
+               (tgt.z - this.z) / (Math.hypot(tgt.x - this.x, tgt.z - this.z) || 1), 4);
+      } else if (tz && Math.hypot(tz.body.x - this.x, tz.body.y + 2 - this.y, tz.body.z - this.z) < ZR) {
+        this.zapCd = 0.9;
+        this.zapAt(tz.body.x, tz.body.y + 0.6, tz.body.z);
+        damageZombie(tz, dmg, this.x, this.z);
+      }
+    }
+
+    /* ---- visuals + state broadcast */
+    if (this.mesh) {
+      this.mesh.position.set(this.x, this.y, this.z);
+      const s = Math.min(1, this.mesh.scale.x + dt * 4);
+      this.mesh.scale.setScalar(s);
+      if (tgt || tz) this.mesh.lookAt(tgt ? tgt.x : tz.body.x, (tgt ? tgt.y : tz.body.y) + 3, tgt ? tgt.z : tz.body.z);
+      else this.mesh.lookAt(player.x, player.y + 3, player.z);
+    }
+    this.sendT -= dt;
+    if (this.sendT <= 0 && MP.connected) {
+      this.sendT = 0.15;
+      WS.emit('pet', { x: +this.x.toFixed(1), y: +this.y.toFixed(1), z: +this.z.toFixed(1) });
+    }
+  },
+
+  zapAt(x, y, z) {
+    spawnLightning(x, y, z);
+    spawnFlash(x, y + 2, z, 1.4);
+    WS.emit('petzap', { x: +x.toFixed(1), y: +y.toFixed(1), z: +z.toFixed(1) });
+  }
+};
+
+/* everyone else's pets — ghost orbs that follow their 'pet' events */
+const PetRemotes = new Map();
+function petGhost(from) {
+  let gh = PetRemotes.get(from);
+  if (!gh) {
+    gh = { mesh: buildPetMesh(null, true), t: 0 };
+    scene.add(gh.mesh);
+    PetRemotes.set(from, gh);
+  }
+  gh.t = elapsed;
+  return gh;
+}
+
+
+/* ---------------- the world-event handlers (§12.6 'w' kinds) -----
+   Wired on the FIRST tick (wireNet below) — the WS layer itself is
+   declared further down the file (§12.6), so registering at module
+   level here would hit its temporal-dead-zone. */
+GameLogic.wireNet = function () {
+WS.on('pet', (d, from) => {                        // v15: someone's storm pet
+  if (from === MP.id || !d || typeof d !== 'object') return;
+  if (d.off) {
+    const gh = PetRemotes.get(from);
+    if (gh) { scene.remove(gh.mesh); PetRemotes.delete(from); }
+    return;
+  }
+  const gh = petGhost(from);
+  gh.mesh.position.set(+d.x || 0, +d.y || 0, +d.z || 0);
+});
+WS.on('petzap', (d, from) => {                     // v15: their pet struck
+  if (from === MP.id || !d || typeof d !== 'object') return;
+  const x = +d.x || 0, y = +d.y || 0, z = +d.z || 0;
+  spawnLightning(x, y, z);
+  spawnFlash(x, y + 2, z, 1.4);
+});
+WS.on('tyc', (d, from) => {
+  if (!GameLogic.active || !d || typeof d !== 'object') return;
+  if (d.t === 'b' && typeof d.e === 'string') {
+    GameLogic.applyBuy(d.e);
+    /* v16: give/grant pay out to the BUYER only (that's me here) */
+    if (from === MP.id) {
+      const rec = GameLogic.buttons.get(d.e);
+      if (rec && rec.def) {
+        if (rec.def.give) {
+          const rid = (ITEM_DEFS[GameLogic.worldId + '.' + rec.def.give] ? GameLogic.worldId + '.' + rec.def.give : rec.def.give);
+          if (ITEM_DEFS[rid]) {
+            if (Inventory.give(rid) < 0) wlToast('Hotbar full!', true);
+            else wlToast(ITEM_DEFS[rid].name + ' acquired!');
+          }
+        }
+        if (rec.def.grant) Wallet.add(Math.round(rec.def.grant));
+      }
+    }
+  }
+  else if (d.t === 'c' && typeof d.e === 'string') GameLogic.applyClaim(d.e, from, d.n || 'Player');
+  else if (d.t === 'pk' && typeof d.e === 'string') GameLogic.applyPick(d.e);
+  else if (d.t === 'r') GameLogic.applyReset();
+  /* v16: vault balance sync + robbery notices + per-plot resets */
+  else if (d.t === 'bank' && typeof d.p === 'string') {
+    GameLogic.plotBank[d.p] = Math.max(0, Math.round(+d.v || 0));
+    GameLogic.refreshClaimers(d.p);
+  }
+  else if (d.t === 'rob' && typeof d.p === 'string' && typeof d.a === 'number') {
+    if (GameLogic.myPlot(d.p)) wlToast(String(d.n || 'Someone') + ' stole ' + wlMoney(d.a) + ' from your vault!', true);
+  }
+  else if (d.t === 'pr' && typeof d.e === 'string') GameLogic.resetPlot(d.e, false, true);
+  else if (d.t === 'win' && typeof d.n === 'string') { adminBanner(String(d.n).slice(0, 120)); GameLogic.fire('win', [d.n]); }
+});
+WS.on('tycq', (d, from) => {
+  if (!GameLogic.active || from === MP.id) return;
+  const chunks = GameLogic.snapshotChunks();
+  if (!chunks.length) return;
+  chunks.forEach((c, i) => WS.emit('tycs', { i, n: chunks.length, d: c }));
+});
+WS.on('tycs', (d, from) => {
+  if (!GameLogic.active) return;
+  if (GameLogic.snapAsk <= 0 || elapsed - GameLogic.snapAsk > 6) return;   // not asking
+  if (!d || typeof d.i !== 'number' || typeof d.n !== 'number' || !d.d) return;
+  if (!GameLogic.snapBuf) { GameLogic.snapBuf = {}; GameLogic.snapN = -1; }
+  if (GameLogic.snapN === -1) { GameLogic.snapN = d.n; GameLogic.snapBuf = new Array(d.n).fill(null); }
+  if (d.i < GameLogic.snapN && !GameLogic.snapBuf[d.i]) GameLogic.snapBuf[d.i] = d.d;
+  if (GameLogic.snapBuf.every(x => x)) {
+    const whole = {};
+    for (const part of GameLogic.snapBuf) Object.assign(whole, part);
+    GameLogic.applySnapshot(whole);
+    GameLogic.snapAsk = 0;
+  }
+});
+WS.on('dspawn', d => wlDropSpawn(d));
+WS.on('wmon', (d, from) => {
+  if (!GameLogic.active || typeof d.m !== 'number') return;
+  GameLogic.remoteMoney.set(from, Math.max(0, Math.round(d.m)));
+});
+WS.on('zrew', d => {
+  if (d && d.to === MP.id && typeof d.r === 'number' && d.r > 0) {
+    Wallet.add(Math.round(d.r));
+    wlCreditPopup(player.x, player.y + 4, player.z, '+' + wlMoney(d.r));
+  }
+});
+WS.on('snet', (d, from) => {
+  if (!GameLogic.script || !GameLogic.script.net || !d || typeof d.k !== 'string') return;
+  const list = GameLogic.script.net[d.k];
+  if (!list) return;
+  for (const fn of list) { try { fn(d.d, from); } catch (e) { console.error('[world net]', e); } }
+});
+};
+
+/* worker-direct snapshot (relay v6 sends stored state on join) */
+GameLogic.applyWorkerSnapshot = function (s) {
+  if (!GameLogic.active) return;
+  GameLogic.applySnapshot(s);
+  GameLogic.snapAsk = 0;    // peer answers can still top it up
+};
+
+/* ---------------- NPC dialogue + shop DOM ---------------- */
+function wlOpenDlg(rec) {
+  const lines = rec.def.lines && rec.def.lines.length ? rec.def.lines : ['...'];
+  GameLogic.dlg = { rec, i: 0 };
+  GameLogic.dlgOpen = true;
+  wlDlgShow(GameLogic.dlg);
+}
+function wlDlgShow(dlg) {
+  let el = document.getElementById('wl-dlg');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'wl-dlg';
+    el.innerHTML = '<div class="wl-dlg-name"></div><div class="wl-dlg-text"></div>' +
+      '<div class="wl-dlg-hint"><span class="key">E</span> next</div>';
+    document.body.appendChild(el);
+  }
+  el.querySelector('.wl-dlg-name').textContent = dlg.rec.def.name || 'Shopkeeper';
+  el.querySelector('.wl-dlg-text').textContent = String(dlg.rec.def.lines[dlg.i] || '');
+  el.classList.add('show');
+}
+function wlCloseDlg() {
+  GameLogic.dlgOpen = false; GameLogic.dlg = null;
+  const el = document.getElementById('wl-dlg');
+  if (el) el.classList.remove('show');
+}
+
+function wlOpenShop(rec) {
+  wlCloseShop();
+  const shop = rec.def.shop || [];
+  const wrap = document.createElement('div');
+  wrap.id = 'wl-shop';
+  let rows = '';
+  shop.forEach((s, i) => {
+    const rid = (ITEM_DEFS[GameLogic.worldId + '.' + s.item] ? GameLogic.worldId + '.' + s.item : s.item);
+    const def = ITEM_DEFS[rid];
+    if (!def) return;
+    const st = def.kind === 'sword' ? (def.stats.damage + ' dmg · ' + (def.stats.cooldown || 0.5) + 's swing') :
+      def.kind === 'gun' ? (def.stats.damage + ' dmg · ' + (def.stats.pellets > 1 ? def.stats.pellets + ' pellets · ' : '') +
+        (def.stats.auto ? 'auto' : 'semi') + (def.stats.ammo ? ' · ' + def.stats.ammo + ' ammo' : ' · ∞')) :
+      (def.stats.heal ? '+' + def.stats.heal + ' health' : '');
+    rows += '<div class="wl-row" data-i="' + i + '">' +
+      '<i data-lucide="' + def.icon + '"></i>' +
+      '<div class="wl-row-mid"><div class="wl-row-name">' + esc(def.name) + '</div>' +
+      '<div class="wl-row-sub">' + esc(st) + '</div></div>' +
+      '<button class="wl-buy' + (Wallet.have(s.cost) ? '' : ' cant') + '" data-i="' + i + '">' + wlMoney(s.cost) + '</button></div>';
+  });
+  wrap.innerHTML = '<div class="wl-shop-card"><div class="wl-shop-head">' +
+    '<i data-lucide="store"></i><span>' + esc(rec.def.name || 'Shop') + '</span>' +
+    '<span class="wl-shop-money"><i data-lucide="' + Wallet.icon + '"></i>' + Wallet.amount.toLocaleString('en-US') + '</span>' +
+    '<button id="wl-shop-close" title="Close">✕</button></div>' + rows + '</div>';
+  document.body.appendChild(wrap);
+  refreshIcons();
+  wrap.querySelector('#wl-shop-close').addEventListener('click', wlCloseShop);
+  wrap.addEventListener('click', ev => {
+    const btn = ev.target.closest('.wl-buy');
+    if (!btn) return;
+    const s = shop[+btn.dataset.i];
+    if (!s) return;
+    if (!Wallet.trySpend(s.cost)) { wlToast('Not enough money — need ' + wlMoney(s.cost), true); return; }
+    const rid = (ITEM_DEFS[GameLogic.worldId + '.' + s.item] ? GameLogic.worldId + '.' + s.item : s.item);
+    if (Inventory.give(rid) < 0) { Wallet.add(s.cost); wlToast('Your inventory is full!', true); return; }
+    wlToast('Bought ' + ITEM_DEFS[rid].name + '!');
+    btn.textContent = '✓';
+    setTimeout(wlCloseShop, 700);
+  });
+}
+function wlCloseShop() {
+  const el = document.getElementById('wl-shop');
+  if (el) el.remove();
+}
+
+/* close panels on menu / world switch */
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { wlCloseShop(); wlCloseDlg(); }
+});
+
+/* ================================================================
    §10 WORLD
 ================================================================ */
 /* ---- build the session's world (v12: template or recipe) ---- */
@@ -2639,6 +5413,9 @@ if (Worlds.recipe) {
     buildTemplateWorld();
   }
 } else buildTemplateWorld();
+/* v14: the world's own GAME — items, buildings, buttons, droppers,
+   shops, scripts (§9.7). No-op on worlds without logic fields. */
+GameLogic.load(Worlds.recipe);
 { const wl = document.getElementById('world-loading'); if (wl) wl.remove(); }
 
 function buildTemplateWorld() {
@@ -3236,7 +6013,6 @@ function updateRides(dt) {
    geometry + face texture are shared. Rig refs: armL/armR are the
    shoulder pivots, legL/legR are the hip pivots.
 ================================================================ */
-let MAX_ZOMBIES = 6;   /* live-synced from V (§1.5) */
 const zombies = [];
 let zSeq = 0, zSyncT = 0;   /* zombie id counter + state-broadcast timer */
 
@@ -3315,7 +6091,15 @@ function damageZombie(z, dmg, ax = player.x, az = player.z) {
   const dx = z.body.x - ax, dz = z.body.z - az, d = Math.hypot(dx, dz) || 1;
   z.body.vx += (dx / d) * V.knockback; z.body.vz += (dz / d) * V.knockback;
   if (z.body.grounded) z.body.vy = 8;
-  if (z.hp <= 0) { z.dead = true; z.deathT = 0; WS.emit('zdie', { i: z.zid }); addSys('Zombie defeated!'); }
+  if (z.hp <= 0) {
+    z.dead = true; z.deathT = 0; WS.emit('zdie', { i: z.zid }); addSys('Zombie defeated!');
+    /* v14: world spawner bounties — the KILLER gets paid, wherever
+       they are (the zombie's owner client settles it, like zdmg) */
+    if (z.reward > 0 && z.lastHit) {
+      if (z.lastHit === MP.id) { Wallet.add(z.reward); wlCreditPopup(player.x, player.y + 4, player.z, '+' + wlMoney(z.reward)); }
+      else WS.emit('zrew', { to: z.lastHit, r: z.reward });
+    }
+  }
 }
 
 function updateZombies(dt) {
@@ -3441,11 +6225,12 @@ function updateZombies(dt) {
 ================================================================ */
 /* initial spawn is scattered on the same 2-6 stud ring respawn() uses —
    multiplayer players never start inside each other at world center.
-   (v12: WORLDS_SPAWN comes from the active world; a saved spot or a
-   cross-world teleport replaces it right after.) */
+   (v12: WORLDS_SPAWN comes from the active world; a pending
+   cross-world admin teleport replaces it right after — otherwise
+   this IS where you start: no remembered spots, v13.) */
 const _spawnA = Math.random() * Math.PI * 2, _spawnR = 2 + Math.random() * 4;
 const player = { x: WORLDS_SPAWN.x + Math.sin(_spawnA) * _spawnR, y: WORLDS_SPAWN.y, z: WORLDS_SPAWN.z + Math.cos(_spawnA) * _spawnR, vx: 0, vy: 0, vz: 0, hw: 0.75, h: 5.4, grounded: false, impact: 0 };
-applyBootPosition();   // v12: resume my saved spot / land where an admin brought me
+applyBootPosition();   // v13: an admin bring lands me at the admin; otherwise I stay at spawn
 
 let yaw = 0, speed = 0, phase = 0, land = 0, climbPhase = 0;
 let climbing = false, seated = false, seatCtl = null, ladderLatch = 0, climbSide = 1;
@@ -3472,8 +6257,10 @@ function hurtPlayer(dmg, kbx = 0, kbz = 0) {
 }
 function respawn() {
   const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 4;   // spawn ring —
-  player.x = WORLDS_SPAWN.x + Math.sin(a) * r;                          // players never stack in multiplayer
-  player.z = WORLDS_SPAWN.z + Math.cos(a) * r; player.y = WORLDS_SPAWN.y;
+  const cp = (GameLogic.active && GameLogic.checkpoint) || null;        // v14: last checkpoint wins
+  player.x = (cp ? cp.x : WORLDS_SPAWN.x) + Math.sin(a) * r;            // players never stack in multiplayer
+  player.z = (cp ? cp.z : WORLDS_SPAWN.z) + Math.cos(a) * r;
+  player.y = cp ? cp.y + 0.4 : WORLDS_SPAWN.y;
   player.vx = player.vy = player.vz = 0;
   health = V.maxHealth; timeSinceHurt = 99;
   if (seatCtl && seatCtl.detach) seatCtl.detach();   // leave any ride seat cleanly
@@ -3627,7 +6414,7 @@ function updateMovement(dt) {
     if (moving) {
       const heading = Math.atan2(tmpV.x, tmpV.z);
       yaw += angWrap(heading - yaw) * Math.min(1, dt * 12);
-      const target = (run ? V.runSpeed : V.walkSpeed) * mySpd * Math.min(1, len) * mySzScale();   // room rule × my multiplier × size scaling
+      const target = (run ? V.runSpeed : V.walkSpeed) * mySpd * Math.min(1, len) * mySzScale() * GameLogic.speedMult();   // room rule × my multiplier × size × world buff (§9.7)
       speed += (target - speed) * Math.min(1, dt * (target > speed ? 8 : 11));
       player.vx = (tmpV.x / len) * speed;
       player.vz = (tmpV.z / len) * speed;
@@ -3636,12 +6423,13 @@ function updateMovement(dt) {
       player.vx *= Math.max(0, 1 - dt * 14);
       player.vz *= Math.max(0, 1 - dt * 14);
     }
-    if ((keys[' '] || touchJump) && player.grounded) player.vy = JUMPV * myJmp * (mySzScale() ? Math.sqrt(myScale) : 1);   // my multiplier × size (sqrt: a mini player can still hop a block)
+    if ((keys[' '] || touchJump) && player.grounded) player.vy = JUMPV * myJmp * (mySzScale() ? Math.sqrt(myScale) : 1) * GameLogic.jumpMult();   // my multiplier × size × world jump buff (§9.7)
     player.vy -= GRAV * dt;
     if (player.vy < -120) player.vy = -120;
   }
 
   moveBody(player, dt);
+  GameLogic.carryPlayer(dt);   // v14: conveyors shove the player (§9.7)
 
   /* landing squash + fall damage (height-based, see FALL_SAFE_H) */
   if (player.impact > 8) {
@@ -3696,7 +6484,7 @@ function updateAnim(dt, t) {
      the slash lifts up-back, then chops down across the body. */
   const it = Inventory.current();
   if (it && !seated) {
-    if (it.id === 'sword') {
+    if (defKind(it.id) === 'sword') {
       let rx = -1.57, rz = -0.06;                 // hold: arm out, sword up
       if (swingT >= 0) {
         const k = swingT / 0.42;
@@ -3709,10 +6497,10 @@ function updateAnim(dt, t) {
         }
       }
       out.armRx = rx; out.armRz = rz;
-    } else if (it.id === 'gun') {                  // arm out, blaster forward
+    } else if (defKind(it.id) === 'gun') {          // arm out, blaster forward
       out.armRx = -1.55 - (gunKickT > 0 ? (gunKickT / 0.14) * 0.3 : 0);
       out.armRz = -0.1;
-    } else if (it.id === 'apple') {
+    } else if (defKind(it.id) === 'consumable') {
       if (eatT > 0) { out.armRx = -2.3; out.armRz = -0.35; }
       else { out.armRx = -0.32; out.armRz = -0.12; }
     }
@@ -3739,7 +6527,11 @@ addEventListener('keydown', e => {
   keys[k] = true;
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   if (k === '/') { e.preventDefault(); chatInput.focus(); }
-  if (k === 'e' && currentInteract) currentInteract.action();
+  if (k === 'e') {                    // v14: NPC dialogue eats E while open
+    if (GameLogic.dlgOpen) GameLogic.dlgNext();
+    else if (currentInteract) currentInteract.action();
+  }
+  if (k === 'r' && !e.repeat) startReload();   // v14: reload the gun in hand
   if (k >= '1' && k <= '9') Inventory.select(+k - 1);
   if (k === 'm') openMenu(true);
 });
@@ -3799,7 +6591,27 @@ if (isTouch) {
    background with a backoff.
 ================================================================ */
 /* WORKER_URL + API_BASE now live in §9.5 (worlds need them at boot) */
-const ADMIN_CODE = 'Jesusisthebom';
+/* v17: the admin code is NOT in this file any more — the relay (v8)
+   checks it and stamps the admin flag on everything it forwards, so a
+   crown can't be faked by editing the page. The code you typed is kept
+   on this device and re-sent on every connect ({t:'auth'}). */
+const ADMIN_KEY = 'baseplate.admin.code.v1';
+let adminPending = null;            // callback waiting on the relay's answer
+function adminAuth(code, cb) {
+  if (!MP.connected) { if (cb) cb(null); return; }
+  adminPending = cb || null;
+  MP._send({ t: 'auth', c: String(code).slice(0, 64) });
+}
+function onAdminAuth(m) {
+  const ok = !!m.ok, cb = adminPending; adminPending = null;
+  if (cb) { cb(ok, m.lim); return; }
+  if (!ok && isAdmin) {             // stored code no longer valid (it was changed)
+    isAdmin = false;
+    try { localStorage.removeItem(ADMIN_KEY); } catch (e) {}
+    applyIdentityToHUD(); rebuildAdminTab();
+    adminBanner('Admin code changed — unlock admin again from the menu.');
+  }
+}
 const CROWN = '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:#f5c542;vertical-align:-1px"><path d="M3 17.5 L3 7.5 L8.2 11.2 L12 4 L15.8 11.2 L21 7.5 L21 17.5 Z"/></svg>';
 const ANIM_OK = ['idle', 'walk', 'run', 'jump', 'climb', 'sit', 'wave', 'dance', 'salute'];
 
@@ -3808,7 +6620,10 @@ const ANIM_OK = ['idle', 'walk', 'run', 'jump', 'climb', 'sit', 'wave', 'dance',
 let USERNAME = 'Player', isAdmin = false, userModalOpen = false, hasStoredName = false;
 function loadIdentity() {
   try { const n = localStorage.getItem('baseplate.user.v1'); if (n) { USERNAME = n; hasStoredName = true; } } catch (e) {}
-  try { isAdmin = localStorage.getItem('baseplate.admin.v1') === '1'; } catch (e) {}
+  try {
+    localStorage.removeItem('baseplate.admin.v1');          // pre-v17 flag (unverified) — retired
+    isAdmin = !!localStorage.getItem(ADMIN_KEY);            // re-verified by the relay on connect
+  } catch (e) {}
 }
 function applyIdentityToHUD() {
   const pname = document.querySelector('#playerhud .pname');
@@ -3926,6 +6741,8 @@ function removeRemote(id) {
   r.tag.remove();
   MP.remotes.delete(id);
   onPlayerLeft(id);          // free their seats, adopt/follow their zombies (§12.6)
+  /* v16: their tycoon plots go back on the market, on every screen */
+  if (GameLogic.active) GameLogic.playerLeft(id);
   MP.paintOnline();
 }
 
@@ -3969,6 +6786,12 @@ function removeRemote(id) {
      rrules {…room rules…}             psize {id,s}
      pstat {id,sm,jm,sc}               pgive {id,it}
      smite {id,x,y,z,dm,sz,pw,sp,rd}
+   v14 world-game kinds (§9.7):
+     tyc {t:'b'|'c'|'pk'|'r'|'win', e, n}  buy / claim / pickup / reset / win
+     tycq {}        tycs {i,n,d}   snapshot ask + chunked answer
+     dspawn {i,e,x,y,z}           a dropper spawned a drop
+     wmon {m}      zrew {to,r}    money broadcast · zombie kill reward
+     snet {k,d}                   world-script custom net events
 ================================================================ */
 const WS = {
   handlers: {},
@@ -4013,7 +6836,16 @@ WS.on('mgrE', d => { if (MGR) MGR.state.rocketOn = !!d.on; });
 WS.on('swg', d => { if (SWING) SWING.net = { a: +d.a || 0, v: +d.v || 0, at: elapsed }; });
 WS.on('mgr', d => { if (!MGR) return; MGR.net = { a: +d.a || 0, w: +d.w || 0, r: !!d.r, at: elapsed };
   if (!MGR.state.rocketOn && MGR.net.r) MGR.state.rocketOn = true; });
-WS.on('zspawn', (d, from) => { spawnZombie(+d.x || 0, +d.z || 0, d.i, from); });
+WS.on('zspawn', (d, from) => {           // v14: + kill reward + owning spawner
+  const ok = spawnZombie(+d.x || 0, +d.z || 0, d.i, from);
+  if (ok) {
+    /* v16 fix: spawnZombie returns a boolean — find the rig it just
+       pushed instead of writing fields onto `true` (that threw a
+       silent TypeError in v15's remote reward path) */
+    const zb = zombies.find(q => q.zid === d.i);
+    if (zb) { zb.reward = Math.max(0, +d.r || 0); zb.src = typeof d.s === 'string' ? d.s : null; }
+  }
+});
 WS.on('zst', d => {
   if (!Array.isArray(d.l)) return;
   for (const e of d.l) {
@@ -4027,7 +6859,7 @@ WS.on('zst', d => {
 WS.on('zdmg', (d, from) => {
   const zb = zombies.find(q => q.zid === d.i);
   if (!zb || zb.dead) return;
-  if (zb.owner === MP.id) damageZombie(zb, +d.d || 1, +d.ax || 0, +d.az || 0);
+  if (zb.owner === MP.id) { zb.lastHit = from; damageZombie(zb, +d.d || 1, +d.ax || 0, +d.az || 0); }   // v14: remember the killer
   else if (zb.hurtT <= 0) zb.hurtT = 0.18;         // flash on every screen
 });
 WS.on('zdie', d => {
@@ -4036,7 +6868,8 @@ WS.on('zdie', d => {
 });
 WS.on('pvp', d => {
   if (d.to !== MP.id) return;
-  hurtPlayer(+d.d || 0, (+d.x || 0) * V.knockback, (+d.z || 0) * V.knockback);
+  const kb = d.kb != null ? clamp(+d.kb, 0, 60) : V.knockback;   // v14: per-weapon knockback
+  hurtPlayer(+d.d || 0, (+d.x || 0) * kb, (+d.z || 0) * kb);
 });
 WS.on('gshot', (d, from) => {
   if (Array.isArray(d.a) && Array.isArray(d.b)) {
@@ -4278,7 +7111,7 @@ function remotePose(r, t) {
     }
   }
   /* tool layer — same hold / slash math as §6 */
-  if (r.tool === 'sword' && a !== 'sit') {
+  if (defKind(r.tool) === 'sword' && a !== 'sit') {
     let rx = -1.57, rz = -0.06;                 // hold: arm out, sword up
     if (r.sw >= 0) {
       const k = r.sw / 0.42;
@@ -4286,10 +7119,10 @@ function remotePose(r, t) {
       else { const u = (k - 0.28) / 0.72; rx = -2.77 + easeOut(u) * 1.9; rz = -0.56 + u * 0.62; }
     }
     c.armRx = rx; c.armRz = rz;
-  } else if (r.tool === 'gun') {                // arm out, blaster forward + recoil kick
+  } else if (defKind(r.tool) === 'gun') {          // arm out, blaster forward + recoil kick
     c.armRx = -1.55 - (r.gunKick > 0 ? (r.gunKick / 0.22) * 0.35 : 0);
     c.armRz = -0.1;
-  } else if (r.tool === 'apple') {
+  } else if (defKind(r.tool) === 'consumable') {
     c.armRx = -0.32; c.armRz = -0.12;
   }
 }
@@ -4297,8 +7130,8 @@ function remotePose(r, t) {
 function remoteToolMesh(r) {
   if (r.toolMesh && r.toolMeshId !== r.tool) { r.toolMesh.removeFromParent(); r.toolMesh = null; r.toolMeshId = ''; }
   if (r.tool && !r.toolMesh) {
-    r.toolMesh = r.tool === 'sword' ? buildSwordMesh() : r.tool === 'gun' ? buildGunMesh() : buildAppleMesh();
-    if (r.tool === 'gun') r.toolMesh.rotation.x = Math.PI / 2;   // barrel forward along the arm
+    r.toolMesh = buildToolMesh(r.tool);                           // v14: any world weapon
+    if (defKind(r.tool) === 'gun') r.toolMesh.rotation.x = Math.PI / 2;   // barrel forward along the arm
     r.toolMeshId = r.tool;
     r.pivots.toolAnchor.add(r.toolMesh);
   }
@@ -4329,11 +7162,13 @@ const MP = {
     /* v12: the list is EVERYONE, EVERYWHERE — same-world players
        first (they're the ones you actually see + interact with),
        then everyone in other worlds with a world chip. */
-    const rows = [{ name: USERNAME, admin: isAdmin, self: true, col: '#0D69AC', world: Worlds.id, live: true }];
+    const rows = [{ name: USERNAME, admin: isAdmin, self: true, col: '#0D69AC', world: Worlds.id, live: true,
+      money: GameLogic.active ? Wallet.amount : null }];
     for (const r of this.remotes.values()) {
       const h = [...r.id].reduce((a, c) => a + c.charCodeAt(0), 0);
       rows.push({ name: r.name, admin: r.admin, self: false, world: Worlds.id, live: true,
-        col: '#' + REMOTE_TORSO_COLORS[h % REMOTE_TORSO_COLORS.length].toString(16).padStart(6, '0') });
+        col: '#' + REMOTE_TORSO_COLORS[h % REMOTE_TORSO_COLORS.length].toString(16).padStart(6, '0'),
+        money: GameLogic.active ? (GameLogic.remoteMoney.get(r.id) ?? null) : null });
     }
     if (Worlds.online) {
       for (const p of GLOBAL.players.values()) {
@@ -4354,6 +7189,7 @@ const MP = {
       `<div class="mp-player"><span class="swatch" style="background:${p.col}"></span>` +
       `<div><div class="nm${p.admin ? ' admin' : ''}">${p.admin ? CROWN : ''}${esc(p.name)}</div>` +
       `<div class="tag">${p.live ? '@' + slug(p.name) : 'in ' + esc(worldNameOf(p.world))}</div></div>` +
+      (p.money != null ? `<span class="wl-mchip">${p.money.toLocaleString('en-US')}</span>` : '') +
       (p.self ? '<span class="you">YOU</span>' : p.live ? '' : `<span class="wchip">${esc(worldNameOf(p.world))}</span>`) + '</div>').join('');
   },
 
@@ -4374,6 +7210,10 @@ const MP = {
       this.connected = true; this.state = 'on'; this.retry = 0;
       this.sendTO = 0; this.pingTO = 25;      // send a state right away
       this.paintOnline();
+      let code = null;                       // v17: re-verify a saved admin code
+      try { code = localStorage.getItem(ADMIN_KEY); } catch (e) {}
+      if (code) adminAuth(code);
+      GameLogic.onConnected();               // v14: ask for the world's game state (§9.7)
     };
     ws.onmessage = ev => this._onmsg(ev.data);
     ws.onclose = () => { if (this.ws === ws) this._down(); };
@@ -4409,12 +7249,15 @@ const MP = {
     else if (m.t === 'c') {
       if (m.id === this.id) return;                 // never echo own chat back
       addChat(String(m.n || 'Player'), String(m.x || ''), !!m.a);
+      if (GameLogic.active) GameLogic.fire('chat', [String(m.x || ''), String(m.n || 'Player'), false]);
     }
     else if (m.t === 'w' && m.id && m.id !== this.id) WS.recv(m.k, m.d, m.id);   // world events (§12.6)
     else if (m.t === 'rrules') applyRoomRules(m.d);   // stored room rules — relay v4 sends these on join
     else if (m.t === 'gp' && Array.isArray(m.p)) onPresence(m.p);   // v12: everyone, every world
     else if (m.t === 'forceworld') onForceWorld(m);                 // v12: an admin brought me across worlds
+    else if (m.t === 'tycs' && m.d && typeof m.d === 'object') GameLogic.applyWorkerSnapshot(m.d);   // v14: relay-stored world state
     else if (m.t === 'bye') removeRemote(m.id);
+    else if (m.t === 'auth') onAdminAuth(m);                        // v17: relay-verified admin
   },
 
   _state(m) {
@@ -4429,7 +7272,7 @@ const MP = {
     r.tx = +m.x || 0; r.ty = +m.y || 0; r.tz = +m.z || 0;
     r.yawT = +m.yw || 0;
     r.anim = ANIM_OK.includes(m.an) ? m.an : 'idle';
-    r.tool = (m.tl === 'sword' || m.tl === 'apple' || m.tl === 'gun') ? m.tl : '';
+    r.tool = (typeof m.tl === 'string' && ITEM_DEFS[m.tl]) ? m.tl : '';   // v14: any world weapon
     r.sw = typeof m.sw === 'number' ? m.sw : -1;
     if (m.sz != null) r.scale = clamp(+m.sz || 1, 0.25, 3);   // their size rides the state (late joiners)
     if (m.sm != null) r.sm = clamp(+m.sm || 1, 0.25, 4);      // v11: their stat multipliers too
@@ -4578,9 +7421,12 @@ function loop() {
     updateRides(dt);
     updateZombies(dt);
     MP.tick(dt, elapsed);      // multiplayer: relay + remote rigs (§12.5)
+    GameLogic.tick(dt);        // v14: the world's own game (§9.7)
 
     if (gunCd > 0) gunCd -= dt;                       // blaster cooldown (§8)
     if (gunKickT > 0) gunKickT -= dt;
+    if (swingCd > 0) swingCd -= dt;                   // v14: per-sword swing cooldown
+    tickWeapon(dt);                                   // v14: ammo / reload / auto fire
     updateFX(dt);                                     // tracers / flashes
 
     if (swingT >= 0) {
@@ -4754,7 +7600,7 @@ function renderWorldsTab() {
     if (!isCur) {
       const btn = mkEl('button', 'abtn mini', 'Join');
       btn.addEventListener('click', () => askConfirm('Join ' + esc(w.name || w.id) + '?',
-        'You will leave this world and load <b>' + esc(w.name || w.id) + '</b>. Your spot here is remembered — switch back any time.',
+        'You will leave this world and load <b>' + esc(w.name || w.id) + '</b> and spawn at its spawn point.',
         'Join', () => { openMenu(false); switchWorld(w.id); }));
       card.append(btn);
     }
@@ -5508,15 +8354,22 @@ function buildAdminTab() {
     const btn = mkEl('button', 'abtn', 'Unlock');
     btn.style.marginTop = '4px';
     const tryUnlock = () => {
-      if (inp.value === ADMIN_CODE) {
-        isAdmin = true;
-        try { localStorage.setItem('baseplate.admin.v1', '1'); } catch (e) {}
-        applyIdentityToHUD();
-        rebuildAdminTab();
-      } else {
-        errEl.textContent = 'Incorrect code.';
-        inp.value = ''; inp.focus();
-      }
+      const code = inp.value;
+      if (!code) return;
+      if (!MP.connected) { errEl.textContent = 'Connect to the server first — the relay checks the code.'; return; }
+      btn.disabled = true; errEl.textContent = 'Checking…';
+      adminAuth(code, (ok, lim) => {
+        btn.disabled = false;
+        if (ok) {
+          isAdmin = true;
+          try { localStorage.setItem(ADMIN_KEY, code); } catch (e) {}
+          applyIdentityToHUD();
+          rebuildAdminTab();
+        } else {
+          errEl.textContent = ok === null ? 'Not connected.' : lim ? 'Too many tries — rejoin to try again.' : 'Incorrect code.';
+          inp.value = ''; inp.focus();
+        }
+      });
     };
     btn.addEventListener('click', tryUnlock);
     inp.addEventListener('keydown', e => {
@@ -5661,6 +8514,9 @@ function buildAdminTab() {
     adminBanner('Broadcast sent.');
   };
   vp.append(actBtn('Broadcast', sendBc));
+  vp.append(actBtn('Reset World Progress', () => askConfirm('Reset world progress?',
+    'Every claimed plot, bought button and taken pickup in this world resets to day one. Player money is kept.',
+    'Reset Everything', () => { WS.act('tyc', { t: 'r' }); adminBanner('World progress reset.'); })));
   sect(vp, 'Live');
   vp.append(srvRow('Relay', () => WORKER_URL.replace(/^wss?:\/\//, '').split('/')[0]));
   vp.append(srvRow('You', () => USERNAME + ' (@' + slug(USERNAME) + ')'));
@@ -5678,7 +8534,8 @@ function buildAdminTab() {
   }, 'danger'));
   vbtns.append(actBtn('Lock Admin', () => {
     isAdmin = false;
-    try { localStorage.removeItem('baseplate.admin.v1'); } catch (e) {}
+    try { localStorage.removeItem(ADMIN_KEY); } catch (e) {}
+    MP._send({ t: 'auth', c: '' });           // tell the relay too (drops the crown)
     applyIdentityToHUD();
     rebuildAdminTab();
   }, 'danger'));
