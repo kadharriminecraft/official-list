@@ -282,6 +282,14 @@
       font: 11px/1.55 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
       max-height: 280px; overflow-y: auto; background: rgba(13, 14, 17, .5);
     }
+    /* edit_file diff: removed lines red, added lines green */
+    .diff-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .diff-body .dl-add { color: #6ee7a0; display: block; }
+    .diff-body .dl-del { color: #ff8c93; display: block; }
+    /* the live "receiving a tool call" drafting card (anti-freeze feedback) */
+    .tool-card.draft .tool-title { font-weight: 600; }
+    .tool-card.draft .tool-sub { color: var(--accent); font-variant-numeric: tabular-nums; }
+    .tool-card.draft .tool-body { color: var(--subtle); }
     .tool-foot { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--border-soft); }
     .tool-foot button {
       display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 10px;
@@ -318,6 +326,17 @@
     .err-card.retrying { border-color: rgba(250, 204, 21, .38); background: rgba(250, 204, 21, .06); }
     .err-card.retrying > .ic { color: #facc15; }
     .err-card .spin-wrap { margin-top: 2px; color: #facc15; }
+    /* pace selector on the live retry card — how aggressive auto-retry is */
+    .retry-pace { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .retry-pace .rp-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--subtle); font-weight: 650; }
+    .rp-seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+    .rp-seg button {
+      min-height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--muted); font-size: 11px; font-weight: 600;
+    }
+    .rp-seg button:hover { color: var(--text); background: var(--surface-3); }
+    .rp-seg button.on { border-color: rgba(250, 204, 21, .55); background: rgba(250, 204, 21, .13); color: #fde68a; }
+    .rp-note { flex-basis: 100%; font-size: 10.5px; color: var(--subtle); line-height: 1.45; }
 
     /* ---------- composer ---------- */
     .composer-wrap { flex: 0 0 auto; padding: 6px 14px max(10px, env(safe-area-inset-bottom)); pointer-events: none; }
@@ -863,6 +882,23 @@
     .tf-main.pop { animation: tf-pop .16s ease-out; }
     @keyframes tf-pop { 0% { transform: scale(.93); opacity: .35; } 100% { transform: scale(1); opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .tf-main.pop, .tf-w.now.pop { animation: none; } }
+    /* barge-in: a big, obvious way to cut the AI off mid-sentence */
+    .talk-interrupt-row { display: flex; justify-content: center; padding: 4px 0 0; }
+    .talk-interrupt-row[hidden] { display: none; }
+    .talk-interrupt {
+      display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 20px;
+      border-radius: 999px; border: 1px solid rgba(239, 123, 131, .55);
+      background: linear-gradient(180deg, rgba(239, 123, 131, .2), rgba(239, 123, 131, .1));
+      color: #f6b3ba; font-size: 13px; font-weight: 650; letter-spacing: -.01em;
+      animation: interrupt-breathe 1.7s ease-in-out infinite;
+    }
+    .talk-interrupt .ic { width: 16px; height: 16px; }
+    .talk-interrupt:hover { background: rgba(239, 123, 131, .26); color: #ffd7db; }
+    @keyframes interrupt-breathe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 123, 131, .3); }
+      50% { box-shadow: 0 0 0 8px rgba(239, 123, 131, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .talk-interrupt { animation: none; } }
 
     /* ---------- voice settings sheet ---------- */
     .voice-sec { margin-bottom: 16px; }
@@ -1116,6 +1152,9 @@
     <div class="talk-fallback" id="talk-fallback" hidden>
       <input class="field" id="talk-input" type="text" placeholder="Type instead…" autocomplete="off" enterkeyhint="send">
       <button class="send-btn talk-send" data-action="talk-send" aria-label="Send"><span id="ic-talk-send"></span></button>
+    </div>
+    <div class="talk-interrupt-row" id="talk-interrupt-row" hidden>
+      <button class="talk-interrupt" id="talk-interrupt-btn" data-action="talk-interrupt" aria-label="Interrupt the reply and start talking"><span data-ic="mic"></span>Interrupt &amp; talk</button>
     </div>
     <div class="talk-controls">
       <button class="talk-ctl" id="talk-mic-btn" data-action="talk-mute" aria-label="Mute microphone"><span id="ic-talk-mic2"></span></button>
@@ -1563,7 +1602,8 @@
       apiKey: "", model: "openai/gpt-4o-mini", imageModel: "google/gemini-2.5-flash-image", profile: "coding", systemPrompt: "",
       temperature: 0.2, topP: 0.95, maxTokens: 0, frequencyPenalty: 0, presencePenalty: 0,
       stream: true, reasoningEnabled: true, reasoningEffort: "medium", reasoningDisplay: "collapsed",
-      contextAutoTrim: true, contextFill: 0.85, agentMaxSteps: 8, toolsEnabled: true, tools: {},
+      contextAutoTrim: true, contextFill: 0.85, agentMaxSteps: 12, toolsEnabled: true, tools: {},
+      retryLevel: "aggressive", // auto-retry pace: relaxed | standard | aggressive | relentless — editable live on the retry card
       voice: { auto: true, voiceURI: "", pitch: 1, rate: 1, volume: 0.95, emotion: 1, pause: 170, focus: false, think: true, length: "balanced" },
     };
     const PROFILES = {
@@ -1584,7 +1624,7 @@
         prompt: "You are Nexus, a creative collaborator. Bring fresh ideas, vivid language, and unexpected angles while staying genuinely useful.",
       },
     };
-    const AGENT_PROMPT = "You are working in Agent Mode inside the user's browser workspace.\nYou can create and manage project files with list_files, read_file, write_file and delete_file — plus grep_files to search them and any other tools listed in your tool definitions (web search, HTTP requests and so on).\nGuidelines:\n- Build projects as multiple clean files (e.g. index.html, style.css, app.js).\n- Before overwriting a file whose current state you are unsure of, read it first.\n- Large files come back from read_file as numbered line chunks (offset/limit) — page through them, or use grep_files to jump straight to the right lines. Never assume a file is truncated; it is paged.\n- After writing logic, verify it with run_javascript when practical (algorithms, pure logic, tests). Workspace files can be loaded inside run_javascript via require('path/file.js').\n- Keep iterating with tools until the task is done, then summarize what you built, the file structure, and how to use it.\n- Use small, focused steps rather than one giant step.";
+    const AGENT_PROMPT = "You are working in Agent Mode — a coding agent inside the user's browser workspace.\nYour ONLY tools are the functions listed in your tool definitions for this request. Never call a function that is not listed there, and never invent one — if something isn't covered, say so in your final reply instead.\nFile tools: list_files (see what exists), read_file (numbered line chunks), grep_files (locate text fast), write_file (create or fully rewrite), edit_file (surgical change to part of a file), rename_file, delete_file. Plus run_javascript (sandbox — require('path/file.js') loads workspace files) and any web/API tools listed.\nWorkflow:\n- Plan first: list_files, then read/grep the files you'll touch before changing them.\n- To change PART of a file, use edit_file with an exact, unique old_text copied from read_file — do NOT rewrite the whole file with write_file for small changes.\n- Keep iterating with tools until the task is genuinely done — don't stop halfway to ask permission for an obvious next step.\n- Verify logic with run_javascript when practical (algorithms, pure logic, tests).\n- Large reads arrive as numbered chunks (offset/limit) — that is paging, not truncation; grep_files jumps straight to what you need.\n- Build projects as multiple clean files (index.html, style.css, app.js) rather than one giant file.\n- When finished, summarize what you built/changed, the file structure, and how to use it.";
 
     /* ============================== fallback model catalog ============================== */
     const FALLBACK_MODELS = [
@@ -1972,9 +2012,9 @@
         } catch (err) {
           if (signal.aborted) throw new DOMException("Aborted", "AbortError");
           if (timedOut) throw new ChatError("The request timed out after " + Math.round(REQUEST_TIMEOUT / 1000) + "s.", 408);
-          if (++netAttempts <= 2) {
-            onRetry?.("Connection hiccup — retrying (" + netAttempts + "/2)…");
-            await sleep(netAttempts * 1200, signal);
+          if (++netAttempts <= 3) { // aggressive on hiccups — most are instant blips
+            onRetry?.("Connection hiccup — retrying (" + netAttempts + "/3)…");
+            await sleep(netAttempts * 700, signal);
             continue;
           }
           throw new ChatError("Network connection failed. Check your internet connection and try again.", 0, { network: true });
@@ -1993,10 +2033,10 @@
           await sleep(ra * 1000, signal);
           continue;
         }
-        if (resp.status >= 500 && serverAttempts < 1) {
+        if (resp.status >= 500 && serverAttempts < 2) {
           serverAttempts++;
-          onRetry?.("Provider error — retrying…");
-          await sleep(1500, signal);
+          onRetry?.("Provider error — retrying (" + serverAttempts + "/2)…");
+          await sleep(serverAttempts * 1000, signal);
           continue;
         }
         throw new ChatError(friendlyHttpError(resp.status, msg), resp.status);
@@ -2013,6 +2053,7 @@
         if (Date.now() - lastByte > STALL_TIMEOUT) { stalled = true; handlers.onStall?.(); }
       }, 5000);
       const acc = {}; // tool call accumulator by index
+      let lastProg = 0; // throttle for live tool-call progress
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -2041,6 +2082,12 @@
                 if (tc.id) acc[idx].id = tc.id;
                 if (tc.function?.name) acc[idx].name = tc.function.name;
                 if (tc.function?.arguments) acc[idx].args += tc.function.arguments;
+              }
+              // live feedback while the model streams a (possibly huge) tool
+              // call — without this a 30s write_file looks frozen
+              if (handlers.onToolProgress && Date.now() - lastProg > 120) {
+                lastProg = Date.now();
+                handlers.onToolProgress(Object.keys(acc).map(k => ({ name: acc[k].name, args: acc[k].args })));
               }
             }
             if (delta.usage) handlers.onUsage(delta.usage);
@@ -2255,6 +2302,7 @@
         state.chatRef = null;
         state.genCtx = null;
         clearInflight();
+        clearToolDraft();
         setGeneratingUi(false);
         releaseWakeLock();
         chat.messages = chat.messages.filter(m => !m.meta);
@@ -2317,13 +2365,15 @@
 
       try {
         const resp = await chatFetch(body, ctrl.signal, t => setStatus(t, "warn", true));
-        setStatus(agent ? "Working…" : "Thinking…", "", true);
+        setStatus(agent ? "Working · step " + (state.agentSteps + 1) + "…" : "Thinking…", "", true);
         const toolCalls = await readStream(resp.body, ctrl.signal, {
           onText: applyText,
           onReasoning: applyReasoning,
           onUsage: u => { msg.usage = u; addUsage(s.model, u); },
           onStall: () => ctrl.abort(),
+          onToolProgress: prog => paintToolDraft(prog, chat, msgIndex),
         });
+        clearToolDraft();
         finalizeStreamUi();
 
         if (toolsActive && toolCalls.length) {
@@ -2481,15 +2531,67 @@
       { type: "function", function: { name: "list_files", description: "List all files in the workspace with their sizes and line counts.", parameters: { type: "object", properties: {}, required: [] } } },
       { type: "function", function: { name: "read_file", description: "Read a workspace file. Large files are returned as numbered line chunks (default 400 lines starting at offset 1) — keep calling with a higher offset to page through the whole file. Line numbers are shown so you can cite them.", parameters: { type: "object", properties: { path: { type: "string", description: "File path, e.g. src/app.js" }, offset: { type: "number", description: "First line to return (1-based, default 1)" }, limit: { type: "number", description: "How many lines to return (default 400, max 600)" } }, required: ["path"] } } },
       { type: "function", function: { name: "grep_files", description: "Search workspace files for a pattern (plain text or /regex/flags) and get every matching line with its file and line number. The fast way to locate things in large files instead of paging through them.", parameters: { type: "object", properties: { pattern: { type: "string", description: "Text to find, or a /regex/ like /function \w+\(/ " }, path: { type: "string", description: "Only search this one file (optional — all files when omitted)" }, max_results: { type: "number", description: "Max matches to return (default 40, max 100)" } }, required: ["pattern"] } } },
-      { type: "function", function: { name: "write_file", description: "Create or completely overwrite a file in the workspace. Always provide the FULL file content.", parameters: { type: "object", properties: { path: { type: "string", description: "File path, e.g. index.html" }, content: { type: "string", description: "The complete file content to write" } }, required: ["path", "content"] } } },
+      { type: "function", function: { name: "write_file", description: "Create or completely overwrite a file in the workspace. Always provide the FULL file content. When you only need to change PART of an existing file, prefer edit_file instead — it is cheaper and safer than rewriting.", parameters: { type: "object", properties: { path: { type: "string", description: "File path, e.g. index.html" }, content: { type: "string", description: "The complete file content to write" } }, required: ["path", "content"] } } },
+      { type: "function", function: { name: "edit_file", description: "Edit part of an existing file by exact text replacement — the preferred way to change a file you have already read (much cheaper than rewriting it with write_file). old_text must match the file EXACTLY, including whitespace and indentation, and be unique in the file (include surrounding lines if needed); set replace_all true to replace every occurrence.", parameters: { type: "object", properties: { path: { type: "string", description: "File path, e.g. src/app.js" }, old_text: { type: "string", description: "The exact text to replace — copy it verbatim from read_file output" }, new_text: { type: "string", description: "The replacement text (empty string deletes old_text)" }, replace_all: { type: "boolean", description: "Replace every occurrence instead of requiring a unique match (default false)" } }, required: ["path", "old_text", "new_text"] } } },
+      { type: "function", function: { name: "rename_file", description: "Rename or move a workspace file.", parameters: { type: "object", properties: { path: { type: "string", description: "Current file path" }, new_path: { type: "string", description: "The new file path" } }, required: ["path", "new_path"] } } },
       { type: "function", function: { name: "delete_file", description: "Delete a file from the workspace.", parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } } },
       { type: "function", function: { name: "run_javascript", description: "Run JavaScript in a secure sandbox (Web Worker, no DOM, 10s limit). console.log/warn/error output and the final value are returned. Load workspace files with require('path.js'). Use it to test logic, algorithms, and verify code.", parameters: { type: "object", properties: { code: { type: "string", description: "JavaScript source code to execute" } }, required: ["code"] } } },
     ];
     const MAX_FILES = 80, MAX_FILE_BYTES = 10 * 1024 * 1024;
     const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+    /* ---------- hallucinated-tool-name safety net ----------
+       Models trained on other coding agents (Claude Code, Cursor, Aider…)
+       routinely call edit tools that were never defined here. Instead of a
+       dead-end error, the usual invented names route to the real tools and
+       alternate argument spellings (old_str, file_path…) are normalized. */
+    const TOOL_ALIASES = {
+      apply_patch: "edit_file", str_replace: "edit_file", str_replace_editor: "edit_file", edit: "edit_file", modify_file: "edit_file", patch_file: "edit_file", replace: "edit_file",
+      create_file: "write_file", write_to_file: "write_file", write: "write_file", save_file: "write_file",
+      open_file: "read_file", cat: "read_file", read: "read_file", view_file: "read_file", open: "read_file",
+      search_files: "grep_files", search_code: "grep_files", find_in_files: "grep_files", grep: "grep_files", code_search: "grep_files", search: "grep_files",
+      ls: "list_files", list_directory: "list_files", list_dir: "list_files", dir: "list_files",
+      remove_file: "delete_file", rm: "delete_file", delete: "delete_file",
+      move_file: "rename_file", move: "rename_file", rename: "rename_file",
+      run_command: "run_javascript", execute_code: "run_javascript", run_code: "run_javascript", eval: "run_javascript", execute: "run_javascript", run: "run_javascript", bash: "run_javascript", shell: "run_javascript", run_python: "run_javascript",
+      search_web: "web_search", websearch: "web_search",
+      fetch: "fetch_url", open_url: "fetch_url", url_fetch: "fetch_url", browse: "fetch_url", get_url: "fetch_url",
+      http: "http_request", request: "http_request", api_request: "http_request",
+      time: "get_time", get_date: "get_time", datetime: "get_time",
+      weather: "get_weather",
+      convert_currency: "currency_convert", exchange_rates: "currency_convert",
+      define: "define_word", dictionary: "define_word", lookup_word: "define_word",
+    };
+    /* alternate argument names models send — canonical key first, then every
+       spelling it may arrive under (rename gets "name" because {path, name}
+       is a common mv-style signature; write gets it via "file"/"filename") */
+    const ARG_ALIASES = {
+      path: ["file", "filename", "file_path", "filePath", "filepath", "target"],
+      old_text: ["old_str", "old_string", "oldText", "find", "search", "match", "original", "source_text"],
+      new_text: ["new_str", "new_string", "newText", "replace_with", "replacement", "updated_text"],
+      new_path: ["to", "new_name", "name", "destination", "dest", "dest_path", "newpath", "new_file"],
+      content: ["text", "body", "contents", "file_content", "data"],
+      code: ["source", "script", "js", "javascript", "program"],
+      pattern: ["regex", "search_pattern", "needle"],
+      query: ["q", "search_query", "search_terms"],
+      url: ["link", "uri", "address", "webpage", "website"],
+    };
+    function normalizeToolArgs(args) {
+      if (!args || typeof args !== "object" || Array.isArray(args)) return args;
+      const out = { ...args };
+      for (const [canonical, aliases] of Object.entries(ARG_ALIASES)) {
+        for (const a of aliases) {
+          if (a in out && !(canonical in out)) { out[canonical] = out[a]; delete out[a]; }
+        }
+      }
+      return out;
+    }
+    function allToolNames() {
+      return [...new Set([...AGENT_TOOLS, ...AI_TOOLS].map(t => t.function.name))];
+    }
+
     /* ============================== AI tools (every chat, not just agent) ============================== */
-    const TOOLS_PROMPT = "You have built-in tools in this conversation — the exact set enabled is listed in your tool definitions. Typical tools include:\n- web_search — search the live web and Wikipedia instead of guessing current facts.\n- fetch_url — read any public webpage as clean text.\n- http_request — call external REST APIs (any method, headers, JSON body).\n- get_weather — real conditions + forecast for any place.\n- get_time — exact current date/time in any timezone.\n- run_javascript — compute, transform data, or verify logic in a sandbox.\n- currency_convert — live exchange rates.\n- define_word — English dictionary.\nWhen file tools (list_files, read_file, grep_files, write_file, delete_file) are listed, this chat has a file workspace: large attached files live there in full — read_file returns them as numbered line chunks (offset/limit), and grep_files finds text by pattern with line numbers. A file being returned in chunks does NOT mean it was truncated; page through with offset to see the rest.\nRules: don't call tools for trivia you already know; after a tool runs, use its result in your answer and cite source URLs when they came from the web; if a tool fails, say so plainly and fall back to your own knowledge with a caveat.";
+    const TOOLS_PROMPT = "You have built-in tools in this conversation — the exact set enabled is listed in your tool definitions, and those are the ONLY tools that exist: never call a function that is not listed there; if something isn't covered, say so in your reply instead of inventing a call. Typical tools include:\n- web_search — search the live web and Wikipedia instead of guessing current facts.\n- fetch_url — read any public webpage as clean text.\n- http_request — call external REST APIs (any method, headers, JSON body).\n- get_weather — real conditions + forecast for any place.\n- get_time — exact current date/time in any timezone.\n- run_javascript — compute, transform data, or verify logic in a sandbox.\n- currency_convert — live exchange rates.\n- define_word — English dictionary.\nWhen file tools (list_files, read_file, grep_files, write_file, edit_file, rename_file, delete_file) are listed, this chat has a file workspace: large attached files live there in full — read_file returns them as numbered line chunks (offset/limit), and grep_files finds text by pattern with line numbers. A file being returned in chunks does NOT mean it was truncated; page through with offset to see the rest. To change part of a file, use edit_file (exact old_text → new_text) rather than rewriting the whole file.\nRules: don't call tools for trivia you already know; after a tool runs, use its result in your answer and cite source URLs when they came from the web; if a tool fails, say so plainly and fall back to your own knowledge with a caveat.";
     const AI_TOOLS = [
       { type: "function", function: { name: "web_search", description: "Search the web. Returns live web results, falling back to Wikipedia. Use it for current events, facts, prices, news — anything you are unsure about.", parameters: { type: "object", properties: { query: { type: "string", description: "Search query" } }, required: ["query"] } } },
       { type: "function", function: { name: "fetch_url", description: "Fetch a public http(s) URL and return its content as clean readable text. Good for articles, documentation, and JSON endpoints.", parameters: { type: "object", properties: { url: { type: "string", description: "Full URL including https://" }, max_chars: { type: "number", description: "Max characters to return (default 12000, max 20000)" } }, required: ["url"] } } },
@@ -2528,6 +2630,8 @@
       read_file: { icon: "file", label: args => "Read " + (args.path || "file"), status: args => "Reading " + (args.path || "file") + "…" },
       grep_files: { icon: "search", label: args => "Searched " + (args.path || "files"), status: args => "Searching " + (args.path || "files") + "…" },
       write_file: { icon: "fileCode", label: args => "Wrote " + (args.path || "file"), status: args => "Writing " + (args.path || "file") + "…" },
+      edit_file: { icon: "pencil", label: args => "Edited " + (args.path || "file"), status: args => "Editing " + (args.path || "file") + "…" },
+      rename_file: { icon: "pen", label: args => "Renamed " + (args.path || "?") + " → " + (args.new_path || "?"), status: args => "Renaming " + (args.path || "file") + "…" },
       delete_file: { icon: "trash", label: args => "Deleted " + (args.path || "file"), status: args => "Deleting " + (args.path || "file") + "…" },
       run_javascript: { icon: "terminal", label: "Ran code", status: "Running code…" },
       web_search: { icon: "search", label: "Searched the web", status: "Searching the web…" },
@@ -2539,6 +2643,17 @@
       define_word: { icon: "book", label: args => "Defined “" + String(args.word || "").slice(0, 24) + "”", status: "Looking it up…" },
     };
     function shortUrl(u) { try { return new URL(String(u)).host; } catch (_) { return String(u || "").slice(0, 30); } }
+    // colored − old / + new lines for edit_file cards
+    function diffLinesHtml(lines) {
+      const shown = lines.slice(0, 24);
+      const rest = lines.length > 24 ? "\n… " + (lines.length - 24) + " more changed lines" : "";
+      return '<div class="diff-body">' + shown.map(l => {
+        const t = escapeHtml(l);
+        if (t.startsWith("+ ")) return '<span class="dl-add">' + t + "</span>";
+        if (t.startsWith("- ")) return '<span class="dl-del">' + t + "</span>";
+        return t;
+      }).join("\n") + escapeHtml(rest) + "</div>";
+    }
 
     /* ---------- shared tool helpers ---------- */
     function toolFetch(url, opts = {}, ms = 12000) {
@@ -2731,8 +2846,21 @@
       if (text.length <= max) return text;
       return text.slice(0, max) + "\n…[output truncated, " + (text.length - max) + " more chars]";
     }
+    // "- old / + new" preview of an edit (removed block first, then the added
+    // one) — capped so a huge replacement can't flood the card or the context
+    function buildDiffLines(oldText, newText, max = 60) {
+      const lines = [];
+      oldText.split("\n").forEach(l => lines.push("- " + l));
+      newText.split("\n").forEach(l => lines.push("+ " + l));
+      if (lines.length > max) return lines.slice(0, max).concat(["… (" + (lines.length - max) + " more changed lines)"]);
+      return lines;
+    }
 
     async function runTool(name, args, chat) {
+      // hallucinated names (apply_patch, ls, create_file…) route to the real
+      // tool, and alternate argument spellings (old_str, filename…) normalize
+      name = TOOL_ALIASES[name] || name;
+      if (args && typeof args === "object" && !Array.isArray(args)) args = normalizeToolArgs(args);
       const ws = workspace(chat);
       switch (name) {
         case "list_files": {
@@ -2801,6 +2929,38 @@
           saveChats();
           return { text: "Wrote " + p + " (" + formatBytes(content.length) + ", " + content.split("\n").length + " lines).", label: "Wrote " + p, sub: formatBytes(content.length) + " · " + content.split("\n").length + " lines", icon: "fileCode", file: p };
         }
+        case "edit_file": {
+          const p = validPath(args.path);
+          if (!(p in ws.files)) throw new ChatError("File not found: " + p + " — use list_files to see what exists, or write_file to create it fresh.");
+          const oldText = String(args.old_text ?? "");
+          const newText = String(args.new_text ?? "");
+          if (!oldText) throw new ChatError("old_text is required — copy the exact text (with its indentation) from read_file output.");
+          if (oldText === newText) throw new ChatError("old_text and new_text are identical — nothing to change.");
+          const content = ws.files[p];
+          const count = content.split(oldText).length - 1;
+          if (count === 0) throw new ChatError("old_text was not found in " + p + " — it must match EXACTLY (whitespace, indentation, quotes). Read the file with read_file and copy the text precisely, or locate it with grep_files first.");
+          if (count > 1 && args.replace_all !== true) throw new ChatError("old_text appears " + count + " times in " + p + " — include more surrounding lines so it is unique, or pass replace_all: true to replace every occurrence.");
+          const updated = args.replace_all === true ? content.split(oldText).join(newText) : content.replace(oldText, newText);
+          if (updated.length > MAX_FILE_BYTES) throw new ChatError("The edit would make the file too large (max " + formatBytes(MAX_FILE_BYTES) + ").");
+          ws.files[p] = updated;
+          saveChats();
+          const changed = args.replace_all === true ? count : 1;
+          const diffLines = buildDiffLines(oldText, newText);
+          return {
+            text: "Edited " + p + " — " + changed + " replacement" + (changed === 1 ? "" : "s") + " (" + oldText.split("\n").length + " line" + (oldText.split("\n").length === 1 ? "" : "s") + " out → " + newText.split("\n").length + " in, file now " + updated.split("\n").length + " lines).\n\n" + diffLines.join("\n"),
+            label: "Edited " + p, sub: changed + " change" + (changed === 1 ? "" : "s") + " · " + updated.split("\n").length + " lines", icon: "pencil", file: p, diffLines,
+          };
+        }
+        case "rename_file": {
+          const p = validPath(args.path), np = validPath(args.new_path);
+          if (!(p in ws.files)) throw new ChatError("File not found: " + p + " — use list_files to see what exists.");
+          if (np === p) throw new ChatError("The new path is the same as the old one.");
+          if (np in ws.files) throw new ChatError("A file called " + np + " already exists — pick a different name or delete it first.");
+          ws.files[np] = ws.files[p];
+          delete ws.files[p];
+          saveChats();
+          return { text: "Renamed " + p + " → " + np + " (" + formatBytes(ws.files[np].length) + " carried over).", label: "Renamed " + p + " → " + np, sub: formatBytes(ws.files[np].length), icon: "pen", file: np };
+        }
         case "delete_file": {
           const p = validPath(args.path);
           if (!(p in ws.files)) throw new ChatError("File not found: " + p);
@@ -2847,7 +3007,7 @@
           const out = await toolDefine(args);
           return { text: out, label: "Defined “" + String(args.word || "").slice(0, 24) + "”", sub: "", icon: "book" };
         }
-        default: throw new ChatError("Unknown tool: " + name);
+        default: throw new ChatError("Unknown tool: " + name + ". The available tools are: " + allToolNames().join(", ") + ". Use edit_file to change part of an existing file, write_file to create or fully rewrite one.");
       }
     }
 
@@ -2858,28 +3018,53 @@
         if (ctrl.signal.aborted) break;
         const call = toolCalls[i];
         const name = call.function?.name || "";
+        // hallucinated names route to the real tool; args get normalized so
+        // Claude-style old_str / Cursor-style file_path still work
+        const resolved = TOOL_ALIASES[name] || name;
         let args = {};
-        try { args = JSON.parse(call.function?.arguments || "{}"); } catch (_) {}
-        setStatus(toolStatusText(name, args), "", true);
+        let parseFailed = false;
+        try { args = JSON.parse(call.function?.arguments || "{}"); }
+        catch (_) { parseFailed = true; }
+        if (args && typeof args === "object" && !Array.isArray(args)) args = normalizeToolArgs(args);
+        setStatus(toolStatusText(resolved, args), "", true);
         // the card appears the moment the tool STARTS, in its live running state
         // (spinner + “Searching the web…”), and flips to its done state after
         chat.messages.push({
           role: "tool", tool_call_id: call.id, name, content: "", ok: null,
-          ui: { label: toolStatusText(name, args), running: true, icon: toolIcon(name) },
+          ui: { label: toolStatusText(resolved, args), running: true, icon: toolIcon(resolved) },
         });
         renderStreamingMessageOnly(chat, msgIndex);
         let res;
+        const known = allToolNames().includes(resolved);
         try {
-          res = await runTool(name, args, chat);
+          if (parseFailed) {
+            // arguments JSON was cut off (max_tokens?) or malformed — teach,
+            // don't dead-end: the model can retry with a complete call
+            res = { text: "The arguments for " + name + " were not valid JSON (truncated or malformed) and the call was NOT executed. Retry with complete, valid JSON — if you keep hitting the length limit, work in smaller pieces (e.g. write_file with less content, or several edit_file calls).", label: "Malformed call · " + name, sub: "invalid arguments", icon: "alert", failed: true };
+          } else if (!known) {
+            // a genuinely unknown function: execute nothing — return guidance
+            // instead so the model recovers on the very next round
+            res = {
+              text: "Unknown tool: \"" + name + "\". It does not exist in this environment and was NOT executed. The ONLY available tools are: " + allToolNames().join(", ") + ". To modify part of an existing file use edit_file (path, old_text, new_text); to create or fully rewrite a file use write_file; to find text use grep_files. Retry now with one of the listed tools.",
+              label: "Unknown tool · " + name, sub: "not executed — see guidance", icon: "alert", failed: true,
+            };
+          } else {
+            res = await runTool(name, args, chat);
+            if (resolved !== name) {
+              // it ran through an alias — tell the model, so next time it
+              // calls the real name instead of the one it invented
+              res = { ...res, text: res.text + "\n\n(Note: \"" + name + "\" is not an available tool — this ran as " + resolved + ". Call " + resolved + " directly next time.)" };
+            }
+          }
         } catch (err) {
-          res = { text: "Tool error: " + err.message, label: labelForTool(name, args) + " (failed)", sub: err.message, icon: toolIcon(name), failed: true };
+          res = { text: "Tool error: " + err.message, label: labelForTool(resolved, args) + " (failed)", sub: err.message, icon: toolIcon(resolved), failed: true };
         }
         executed++;
         const tmsg = chat.messages[chat.messages.length - 1];
         if (tmsg?.role === "tool" && tmsg.tool_call_id === call.id) {
           tmsg.content = res.text;
           tmsg.ok = !res.failed;
-          tmsg.ui = { label: res.label, sub: res.sub, icon: res.icon, file: res.file, output: res.output };
+          tmsg.ui = { label: res.label, sub: res.sub, icon: res.icon, file: res.file, output: res.output, diffLines: res.diffLines };
         }
         persistInflightThrottled(chat, msgIndex);
         saveChatsThrottled();
@@ -3202,7 +3387,9 @@
         const ui = r?.ui || {};
         const running = !!r && ui.running;
         const ok = r ? r.ok : false;
-        const body = running ? "Running…" : (r ? truncateOut(r.content, 4000) : "Not executed.");
+        const body = running
+          ? "Running…"
+          : (r ? (ui.diffLines?.length ? diffLinesHtml(ui.diffLines) : escapeHtml(truncateOut(r.content, 4000))) : "Not executed.");
         const file = ui.file || "";
         const foot = !running && file && /\.html?$/i.test(file)
           ? '<div class="tool-foot"><button data-action="preview-file" data-path="' + escapeAttr(file) + '">' + ic("play") + " Preview</button>" +
@@ -3213,19 +3400,24 @@
           '<span class="tool-copy"><span class="tool-title">' + escapeHtml(ui.label || labelForTool(call.function?.name, {})) + "</span>" +
           (ui.sub && !running ? '<span class="tool-sub">' + escapeHtml(ui.sub) + "</span>" : "") + "</span>" +
           '<span class="chev">' + ic("chevRight") + "</span></summary>" +
-          '<div class="tool-body">' + escapeHtml(body) + "</div>" + foot + "</details>";
+          '<div class="tool-body">' + body + "</div>" + foot + "</details>";
       }).join("") + "</div>";
     }
 
     /* ---------- failure cards (shared by solo rows and unified agent rows) ---------- */
     function retryCardHtml(m, index) {
       const ar = m.autoRetry;
-      const secs = Math.max(0, Math.ceil((ar.nextAt - Date.now()) / 1000));
+      const lvl = RETRY_PROFILES[state.settings.retryLevel] ? state.settings.retryLevel : "aggressive";
+      const prof = RETRY_PROFILES[lvl];
+      const paceBtn = k => '<button data-action="retry-level" data-level="' + k + '"' + (k === lvl ? ' class="on"' : "") + ' aria-pressed="' + (k === lvl) + '">' + RETRY_PROFILES[k].label + "</button>";
       return '<div class="err-card retrying">' +
         '<span class="spin-wrap">' + ic("rotate", "spin") + '</span><div class="err-copy">' +
         '<div class="err-title">Auto-retry engaged — attempt ' + ar.attempt + " of " + ar.max + "</div>" +
-        '<div class="err-msg" data-retry-countdown data-index="' + index + '">Next retry in ' + secs + "s — same request, no duplicate message</div>" +
+        '<div class="err-msg" data-retry-countdown data-index="' + index + '">' + retryCountdownText(ar.nextAt) + "</div>" +
         (ar.lastError ? '<div class="err-hint">Last failure: ' + escapeHtml(ar.lastError) + "</div>" : "") +
+        '<div class="retry-pace"><span class="rp-label">Pace</span><div class="rp-seg">' +
+          paceBtn("relaxed") + paceBtn("standard") + paceBtn("aggressive") + paceBtn("relentless") +
+        '</div><div class="rp-note">' + escapeHtml(prof.label + ": " + prof.note) + "</div></div>" +
         '<div class="err-actions"><button data-action="stop-auto-retry" data-index="' + index + '">' + ic("x") + " Stop auto-retry</button></div>" +
         "</div></div>";
     }
@@ -3237,8 +3429,8 @@
         : status === 404 ? "Model not found" : status === 403 ? "Model blocked for this key" : status >= 500 ? "Provider error"
         : status === 0 ? "Connection failed" : "Request failed";
       const retryable = status === 0 || status === 408 || status === 429 || status >= 500;
-      const hint = status === 429 ? "The provider is busy right now. Retry now, or engage auto-retry — it keeps retrying this same request with growing pauses until it goes through."
-        : status >= 500 ? "The model provider had a server error. Auto-retry keeps trying this same request with growing pauses until it succeeds."
+      const hint = status === 429 ? "The provider is busy right now. Retry now, or engage auto-retry — it re-fires this same request almost instantly, backing off only if failures pile up."
+        : status >= 500 ? "The model provider had a server error. Auto-retry keeps hammering this same request — fast at first, backing off until it succeeds."
         : status === 408 ? "The request timed out. Auto-retry will keep trying — or pick a faster model."
         : status === 0 ? "No connection could be made. Auto-retry keeps trying this same request until your network recovers."
         : status === 403 ? (freeBlocked
@@ -3333,6 +3525,7 @@
     /* ============================== streaming engine (smooth, rAF-batched) ============================== */
     const stream = { active: false, chat: null, index: -1, raf: 0, lastRender: 0, reasonTick: 0 };
     state.streamingIndex = -1;
+    state.toolDraft = null;
 
     function streamNodeHtml(m) {
       if (m.imagePending) {
@@ -3424,6 +3617,85 @@
       if (stream.raf) { cancelAnimationFrame(stream.raf); stream.raf = 0; }
       stream.active = false;
       state.streamingIndex = -1;
+    }
+
+    /* ---------- live "drafting" feedback ----------
+       The silent killer of agent UX: while the model STREAMS a tool call
+       (a write_file carrying a whole file can take 30s+ of argument
+       tokens), the old UI showed nothing but static typing dots — users
+       read that as a freeze. paintToolDraft() turns the partial argument
+       stream into a live card ("Creating index.html… · 4.2 KB in") with a
+       growing byte counter and an elapsed timer, plus a matching composer
+       status line. It patches the DOM in place — no re-render churn. */
+    function toolDraftLabel(name, subject) {
+      const n = TOOL_ALIASES[name] || name;
+      const s = subject || "";
+      switch (n) {
+        case "write_file": return "Creating " + (s || "a file");
+        case "edit_file": return "Editing " + (s || "a file");
+        case "read_file": return "Opening " + (s || "a file");
+        case "rename_file": return "Renaming " + (s || "a file");
+        case "delete_file": return "Deleting " + (s || "a file");
+        case "grep_files": return "Preparing search" + (s ? " · " + s : "");
+        case "run_javascript": return "Drafting code";
+        case "web_search": return "Preparing search" + (s ? " · " + s : "");
+        case "fetch_url": return "Preparing to fetch" + (s ? " · " + s : "");
+        default: return toolStatusText(n, {}) || "Working";
+      }
+    }
+    // pull a readable subject (path, query, url…) out of PARTIAL argument
+    // JSON — works on incomplete strings because the regex tolerates a
+    // missing closing quote
+    function toolDraftSubject(name, rawArgs) {
+      const n = TOOL_ALIASES[name] || name;
+      const keys = n === "rename_file" ? ["path", "new_path"]
+        : n === "grep_files" ? ["pattern"]
+        : n === "web_search" ? ["query"]
+        : n === "fetch_url" || n === "http_request" ? ["url"]
+        : ["path"];
+      for (const k of keys) {
+        const m = rawArgs.match(new RegExp('"' + k + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)'));
+        if (m) return m[1].slice(0, 60);
+      }
+      return "";
+    }
+    function paintToolDraft(prog, chat, msgIndex) {
+      const first = (prog || []).find(p => p.name);
+      if (!first) return;
+      const info = {
+        name: first.name,
+        subject: toolDraftSubject(first.name, first.args || ""),
+        bytes: (first.args || "").length,
+      };
+      state.toolDraft = info;
+      setStatus(toolDraftLabel(info.name, info.subject) + "… · " + formatBytes(info.bytes) + " in", "", true);
+      if (currentChat() !== chat) return;
+      const row = chatContent.querySelector('[data-message-index="' + msgIndex + '"]')?.closest(".message-row");
+      if (!row) return;
+      let card = row.querySelector(".tool-draft");
+      if (!card) {
+        // real drafting feedback exists → the static dots would read as a
+        // freeze next to it, so they go
+        row.querySelector(".typing")?.remove();
+        card = document.createElement("div");
+        card.className = "tool-cards tool-draft";
+        card.innerHTML = '<details class="tool-card running draft" open><summary>' +
+          '<span class="tool-icon run">' + ic("rotate", "spin") + "</span>" +
+          '<span class="tool-copy"><span class="tool-title" data-draft-label></span>' +
+          '<span class="tool-sub" data-draft-sub></span></span>' +
+          '<span class="think-time" data-gen-elapsed=""></span></summary>' +
+          '<div class="tool-body">The model is streaming this tool call — the counter grows as it arrives. Nothing is frozen.</div></details>';
+        const bodyEl = row.querySelector(".message-body");
+        const textEl = row.querySelector(".message-text");
+        if (bodyEl && textEl) bodyEl.insertBefore(card, textEl.nextSibling);
+        else row.appendChild(card);
+      }
+      card.querySelector("[data-draft-label]").textContent = toolDraftLabel(info.name, info.subject) + "…";
+      card.querySelector("[data-draft-sub]").textContent = "receiving · " + formatBytes(info.bytes);
+    }
+    function clearToolDraft() {
+      state.toolDraft = null;
+      document.querySelectorAll(".tool-draft").forEach(el => el.remove());
     }
     function renderStreamingMessageOnly(chat, msgIndex) {
       // refresh one message (used between agent tool executions) — re-renders
@@ -4413,6 +4685,11 @@
       rec: null, finalText: "", carry: "", silenceTimer: null, pollTimer: null, voice: null,
       submitting: false, focus: false, resumeAfterVoice: false,
       focusTimer: null, focusWords: null, focusOffsets: null, lastChunk: "",
+      // caption sync: the predictor's anchors + the pace learned from this voice
+      focusRate: 1, uttStart: 0, saidWord: -1, boundWord: -1, boundAt: 0, calib: null, calibPace: null,
+      // barge-in: cancel() fires onend on the armed sentence chain — only a
+      // matching token may keep speaking, so an interrupt truly silences it
+      speakToken: 0,
       lastSent: "", lastSentAt: 0, sessionStart: 0, sessionHeard: false,
     };
     /* normalized phrase comparison for the echo guard (case, punctuation and
@@ -4437,6 +4714,7 @@
       talk.kb = !caps.stt; // no speech input available → keyboard by default
       talk.finalText = ""; talk.carry = ""; talk.submitting = false; talk.resumeAfterVoice = false;
       talk.lastSent = ""; talk.lastSentAt = 0; talk.lastChunk = "";
+      talk.calibPace = null; // each call re-learns its voice's pace from scratch
       talk.focus = !!voiceCfg().focus;
       $("talk-model-name").textContent = (modelById()?.name || "Voice chat");
       $("talk-fallback").hidden = !talk.kb;
@@ -4740,6 +5018,11 @@
       const synth = window.speechSynthesis;
       if (!clean || !synth || typeof window.SpeechSynthesisUtterance !== "function" || !talk.speakerOn) { afterSpeakDone(); return; }
       try { synth.cancel(); } catch (_) {}
+      // stamp this reply: every armed sentence chain lives only while its
+      // token matches. cancel() fires onend on the CURRENT sentence, whose
+      // handler would otherwise queue the NEXT one — that's how an interrupt
+      // used to cut one sentence and keep talking.
+      const token = ++talk.speakToken;
       setTalkPhase("speaking");
       // speakable chunks: sentences, long ones split at natural pauses
       const chunks = [];
@@ -4761,6 +5044,7 @@
       const blend = (base, emo) => talkClamp(base * (1 + (emo - 1) * cfg.emotion), 0.5, 1.6);
       let i = 0;
       const speakNext = () => {
+        if (token !== talk.speakToken) { stopFocusTicker(); return; } // interrupted — whoever bumped the token owns the transition
         if (!talk.active || !talk.speakerOn) { stopFocusTicker(); afterSpeakDone(); return; }
         if (i >= chunks.length) { stopFocusTicker(); afterSpeakDone(); return; }
         const text = chunks[i++];
@@ -4773,10 +5057,15 @@
         u.pitch = talkClamp(blend(cfg.pitch, emo.pitch) * (1 + drift * 0.03), 0.5, 1.6); // user's base × emotion × micro-drift
         u.rate = talkClamp(blend(cfg.rate, emo.rate) * (1 - drift * 0.025), 0.5, 1.6);
         u.volume = talkClamp(cfg.volume * (1 + (emo.volume - 1) * cfg.emotion), 0.1, 1);
-        u.onstart = () => startFocusTicker(text, u.rate); // focused captions: word-by-word
-        u.onboundary = ev => { if (ev.name === "word" || ev.type === "word") focusBoundary(ev, text); };
-        u.onend = () => { stopFocusTicker(); setTimeout(speakNext, cfg.pause); }; // human pause between sentences
-        u.onerror = () => { stopFocusTicker(); setTimeout(speakNext, 60); };
+        u.onstart = () => { if (token !== talk.speakToken) return; startFocusTicker(text, u.rate); }; // focused captions: word-by-word
+        u.onboundary = ev => { if (token !== talk.speakToken) return; if (ev.name === "word" || ev.type === "word") focusBoundary(ev, text); };
+        u.onend = () => {
+          if (token !== talk.speakToken) return; // cancelled — a newer reply or an interrupt took over
+          if (talk.focusWords) paintFocusWord(talk.focusWords.length); // light the whole sentence: it finished
+          stopFocusTicker();
+          setTimeout(speakNext, cfg.pause); // human pause between sentences
+        };
+        u.onerror = () => { if (token !== talk.speakToken) return; stopFocusTicker(); setTimeout(speakNext, 60); };
         try { synth.speak(u); } catch (_) { setTimeout(speakNext, 60); }
       };
       // small delay before the first chunk — iOS drops utterances queued
@@ -4789,7 +5078,20 @@
       if (voiceSheetOpen()) { talk.resumeAfterVoice = true; return; } // mic resumes when the sheet closes (no echo while previewing)
       if (!talk.muted && getSRClass()) startListening();
     }
-    function stopSpeaking() { try { window.speechSynthesis?.cancel(); } catch (_) {} stopFocusTicker(); }
+    /* Silence the AI on demand. `resume` mirrors afterSpeakDone: hand the
+       call back to the user (listening / parked when muted) instead of
+       leaving the phase stuck on "speaking". The token bump is what makes
+       the interruption stick — no queued sentence survives it. */
+    function stopSpeaking(resume) {
+      talk.speakToken++;
+      try { window.speechSynthesis?.cancel(); } catch (_) {}
+      stopFocusTicker();
+      if (resume && talk.active && talk.phase === "speaking") {
+        setTalkPhase(talk.muted ? "idle" : "listening");
+        if (voiceSheetOpen()) { talk.resumeAfterVoice = true; return; }
+        if (!talk.muted && getSRClass()) startListening();
+      }
+    }
     /* ---------- focused captions: the word being said, live ---------- */
     function applyTalkFocus(clear) {
       const scr = document.getElementById("talk-screen");
@@ -4818,9 +5120,19 @@
     }
     /* while the AI speaks, the whole sentence is visible and reads like a
        subtitle: spoken words light up as they're said, the current word pops,
-       upcoming words stay dim but readable. Word boundaries drive it where the
-       engine provides them; a pace-estimated ticker fills in (and is
-       snap-corrected by boundaries) where it doesn't */
+       upcoming words stay dim but readable. Two engines cooperate so the
+       highlight never drifts behind the voice:
+       - Where the browser fires word-boundary events they are AUTHORITATIVE:
+         they snap the highlight to the exact word AND calibrate a running
+         measure of how fast this voice actually speaks (chars/second at
+         rate 1×), so the estimate tunes itself to the real voice and speed.
+       - Between boundaries — and on engines that never fire them, like iOS
+         Safari — a timestamp-driven predictor advances the highlight using
+         the calibrated pace × the utterance's actual rate, anchored to the
+         last fresh boundary when there is one, to the utterance start
+         otherwise. Because it is time-anchored it also survives background
+         tab throttling: it snaps to the right word the moment it ticks. */
+    const FOCUS_BASE_CPMS = 15.5 / 1000; // ~165 wpm at rate 1× before any calibration
     function startFocusTicker(text, rate) {
       if (!talk.focus || !talk.active) return;
       stopFocusTicker();
@@ -4839,43 +5151,78 @@
         talk.focusOffsets.push(at < 0 ? pos : at);
         pos = (at < 0 ? pos : at) + w.length;
       }
-      renderFocusSentence(-1);
-      const r = Math.max(0.5, rate || 1);
-      let idx = 0;
-      const step = () => {
-        if (!talk.focusWords) return; // boundary events took over (or utterance ended)
-        if (idx >= words.length) return; // estimate exhausted — stay armed: real boundaries keep arriving
-        renderFocusSentence(idx++);
-        const w = words[idx - 1] || "";
-        talk.focusTimer = setTimeout(step, Math.min(900, 190 + w.length * 62) / r);
-      };
-      talk.focusTimer = setTimeout(step, 130);
+      talk.focusRate = Math.max(0.5, rate || 1); // the REAL rate: emotion blend + drift included
+      talk.uttStart = performance.now();
+      talk.boundWord = -1; talk.boundAt = 0; talk.saidWord = -1;
+      talk.calib = talk.calibPace || null; // a voice keeps the pace it proved last sentence
+      buildFocusSentence();
+      talk.focusTimer = setInterval(focusTick, 60);
+    }
+    /* which word owns a char position */
+    function focusWordAtChar(ci) {
+      let at = 0;
+      for (let i = 0; i < talk.focusOffsets.length; i++) { if (talk.focusOffsets[i] <= ci) at = i; else break; }
+      return at;
+    }
+    function focusTick() {
+      if (!talk.focusWords || !talk.active) return;
+      const now = performance.now();
+      const pace = talk.calib || FOCUS_BASE_CPMS; // chars per ms at 1×
+      let pred;
+      if (talk.boundAt && now - talk.boundAt < 2000) {
+        // fresh boundary: predict forward from the exact word it named
+        pred = (talk.focusOffsets[talk.boundWord] || 0) + (now - talk.boundAt) * pace * talk.focusRate;
+      } else {
+        pred = (now - talk.uttStart) * pace * talk.focusRate;
+      }
+      const at = focusWordAtChar(pred);
+      if (at > talk.saidWord) paintFocusWord(at);
     }
     function stopFocusTicker(keepWords) {
-      if (talk.focusTimer) { clearTimeout(talk.focusTimer); talk.focusTimer = null; }
+      if (talk.focusTimer) { clearInterval(talk.focusTimer); talk.focusTimer = null; }
       if (!keepWords) talk.focusWords = null;
     }
     function focusBoundary(ev, text) {
       if (!talk.focus || !talk.active || !talk.focusWords) return;
-      const ci = Number(ev.charIndex) || 0;
-      let at = 0;
-      for (let i = 0; i < talk.focusOffsets.length; i++) { if (talk.focusOffsets[i] <= ci) at = i; else break; }
-      stopFocusTicker(true); // boundaries are authoritative — hand the display over (words stay armed)
-      renderFocusSentence(at);
+      const at = focusWordAtChar(Number(ev.charIndex) || 0);
+      if (at > talk.boundWord) {
+        // calibrate from what the voice actually did: chars consumed through
+        // this word over the elapsed time, normalized to rate 1×
+        const el = performance.now() - talk.uttStart;
+        if ((at >= 2 || el > 250) && at > 0) {
+          const chars = talk.focusOffsets[at] + (talk.focusWords[at] || "").length;
+          const obs = Math.min(40, Math.max(5, chars / el / talk.focusRate * 1000)); // chars/sec at 1×
+          talk.calib = talk.calib ? talk.calib * 0.35 + obs * 0.65 : obs;
+          talk.calibPace = talk.calib; // remembered for the next sentence
+        }
+        talk.boundWord = at; talk.boundAt = performance.now();
+      }
+      if (at > talk.saidWord) paintFocusWord(at); // snap the display forward — boundaries are truth
     }
-    /* paint the sentence: words 0..said-1 are said, word `said` is current, the rest dim */
-    function renderFocusSentence(said) {
+    /* build the sentence spans ONCE per sentence — ticks only move classes */
+    function buildFocusSentence() {
       const main = document.getElementById("tf-main");
       if (!main || !talk.focusWords) return;
       main.className = "tf-main tf-ai";
-      main.innerHTML = talk.focusWords.map((w, i) =>
-        '<span class="tf-w' + (i < said ? " said" : "") + (i === said ? " now" : "") + '">' + escapeHtml(w) + "</span>"
-      ).join(" ");
-      const now = main.querySelector(".tf-w.now");
-      if (now) { // keep the current word in view when the sentence outgrows the zone
-        const target = Math.max(0, now.offsetTop - main.clientHeight * 0.55);
+      main.innerHTML = talk.focusWords.map(w => '<span class="tf-w">' + escapeHtml(w) + "</span>").join(" ");
+      main.scrollTop = 0;
+    }
+    /* words 0..said-1 are said, word `said` is current, the rest dim */
+    function paintFocusWord(said) {
+      const main = document.getElementById("tf-main");
+      if (!main || !talk.focusWords) return;
+      const spans = main.querySelectorAll(".tf-w");
+      const from = talk.saidWord; // monotonic within a sentence — only ever moves forward
+      talk.saidWord = said;
+      for (let i = Math.max(0, from); i < said && i < spans.length; i++) spans[i].classList.add("said");
+      const old = main.querySelector(".tf-w.now");
+      if (old) old.classList.remove("now", "pop");
+      const cur = spans[said];
+      if (cur) {
+        cur.classList.add("now");
+        void cur.offsetWidth; cur.classList.add("pop"); // restart the pop on the newly current word
+        const target = Math.max(0, cur.offsetTop - main.clientHeight * 0.55); // keep it in view
         if (Math.abs(main.scrollTop - target) > 8) main.scrollTop = target;
-        now.classList.remove("pop"); void now.offsetWidth; now.classList.add("pop");
       }
     }
     /* ---------- talk overlay rendering ---------- */
@@ -4889,7 +5236,7 @@
       const map = {
         listening: { icon: "mic", label: talk.muted ? "Muted" : "Listening…", hint: "Just talk — pause when you're done and Nexus answers out loud. Tap the orb to send now." },
         thinking: { icon: "brain", label: "Thinking… <span data-gen-elapsed>1s</span>", hint: "Working on a short spoken answer." },
-        speaking: { icon: "wave", label: "Speaking…", hint: "Tap the orb to interrupt and jump back in." },
+        speaking: { icon: "wave", label: "Speaking…", hint: "Want to jump in? Tap Interrupt — or the orb — and the mic picks up instantly." },
         idle: { icon: talk.muted ? "micOff" : "mic", label: talk.kb ? "Type your message" : "Paused", hint: talk.kb ? "Speech input isn't available here — type below and replies still come out loud." : "Mic is muted — tap the mic button to resume." },
       };
       const ph = map[talk.phase] || map.idle;
@@ -4909,6 +5256,9 @@
         spBtn.classList.toggle("off", !talk.speakerOn);
         spBtn.setAttribute("aria-label", talk.speakerOn ? "Mute voice replies" : "Unmute voice replies");
       }
+      // barge-in button: visible exactly while the AI is talking
+      const irRow = document.getElementById("talk-interrupt-row");
+      if (irRow) irRow.hidden = talk.phase !== "speaking";
       const voiceBtn = $("talk-voice-btn");
       if (voiceBtn) voiceBtn.classList.toggle("active", !!talk.focus); // hint that focused captions are on
       // focused captions: keep the mini status + text zone in sync with the phase
@@ -5149,10 +5499,22 @@
 
     /* ---------- opt-in auto re-requester ----------
        Engaged manually from an error card. It does NOT send a new message:
-       it re-issues the exact same request (same history, same prompt) with
-       growing pauses: 4s, 8s, 16s, 30s, 60s, then 120s, up to 10 attempts. */
-    const AUTO_RETRY_MAX = 10;
-    const AUTO_RETRY_DELAYS = [4000, 8000, 16000, 30000, 60000, 120000];
+       it re-issues the exact same request (same history, same prompt).
+       How hard it tries is a setting with four paces — Relaxed to Relentless,
+       default Aggressive (first retry in under a second) — and the pace row
+       on the live retry card edits it MID-RUN: a faster pick shortens the
+       countdown that's already ticking; a gentler one applies next attempt. */
+    const RETRY_PROFILES = {
+      relaxed:    { label: "Relaxed",    max: 12,  delays: [3000, 6000, 12000, 24000, 60000, 120000], note: "first retry in 3s, spacing grows to 2min — up to 12 attempts" },
+      standard:   { label: "Standard",   max: 15,  delays: [2000, 4000, 8000, 15000, 30000, 60000],  note: "first retry in 2s, spacing grows to 1min — up to 15 attempts" },
+      aggressive: { label: "Aggressive", max: 30,  delays: [800, 1500, 2500, 4000, 6000, 10000, 15000, 30000], note: "first retry in 0.8s, spacing grows to 30s — up to 30 attempts" },
+      relentless: { label: "Relentless", max: 100, delays: [400, 800, 1200, 2000, 3000, 5000, 8000, 12000],  note: "first retry in 0.4s, stays under 12s apart — up to 100 attempts" },
+    };
+    function retryProfile() { return RETRY_PROFILES[state.settings.retryLevel] || RETRY_PROFILES.aggressive; }
+    function retryCountdownText(nextAt) {
+      const secs = Math.max(0, (nextAt - Date.now()) / 1000);
+      return "Next retry in " + (secs < 10 ? secs.toFixed(1) : Math.ceil(secs)) + "s — same request, no duplicate message";
+    }
     let retryTicker = null;
     function startRetryTicker() {
       if (retryTicker) return;
@@ -5161,10 +5523,9 @@
         document.querySelectorAll("[data-retry-countdown]").forEach(el => {
           const m = chat?.messages[Number(el.dataset.index)];
           if (!m?.autoRetry) return;
-          const secs = Math.max(0, Math.ceil((m.autoRetry.nextAt - Date.now()) / 1000));
-          el.textContent = "Next retry in " + secs + "s — same request, no duplicate message";
+          el.textContent = retryCountdownText(m.autoRetry.nextAt);
         });
-      }, 500);
+      }, 250); // fine enough to render sub-second aggressive paces honestly
     }
     function stopRetryTicker() { if (retryTicker) { clearInterval(retryTicker); retryTicker = null; } }
 
@@ -5173,21 +5534,39 @@
       const chat = currentChat();
       if (!chat?.messages[index]?.error) return;
       if (index !== chat.messages.length - 1) { toast("Auto-retry works on the latest failed message", "warn"); return; }
-      const session = { chatId: chat.id, index, stopped: false, ac: new AbortController() };
+      const session = { chatId: chat.id, index, stopped: false, paceVersion: 0, ac: new AbortController() };
       state.autoRetry = session;
       (async () => {
-        let success = false;
+        let success = false, attempt = 0;
         try {
-          for (let attempt = 1; attempt <= AUTO_RETRY_MAX; attempt++) {
+          while (true) {
+            const prof = retryProfile(); // re-read every round — the pace row edits this live
+            if (attempt >= prof.max) break; // the ceiling can move mid-run too
+            attempt++;
             const c = currentChat();
             if (!c || c.id !== session.chatId || session.index !== c.messages.length - 1) break;
             const m = c.messages[session.index];
             if (!m || (!m.error && !m.autoRetry)) { success = true; break; }
-            const delay = AUTO_RETRY_DELAYS[Math.min(attempt - 1, AUTO_RETRY_DELAYS.length - 1)];
-            m.autoRetry = { attempt, max: AUTO_RETRY_MAX, nextAt: Date.now() + delay, retrying: false, lastError: m.error?.message || m.autoRetry?.lastError || "" };
+            const delay = prof.delays[Math.min(attempt - 1, prof.delays.length - 1)];
+            let deadline = Date.now() + delay;
+            m.autoRetry = { attempt, max: prof.max, nextAt: deadline, retrying: false, lastError: m.error?.message || m.autoRetry?.lastError || "" };
             saveChats(); renderChat(); startRetryTicker();
-            try { await sleep(delay, session.ac.signal); } catch (_) { break; }
-            if (session.stopped) break;
+            // wait in short slices so a pace switch (or Stop) can react mid-wait:
+            // a faster pace clamps the LIVE countdown, a gentler one waits out
+            const next = () => { const p2 = retryProfile(); return p2.delays[Math.min(attempt - 1, p2.delays.length - 1)]; };
+            let ver = session.paceVersion;
+            while (Date.now() < deadline) {
+              try { await sleep(200, session.ac.signal); } catch (_) { break; }
+              if (session.stopped) break;
+              if (session.paceVersion !== ver) {
+                ver = session.paceVersion;
+                deadline = Math.min(deadline, Date.now() + next()); // only ever shortens — gentler picks land next attempt
+                const cw = currentChat();
+                const mw = cw?.id === session.chatId ? cw.messages[session.index] : null;
+                if (mw?.autoRetry) { mw.autoRetry.nextAt = deadline; saveChats(); }
+              }
+            }
+            if (session.stopped || session.ac.signal.aborted) break;
             // retry the SAME request: drop the failed placeholder, regenerate from the same history
             const c2 = currentChat();
             if (!c2 || c2.id !== session.chatId || session.index !== c2.messages.length - 1) break;
@@ -5211,7 +5590,7 @@
           state.autoRetry = null;
           stopRetryTicker();
           if (currentChat()?.id === session.chatId) renderChat();
-          if (!session.stopped && !success) toast("Auto-retry gave up after " + AUTO_RETRY_MAX + " attempts", "warn");
+          if (!session.stopped && !success) toast("Auto-retry gave up after " + attempt + " attempts — retry now or pick another model", "warn");
           else if (success) toast("Auto-retry succeeded — response received");
         }
       })();
@@ -5535,9 +5914,7 @@
         } else if (talk.phase === "thinking") {
           stopGeneration(); // abort — runTalkTurn resumes listening when it unwinds
         } else if (talk.phase === "speaking") {
-          stopSpeaking(); // barge in: cut the reply short and listen again
-          setTalkPhase("listening");
-          if (!talk.muted && getSRClass()) startListening();
+          stopSpeaking(true); // barge in: silence the reply (token kills queued sentences) and listen again
         } else if (talk.kb) {
           setTimeout(() => $("talk-input")?.focus(), 50);
         }
@@ -5569,8 +5946,12 @@
       "talk-speaker": () => {
         if (!talk.active) return;
         talk.speakerOn = !talk.speakerOn;
-        if (!talk.speakerOn) stopSpeaking();
+        if (!talk.speakerOn) stopSpeaking(true); // stop AND hand the call back (mic up / parked) — the phase must not linger on "speaking"
         renderTalkUi();
+      },
+      "talk-interrupt": () => {
+        if (!talk.active || talk.phase !== "speaking") return;
+        stopSpeaking(true); // cut the AI off mid-sentence and pick the mic straight up
       },
       "talk-voice": () => openVoiceSheet(),
       "voice-focus": () => {
@@ -5634,6 +6015,22 @@
       "retry-error": el => retryError(Number(el.dataset.index)),
       "start-auto-retry": el => startAutoRetry(Number(el.dataset.index)),
       "stop-auto-retry": () => stopAutoRetry(),
+      "retry-level": el => {
+        const lvl = el.dataset.level;
+        if (!RETRY_PROFILES[lvl]) return;
+        state.settings.retryLevel = lvl;
+        saveSettings();
+        const prof = retryProfile();
+        const s = state.autoRetry;
+        if (s) { // live re-pace: the running session picks it up within a slice
+          s.paceVersion = (s.paceVersion || 0) + 1;
+          const c = state.chats.find(x => x.id === s.chatId);
+          const m = c?.messages?.[s.index];
+          if (m?.autoRetry) { m.autoRetry.max = prof.max; saveChats(); }
+        }
+        renderChat();
+        toast("Auto-retry pace: " + prof.label + " — " + prof.note);
+      },
       "err-pick-model": () => { showModelBrowser(); openLayer("model-layer"); },
       "err-switch-paid": el => {
         const paid = paidVariantOf(el.dataset.model);
@@ -5995,12 +6392,16 @@
           const sysMsg = (body.messages || []).find(m => m.role === "system");
           const talkMode = sysMsg && typeof sysMsg.content === "string" && sysMsg.content.includes("LIVE SPOKEN conversation");
           const talkProbe = typeof lastUser?.content === "string" ? lastUser.content : "";
-          if (talkMode && (talkProbe.includes("!!slow") || talkProbe.includes("!!abbrevs") || !talkProbe.includes("!!"))) {
+          if (talkMode && (talkProbe.includes("!!slow") || talkProbe.includes("!!abbrevs") || talkProbe.includes("!!longtalk") || !talkProbe.includes("!!"))) {
             // "!!abbrevs" = reply carrying abbreviations/symbols so the speech
             // preprocessing (e.g.→for example, %→percent, &→and, vs.→versus,
-            // etc.→etcetera) is observable in the captured utterances
+            // etc.→etcetera) is observable in the captured utterances;
+            // "!!longtalk" = ONE long sentence so caption pacing is observable
+            // across many words without sentence-boundary resets
             const reply = talkProbe.includes("!!abbrevs")
               ? "Easy! Think e.g. 50% of Tom & Jerry vs. the rest, etc. What should we watch first?"
+              : talkProbe.includes("!!longtalk")
+              ? "This is a deliberately long single sentence about the weather the ocean and several other calm topics so the caption pacing can be observed over many words in a row."
               : "Sure, I can help with that! Just say the word. What should we tackle first?";
             const parts = reply.match(/[\s\S]{1,24}/g) || [];
             const partDelay = talkProbe.includes("!!slow") ? 420 : 22;
@@ -6015,12 +6416,17 @@
               }
             }), { status: 200, headers: { "Content-Type": "text/event-stream" } });
           }
-          // test hooks: "!!fail" simulates provider 500s (fails 2 of every 3 calls),
-          // "!!longcode" streams a long code block for tail-follow testing
+          // test hooks: "!!fail" simulates provider 500s (fails 3 of every 4
+          // calls — enough to beat the 2 in-request 5xx retries and surface an
+          // error card, then succeed on the auto-retry attempt),
+          // "!!alwaysfail" never succeeds (E2E: pace switching on the retry card)
           const probe = typeof lastUser?.content === "string" ? lastUser.content : JSON.stringify(lastUser?.content || "");
+          if (probe.includes("!!alwaysfail")) {
+            return new Response(JSON.stringify({ error: { message: "Mock provider server error (permanent, simulated)", code: 500 } }), { status: 500, headers: { "Content-Type": "application/json" } });
+          }
           if (probe.includes("!!fail")) {
             installMock.__fails = (installMock.__fails || 0) + 1;
-            if (installMock.__fails % 3 !== 0) {
+            if (installMock.__fails % 4 !== 0) {
               return new Response(JSON.stringify({ error: { message: "Mock provider server error (simulated)", code: 500 } }), { status: 500, headers: { "Content-Type": "application/json" } });
             }
           }
@@ -6049,8 +6455,37 @@
             const lastMsg = (body.messages || [])[(body.messages || []).length - 1];
             const toolNames = body.tools.map(t => t?.function?.name).filter(Boolean);
             const agentMode = sysMsg && typeof sysMsg.content === "string" && sysMsg.content.includes("Agent Mode");
+            const lastTool = lastMsg?.role === "tool" ? lastMsg : null;
             if (agentMode && toolNames.includes("write_file")) {
-              if (lastMsg?.role === "tool") {
+              if (probe.includes("!!agentedit")) {
+                // E2E hook: full write → verify → EDIT → summarize run — proves
+                // edit_file round-trips with a diff card and the file updates
+                if (lastTool && lastTool.name === "edit_file") steps.push({ content: "Edited **demo.js** with edit_file — `const x` is now 42. Surgical edits beat rewrites." });
+                else if (lastTool) steps.push({ tool_calls: [{ index: 0, id: "call_mock_edit", type: "function", function: { name: "edit_file", arguments: JSON.stringify({ path: "demo.js", old_text: "const x = 21;", new_text: "const x = 42;" }) } }] });
+                else steps.push({ tool_calls: [
+                  { index: 0, id: "call_mock_1", type: "function", function: { name: "write_file", arguments: JSON.stringify({ path: "demo.js", content: "const x = 21;\nconsole.log('answer', x * 2);" }) } },
+                  { index: 1, id: "call_mock_2", type: "function", function: { name: "run_javascript", arguments: JSON.stringify({ code: "require('demo.js');" }) } },
+                ] });
+              } else if (probe.includes("!!alias")) {
+                // E2E hook: the model calls apply_patch with Claude-style
+                // old_str/new_str — the alias system must route it to
+                // edit_file and normalize the argument names
+                if (lastTool) steps.push({ content: "apply_patch ran as edit_file — demo.js patched to 99. The note told me to call edit_file directly next time." });
+                else steps.push({ tool_calls: [{ index: 0, id: "call_mock_patch", type: "function", function: { name: "apply_patch", arguments: JSON.stringify({ path: "demo.js", old_str: "const x = 21;", new_str: "const x = 99;" }) } }] });
+              } else if (probe.includes("!!ghostfn")) {
+                // E2E hook: the model invents a function that doesn't exist —
+                // the tool result must carry guidance (not a dead-end), and
+                // the model recovers on the next round
+                if (lastTool) steps.push({ content: "Recovered — I read the guidance and switched to the listed tools." });
+                else steps.push({ tool_calls: [{ index: 0, id: "call_mock_ghost", type: "function", function: { name: "definitely_not_a_tool", arguments: JSON.stringify({ path: "x.js" }) } }] });
+              } else if (probe.includes("!!bigdraft")) {
+                // E2E hook: one huge write_file whose arguments stream slowly —
+                // the live drafting card + byte counter must be observable
+                const lines = [];
+                for (let i = 1; i <= 150; i++) { lines.push("// section " + i + " — scaffolding for the drafting-progress demo"); lines.push("export const section" + i + " = { id: " + i + ", ready: true };\n"); }
+                if (lastTool) steps.push({ content: "big.js written in full — the drafting card kept you posted the whole way down." });
+                else steps.push({ tool_calls: [{ index: 0, id: "call_mock_big", type: "function", function: { name: "write_file", arguments: JSON.stringify({ path: "big.js", content: lines.join("\n") }) } }], slowArgs: true });
+              } else if (lastMsg?.role === "tool") {
                 // second round: model has tool results, now it answers
                 steps.push({ content: "I created **demo.js** and verified it in the sandbox — it logs `answer 42`.\n\nHere's the file:\n\n```js\nconst x = 21;\nconsole.log('answer', x * 2);\n```\n\nOpen the **Files** tab in the side panel to see it." });
               } else {
@@ -6101,7 +6536,20 @@
               for (const step of steps) {
                 if (aborted()) break;
                 if (step.tool_calls) {
-                  push(sse({ choices: [{ delta: { tool_calls: step.tool_calls }, finish_reason: null }] }));
+                  // stream tool calls like a real provider: id + name first,
+                  // then the arguments in fragments — the live drafting card
+                  // ("Creating big.js… · 4.2 KB in") is driven off these
+                  const argDelay = step.slowArgs ? 12 : 6;
+                  for (const tc of step.tool_calls) {
+                    push(sse({ choices: [{ delta: { tool_calls: [{ index: tc.index, id: tc.id, type: "function", function: { name: tc.function.name, arguments: "" } }] }, finish_reason: null }] }));
+                    const frags = (tc.function.arguments || "").match(/[\s\S]{1,36}/g) || [];
+                    for (const f of frags) {
+                      if (aborted()) break;
+                      push(sse({ choices: [{ delta: { tool_calls: [{ index: tc.index, function: { arguments: f } }] }, finish_reason: null }] }));
+                      await new Promise(r => setTimeout(r, argDelay));
+                    }
+                    await new Promise(r => setTimeout(r, 80));
+                  }
                 } else if (step.reasoning) {
                   const parts = step.reasoning.match(/[\s\S]{1,30}/g) || [];
                   for (const p of parts) {
@@ -6133,6 +6581,7 @@
         state, talk, ChatDB, flushChats,
         saveChats: () => saveChats(),
         runTool: (name, args, chat) => runTool(name, args || {}, chat || state.chats.find(c => c.id === state.currentId) || state.chats[0]),
+        toolAliases: TOOL_ALIASES,
         get idbChats() { return ChatDB.get("chats"); },
       };
       console.info("[Nexus] mock mode active — no real API calls");
