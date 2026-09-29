@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-29T01:57:02.021Z",
+  "updated_at": "2026-09-29T22:58:37.988Z",
   "categories": [
     {
       "id": "developers",
@@ -79,30 +79,6 @@
     }
   ],
   "apps": [
-    {
-      "name": "Epoch",
-      "path": "Fun/Epoch",
-      "author": "Anonymous",
-      "description": "Hours slip through the cracks here",
-      "icon": "fa:fa-hourglass",
-      "color": "linear-gradient(135deg, #c7d9ee, #f1f6fc)",
-      "iconColor": "#e8a83e",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "Monochrome",
-      "rawName": "Monochrome.html",
-      "path": "Audio/Monochrome.html",
-      "author": "Bluevader 🔷",
-      "description": "You need to host your own cloudflare worker. The code for it is at the bottom of this html file front page",
-      "icon": "⚪",
-      "color": "linear-gradient(135deg, #2b2f36, #4b5563)",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
     {
       "name": "Song Search",
       "rawName": "SongSearch.html",
@@ -850,11 +826,6 @@
       "author": "Throk"
     },
     {
-      "name": "A Day In The NOM",
-      "rawName": "a-Day-in-the-NOM.html",
-      "path": "Developers/Text Editing/a-Day-in-the-NOM.html"
-    },
-    {
       "name": "Clipboard",
       "rawName": "Clipboard.html",
       "path": "Tools/Clipboard.html",
@@ -876,16 +847,6 @@
       "author": "Throk",
       "description": "Best text editor",
       "icon": "fa:fa-code"
-    },
-    {
-      "name": "Youtube",
-      "rawName": "Youtube.html",
-      "path": "Other/Youtube.html",
-      "author": "Bluevader🔷️",
-      "description": "🚨OPEN METHOD HAS TO BE IFRAME TO WORK🚨",
-      "icon": "fa:fa-play",
-      "color": "#101014",
-      "iconColor": "#e11d48"
     },
     {
       "name": "Nes<->Txt",
@@ -981,16 +942,6 @@
       "icon": "📧"
     },
     {
-      "name": "Scp",
-      "rawName": "Scp.html",
-      "path": "Other/Scp.html",
-      "author": "Bluevader🔷",
-      "description": "This is to view the official Scp website",
-      "icon": "👽",
-      "color": "#101014",
-      "isNew": true
-    },
-    {
       "name": "Minesweeper",
       "rawName": "Minesweeper.html",
       "path": "Fun/Single Player/Minesweeper.html",
@@ -1036,16 +987,6 @@
       "isNew": true
     },
     {
-      "name": "Songsearch+",
-      "rawName": "songsearch+.html",
-      "path": "Audio/songsearch+.html",
-      "author": "Bluevader🔷️",
-      "description": "This is song search but includes downloading music. It does require a cloudflare worker\n\nRepo with code\nkadharriminecraft/Songsearch",
-      "icon": "🎵",
-      "color": "#101014",
-      "isNew": true
-    },
-    {
       "name": "Scry Table",
       "rawName": "ScryTable.html",
       "path": "Fun/Tabletop/Magic/ScryTable.html",
@@ -1071,17 +1012,6 @@
       "author": "Throk",
       "description": "This is a party game that your able to do games like mafia and it will run the game logic and narrate",
       "icon": "🐺",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "Z.ai",
-      "rawName": "zai.html",
-      "path": "Other/zai.html",
-      "author": "Bluevader 🔷",
-      "description": "This allows to access z.ai website. You need to host your own worker and the code is built into the file.",
-      "icon": "fa:fa-star",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -1125,18 +1055,6 @@
       "author": "Bluevader 🔷️",
       "description": "This is a advanced AI app that uses a Openrouter API key. This app is built for coding and general use",
       "icon": "🌌",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "Relay",
-      "rawName": "Relay.html",
-      "path": "Other/Relay.html",
-      "author": "Bluevader🔷️",
-      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
-      "icon": "🌐",
-      "color": "#101014",
       "featured": true,
       "isNew": true,
       "pinned": true
