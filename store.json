@@ -2,7 +2,7 @@
   "webos_store": 2,
   "version": 2,
   "repo": "Kadharriminecraft/official-list",
-  "updated_at": "2026-09-20T13:14:38.855Z",
+  "updated_at": "2026-09-29T01:53:53.605Z",
   "categories": [
     {
       "id": "developers",
@@ -92,15 +92,15 @@
       "pinned": true
     },
     {
-      "name": "Steam",
-      "rawName": "SteamProx.html",
-      "path": "Other/SteamProx.html",
-      "author": "Bluevader🔷️",
-      "description": "This can access all of steam games and see full game pages(no videos)\nNo real setup other than selecting perfered proxy",
-      "icon": "fa:fa-gamepad",
-      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
-      "iconColor": "#ffffff",
+      "name": "Monochrome",
+      "rawName": "Monochrome.html",
+      "path": "Audio/Monochrome.html",
+      "author": "Bluevader 🔷",
+      "description": "You need to host your own cloudflare worker. The code for it is at the bottom of this html file front page",
+      "icon": "⚪",
+      "color": "linear-gradient(135deg, #2b2f36, #4b5563)",
       "featured": true,
+      "isNew": true,
       "pinned": true
     },
     {
@@ -194,14 +194,14 @@
       "author": "Throk"
     },
     {
-      "name": "Podcasts+",
-      "rawName": "Podcasts+.html",
-      "path": "Audio/Podcasts/Podcasts+.html",
-      "author": "Anonymous",
-      "description": "Upgraded podcasts app inspired from Throk",
-      "icon": "fa:fa-headphones",
-      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
-      "iconColor": "#f97316",
+      "name": "Steam",
+      "rawName": "SteamProx.html",
+      "path": "Other/SteamProx.html",
+      "author": "Bluevader🔷️",
+      "description": "This can access all of steam games and see full game pages(no videos)\nNo real setup other than selecting perfered proxy",
+      "icon": "fa:fa-gamepad",
+      "color": "linear-gradient(135deg, #1e3a8a, #60a5fa)",
+      "iconColor": "#ffffff",
       "featured": true,
       "pinned": true
     },
@@ -777,10 +777,14 @@
       "author": "Throk"
     },
     {
-      "name": "Minesweeper",
-      "rawName": "Minesweeper.html",
-      "path": "Fun/Single Player/Minesweeper.html",
-      "author": "Throk",
+      "name": "Podcasts+",
+      "rawName": "Podcasts+.html",
+      "path": "Audio/Podcasts/Podcasts+.html",
+      "author": "Anonymous",
+      "description": "Upgraded podcasts app inspired from Throk",
+      "icon": "fa:fa-headphones",
+      "color": "linear-gradient(160deg, var(--bg2), var(--bg3) 55%, color-mix(in srgb, var(--accent) 22%, var(--bg3)))",
+      "iconColor": "#f97316",
       "featured": true,
       "pinned": true
     },
@@ -987,12 +991,10 @@
       "isNew": true
     },
     {
-      "name": "Radio V4",
-      "rawName": "Radio v4.html",
-      "path": "Audio/Radio v4.html",
+      "name": "Minesweeper",
+      "rawName": "Minesweeper.html",
+      "path": "Fun/Single Player/Minesweeper.html",
       "author": "Throk",
-      "icon": "fa:fa-radio",
-      "iconColor": "#4f46e5",
       "featured": true,
       "pinned": true
     },
@@ -1016,14 +1018,13 @@
       "pinned": true
     },
     {
-      "name": "Scry Table",
-      "rawName": "ScryTable.html",
-      "path": "Fun/Tabletop/Magic/ScryTable.html",
-      "author": "Buell",
-      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
-      "icon": "🔮",
+      "name": "Radio V4",
+      "rawName": "Radio v4.html",
+      "path": "Audio/Radio v4.html",
+      "author": "Throk",
+      "icon": "fa:fa-radio",
+      "iconColor": "#4f46e5",
       "featured": true,
-      "isNew": true,
       "pinned": true
     },
     {
@@ -1045,12 +1046,12 @@
       "isNew": true
     },
     {
-      "name": "Narrator",
-      "rawName": "Narrator.html",
-      "path": "Fun/Tabletop/Narrator.html",
-      "author": "Throk",
-      "description": "This is a party game that your able to do games like mafia and it will run the game logic and narrate",
-      "icon": "🐺",
+      "name": "Scry Table",
+      "rawName": "ScryTable.html",
+      "path": "Fun/Tabletop/Magic/ScryTable.html",
+      "author": "Buell",
+      "description": "This is an advanced Magic the Gathering app for building and playing with decks",
+      "icon": "🔮",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -1064,24 +1065,23 @@
       "icon": "fa:fa-volume-high"
     },
     {
+      "name": "Narrator",
+      "rawName": "Narrator.html",
+      "path": "Fun/Tabletop/Narrator.html",
+      "author": "Throk",
+      "description": "This is a party game that your able to do games like mafia and it will run the game logic and narrate",
+      "icon": "🐺",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
+    },
+    {
       "name": "Nexus Ai Pro",
       "rawName": "NexusAiPro.html",
       "path": "Tools/NexusAiPro.html",
       "author": "Bluevader 🔷️",
       "description": "This is a advanced AI app that uses a Openrouter API key. This app is built for coding and general use",
       "icon": "🌌",
-      "featured": true,
-      "isNew": true,
-      "pinned": true
-    },
-    {
-      "name": "Relay",
-      "rawName": "Relay.html",
-      "path": "Other/Relay.html",
-      "author": "Bluevader🔷️",
-      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
-      "icon": "🌐",
-      "color": "#101014",
       "featured": true,
       "isNew": true,
       "pinned": true
@@ -1117,6 +1117,18 @@
       "description": "You dont want to use this",
       "icon": "fa:fa-apple-whole",
       "isNew": true
+    },
+    {
+      "name": "Relay",
+      "rawName": "Relay.html",
+      "path": "Other/Relay.html",
+      "author": "Bluevader🔷️",
+      "description": "This is a browser. It works better if you deploy your own cloudflare worker. Worker code found in settings to copy",
+      "icon": "🌐",
+      "color": "#101014",
+      "featured": true,
+      "isNew": true,
+      "pinned": true
     }
   ]
 }
